@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="cf_prova_volo" name="cf_ros_test_log" type="cf_ros_test_log.py" output="screen" />
+</launch>
