@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   rotors_gazebo_plugins
   rotors_joy_interface
   std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -64,13 +65,20 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message1.msg
 #   Message2.msg
 # )
-
+add_message_files(
+    FILES
+    CustomTrajectoryPointYaw_msg.msg
+)
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
 #   Service1.srv
 #   Service2.srv
 # )
+add_service_files(
+    FILES
+    CustomTrajectoryPointYaw_srv.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -84,6 +92,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   DEPENDENCIES
 #   geometry_msgs#   mav_msgs#   mav_planning_msgs#   mav_state_machine_msgs#   mav_system_msgs#   std_msgs
 # )
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+    geometry_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -117,7 +130,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES CrazyflieBeta
-#  CATKIN_DEPENDS geometry_msgs mav_msgs mav_planning_msgs mav_state_machine_msgs mav_system_msgs roscpp rospy rotors_comm rotors_control rotors_description rotors_evaluation rotors_gazebo rotors_gazebo_plugins rotors_joy_interface rotors_simulator std_msgs
+    CATKIN_DEPENDS geometry_msgs mav_msgs mav_planning_msgs mav_state_machine_msgs mav_system_msgs roscpp rospy rotors_comm rotors_control rotors_description rotors_evaluation rotors_gazebo rotors_gazebo_plugins rotors_joy_interface std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -146,6 +159,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/CrazyflieBeta_node.cpp)
+add_executable(trajectory_handle_service src/trajectory_handle_service.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -156,11 +170,13 @@ include_directories(
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(trajectory_handle_service ${trajectory_handle_service_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(trajectory_handle_service
+    ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
