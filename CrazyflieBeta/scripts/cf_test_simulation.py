@@ -77,7 +77,7 @@ if __name__ == '__main__':
     # Service instantiation:
     trajectory_service = rospy.ServiceProxy('/go_to', CustomTrajectoryPointYaw_srv)
 
-    # Message:
+    # Message 1:
     my_trajectory = CustomTrajectoryPointYaw_srvRequest()
     my_trajectory.trajectory_point.point.x = 0.0
     my_trajectory.trajectory_point.point.y = 0.0
@@ -86,9 +86,17 @@ if __name__ == '__main__':
 
 
     response = trajectory_service(my_trajectory)
-    result = response.result
-    rospy.loginfo("CHIAMATO SERVIZIO!! RISULTATO=%s", str(result))
+    rospy.loginfo("CHIAMATO SERVIZIO!! RISULTATO=%s", str(response.result))
 
+    # Message 2:
+    my_trajectory.trajectory_point.point.x = 1.0
+    my_trajectory.trajectory_point.point.y = 1.0
+    my_trajectory.trajectory_point.point.z = 1.0
+    my_trajectory.trajectory_point.yaw = 0.0
+
+    response = trajectory_service(my_trajectory)
+    rospy.loginfo("CHIAMATO SERVIZIO!! RISULTATO=%s", str(response.result))
+    
     rospy.spin()
 
 

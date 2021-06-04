@@ -1,0 +1,3 @@
+<launch>
+    <node name="nodo_prova" pkg="crazyCmd" type="prova.py" output="screen" />
+</launch>
