@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 # ROS modules
+import time
+
 import rospy
 
 # Crazyflie modules
@@ -7,7 +9,10 @@ import cflib.crtp
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
+
 from crazy_common_py.dataTypes import CfAgent
+from crazy_common_py.constants import *
+
 class CrazyflieManager:
     #=======================================================================================================
     #
@@ -19,7 +24,7 @@ class CrazyflieManager:
         self.URI = cf_agent.URI
         self.name = cf_agent.name
         self.decks = cf_agent.decks
-
+        self.decks_checks = []
         # Check if we are dealing with a real crazyflie or a simulated one
         if "simulation" not in self.URI:
             self.isSimulated = False
@@ -38,26 +43,25 @@ class CrazyflieManager:
     # These methods are aimed to check if all the requested decks are properly attached to the real crazyflie
     # before instantiate it and being able to control it.
     # ========================================================================================================
-
     def __deckCheckCB(self, name, value_str):
         value = int(value_str)
-        if value:
-            self.decks_checks[self.__actualDeck] = True
+        if value == 1:
+            self.decks_checks.append(1)
             rospy.logdebug("Deck %s correctly attached to Crazyflie %s with URI %s",
-                           self.decks_checks[self.__actualDeck].name, self.name, self.URI)
+                self.decks[-1].name, self.name, self.URI)
+
         else:
-            self.decks_checks[self.__actualDeck] = False
+            print("NON OK")
+            self.decks_checks.append(0)
             rospy.logerr("[ERROR] Deck %s not found on Crazyflie %s with URI %s",
-                         self.decks_checks[self.__actualDeck].name, self.name, self.URI)
+                  self.decks[-1].name, self.name, self.URI)
 
     def __checkDecks(self):
-        self.decks_checks = []
-        self.__actualDeck = 0
         for deck in self.decks:
             with SyncCrazyflie(self.URI, cf=Crazyflie(rw_cache='./cache')) as scf:
-                scf.cf.param.add_update_callback(group=deck.group, name=deck.name, cb=self.__deckCheckCB)
-            self.__actualDeck += 1
-        if False in self.decks_checks:
+                scf.cf.param.add_update_callback(group="deck", name=deck.name, cb=self.__deckCheckCB)
+                time.sleep(DELAY_DECK_CHECK)
+        if 0 in self.decks_checks:
             self.all_decks_attached = False
         else:
             self.all_decks_attached = True
@@ -78,6 +82,13 @@ class CrazyflieManager:
         # Performing a check of the decks:
         self.all_decks_attached = False
         self.__checkDecks()
+
+        if self.all_decks_attached:
+            with SyncCrazyflie(self.URI) as scf:
+                with MotionCommander(scf, default_height=DEFAULT_TAKEOFF_HEIGHT) as mc:
+                    rospy.logdebug("Crazyflie %s is taking off...", self.name)
+                    time.sleep(2)
+
     # =======================================================================================================
     #
     #                                        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -104,5 +115,37 @@ class CrazyflieManager:
     def rotate(self):
         pass
 
+URI = 'radio://0/80/2M/E7E7E7E7E7'
+
+is_deck_attached = False
 
 
+def param_deck_flow(name, value_str):
+    value = int(value_str)
+    print(value)
+    global is_deck_attached
+    if value:
+        is_deck_attached = True
+        print('Deck is attached!')
+    else:
+        is_deck_attached = False
+        print('Deck is NOT attached!')
+
+
+if __name__ == '__main__':
+    # Node initialization:
+    rospy.init_node('cf_single_test', log_level=rospy.DEBUG)
+
+    # Driver initialization:
+    cflib.crtp.init_drivers()
+
+    # Data of agent crazyflie:
+    agent = CfAgent('radio://0/80/2M/E7E7E7E7E7', 'cf1')
+    agent.add_deck("bcFlow2")
+    agent.add_deck("bcZRanger2")
+
+    # CrazyflieManager instantiation:
+    cf1 = CrazyflieManager(agent)
+
+
+    rospy.spin()

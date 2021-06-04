@@ -1,0 +1,5 @@
+<launch>
+
+    <node name="cf_test_single" pkg="crazyCmd" type="crazyflie_manager.py" output="screen" />
+
+</launch>
