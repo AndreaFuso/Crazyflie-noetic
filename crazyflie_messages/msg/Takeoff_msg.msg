@@ -1,0 +1,2 @@
+float64 vertical_speed
+float64 takeoff_height

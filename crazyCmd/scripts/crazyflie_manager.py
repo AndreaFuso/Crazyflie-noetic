@@ -118,13 +118,11 @@ class CrazyflieManager:
     #                                        R E A L  C R A Z Y F L I E  I N I T
     #
     # ========================================================================================================
+
     def __real_init(self):
         # Performing a check of the decks:
         self.all_decks_attached = False
         self.__checkDecks()
-
-
-
 
         if self.all_decks_attached:
             with SyncCrazyflie(self.URI) as self.scf:
@@ -157,11 +155,11 @@ class CrazyflieManager:
     #                                     P U B L I S H E R S  M E T H O D S
     #
     # ========================================================================================================
+
     def __attitude_log_async(self):
         self.__init_logconf()
         self.scf.cf.log.add_config(self.__attitude_logconf)
         self.__attitude_logconf.data_received_cb.add_callback(self.__attitude_log_cb)
-
 
     def __attitude_log_cb(self, timestamp, data, logconf):
         self.__attitude_msg.roll = data['stabilizer.roll']
