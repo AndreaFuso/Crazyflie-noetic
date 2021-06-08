@@ -9,7 +9,7 @@ from std_srvs.srv import Empty, EmptyRequest
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 from geometry_msgs.msg import Transform, Twist, Vector3, Quaternion
 from crazyflie_messages.msg import CustomTrajectoryPointYaw_msg
-from crazyflie_messages.srv import CustomTrajectoryPointYaw_srv, CustomTrajectoryPointYaw_srvRequest
+from crazyflie_messages.srv import CustomTrajectoryPointYaw_srv, CustomTrajectoryPointYaw_srvRequest, Takeoff_srv, Takeoff_srvRequest
 
 if __name__ == '__main__':
     # Node initialization:
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     # Vector3 translation
     # Quaternion rotation
 
-    # Waiting for service to be on:
+    '''# Waiting for service to be on:
     rospy.wait_for_service('/go_to')
 
     # Service instantiation:
@@ -93,7 +93,32 @@ if __name__ == '__main__':
     my_trajectory.trajectory_point.yaw = 0.0
 
     response = trajectory_service(my_trajectory)
-    rospy.loginfo("CHIAMATO SERVIZIO!! RISULTATO=%s", str(response.result))
+    rospy.loginfo("CHIAMATO SERVIZIO!! RISULTATO=%s", str(response.result))'''
+
+    # Wait for takeoff service to be online:
+    rospy.wait_for_service('/takeoff')
+
+    # Takeoff service instance:
+    takeoff_service = rospy.ServiceProxy('/takeoff', Takeoff_srv)
+
+    # Message:
+    takeoff_request = Takeoff_srvRequest()
+
+    max_PWM = 8163.0
+    min_PWM = 5156.0
+
+    delta_PWM = max_PWM - min_PWM
+
+    thrust_perc = 0.57
+
+    pwm = min_PWM + thrust_perc * delta_PWM
+
+    takeoff_request.takeoff_settings.takeoff_height = 0.2
+    takeoff_request.takeoff_settings.vertical_speed = pwm
+
+    # Calling the service:
+    takeoff_response = takeoff_service(takeoff_request)
+    rospy.loginfo("TAKEOFF SERVICE responded: RESULT = %s", str(takeoff_response.result))
 
     rospy.spin()
 

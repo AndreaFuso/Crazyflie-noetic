@@ -6,6 +6,7 @@
 #include <mav_msgs/default_topics.h>
 
 #include <crazyflie_messages/Takeoff_srv.h>
+#include <mav_msgs/RollPitchYawrateThrustCrazyflie.h>
 
 class TrajectoryService {
     private:
@@ -36,22 +37,35 @@ class TrajectoryService {
         }
 };
 
+
+
 class CrazyflieSimulatorManager {
     private:
+        ros::Publisher pub;
+        ros::ServiceServer take_off_service;
         // TAKEOFF SERVICE CALLBACK
         bool takeoff_service_cb(crazyflie_messages::Takeoff_srv::Request &req, crazyflie_messages::Takeoff_srv::Response &res){
             ROS_INFO("[SERVICE CALLED] Takeoff service called...");
+            // Operations to perform takeoff
+            mav_msgs::RollPitchYawrateThrustCrazyflie message;
+            message.roll = 0.0;
+            message.pitch = 0.0;
+            message.yaw_rate = 0.0;
+            message.thrust = req.takeoff_settings.vertical_speed;
 
+            pub.publish(message);
+
+            res.result = true;
+            return true;
         }
 
     public:
-        // Takeoff service declaration:
-        ros::ServiceServer take_off_service;
-
         // CONSTRUCTOR
         CrazyflieSimulatorManager(ros::NodeHandle& nh){
             // Service instance:
             take_off_service = nh.advertiseService("/takeoff", &CrazyflieSimulatorManager::takeoff_service_cb, this);
+            pub = nh.advertise<mav_msgs::RollPitchYawrateThrustCrazyflie>("/crazyflie2/command/roll_pitch_yawrate_thrust", 10);
+
         }
 };
 
@@ -64,7 +78,8 @@ int main(int argc, char **argv) {
     // Node instantiation:
     ros::init(argc, argv, "crazyflie_sim_manager");
     ros::NodeHandle nh;
-    TrajectoryService traj_service(nh);
+    //TrajectoryService traj_service(nh);
+    CrazyflieSimulatorManager cf_manager(nh);
     ros::spin();
 
     return 0;
