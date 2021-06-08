@@ -40,7 +40,7 @@ class CrazyflieSimulatorManager {
     private:
         // TAKEOFF SERVICE CALLBACK
         bool takeoff_service_cb(crazyflie_messages::Takeoff_srv::Request &req, crazyflie_messages::Takeoff_srv::Response &res){
-            ROS_INFO("[SERVICE CALLED] Takeoff service called...")
+            ROS_INFO("[SERVICE CALLED] Takeoff service called...");
 
         }
 
