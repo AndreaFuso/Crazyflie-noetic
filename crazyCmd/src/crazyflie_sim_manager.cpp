@@ -38,9 +38,20 @@ class TrajectoryService {
 
 class CrazyflieSimulatorManager {
     private:
+        // TAKEOFF SERVICE CALLBACK
         bool takeoff_service_cb(crazyflie_messages::Takeoff_srv::Request &req, crazyflie_messages::Takeoff_srv::Response &res){
             ROS_INFO("[SERVICE CALLED] Takeoff service called...")
 
+        }
+
+    public:
+        // Takeoff service declaration:
+        ros::ServiceServer take_off_service;
+
+        // CONSTRUCTOR
+        CrazyflieSimulatorManager(ros::NodeHandle& nh){
+            // Service instance:
+            take_off_service = nh.advertiseService("/takeoff", &CrazyflieSimulatorManager::takeoff_service_cb, this);
         }
 };
 
