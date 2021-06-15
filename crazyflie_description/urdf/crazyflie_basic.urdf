@@ -1,0 +1,226 @@
+<?xml version="1.0"?>
+<robot name="crazyflie">
+    <!--
+    =========================================================================
+                                  L I N K S
+    =========================================================================
+    -->
+    <link name="dummy">
+    <pose>0 0 0 0 0 0</pose>
+    </link>
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        C R A Z Y F L I E  B O D Y
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="crazyflie_main_body">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass value="0.025"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="1.65717e-05" ixy="0" ixz="0" iyy="1.65717e-05" iyz="0" izz="2.92617e-05"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="$(find crazyflie_description)/meshes/crazyflie2.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.045 0.045 0.03"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M1">
+      <origin xyz="0.032527 -0.032527 0.024"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="$(find crazyflie_description)/meshes/propeller_ccw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M2">
+      <origin xyz="-0.032527 -0.032527 0.024"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="$(find crazyflie_description)/meshes/propeller_cw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M3">
+      <origin xyz="-0.032527 0.032527 0.024"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="$(find crazyflie_description)/meshes/propeller_ccw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M4">
+      <origin xyz="0.032527 0.032527 0.024"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="$(find crazyflie_description)/meshes/propeller_cw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    =========================================================================
+                                  J O I N T S
+    =========================================================================
+    -->
+    <joint name="dummy_joint" type="fixed">
+     <parent link="dummy"/>
+     <child link="crazyflie_main_body"/>
+    </joint>
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M1_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M1"/>
+      <origin xyz="0.032527 -0.032527 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M2_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M2"/>
+      <origin xyz="-0.032527 -0.032527 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M3_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M3"/>
+      <origin xyz="-0.032527 0.032527 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M4_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M4"/>
+      <origin xyz="0.032527 0.032527 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+    </joint>
+
+    <!--
+    =========================================================================
+                              P L U G I N S
+    =========================================================================
+    -->
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+          <robotNamespace>/cf1</robotNamespace>
+        </plugin>
+    </gazebo>
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <transmission name="transmission_M1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="M1">
+          <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+        <joint name="crazyflie_M1_joint">
+          <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+    </transmission>
+</robot>

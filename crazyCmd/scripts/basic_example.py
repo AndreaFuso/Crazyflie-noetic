@@ -120,6 +120,20 @@ if __name__ == '__main__':
     takeoff_response = takeoff_service(takeoff_request)
     rospy.loginfo("TAKEOFF SERVICE responded: RESULT = %s", str(takeoff_response.result))
 
+    rate = rospy.Rate(2)
+
+    pwm_hover = 6874.0
+    cont = 0
+    while not rospy.is_shutdown():
+        rospy.loginfo("THRUST: %f", takeoff_request.takeoff_settings.vertical_speed)
+        takeoff_service(takeoff_request)
+        if cont <= 5:
+            takeoff_request.takeoff_settings.vertical_speed += 10.0
+        else:
+            takeoff_request.takeoff_settings.vertical_speed = pwm_hover
+        cont += 1
+        rate.sleep()
+
     rospy.spin()
 
 

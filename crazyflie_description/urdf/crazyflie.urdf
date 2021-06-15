@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<robot name="crazyflie">
+    <!-- Crazyflie main body -->
+    <link name="crazyflie_body">
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+            <mass value="0.025"/>   <!-- [kg] -->
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.25" ixy="0" ixz="0" iyy="0.25" iyz="0" izz="0.25"/>
+        </inertial>
+        <collision>
+            <geometry>
+                <box size="0.045 0.045 0.03"/>
+            </geometry>
+        </collision>
+        <visual>
+            <origin xyz="0 0 -0.015" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="$(find crazyflie_description)/meshes/crazyflie2.dae"/>
+            </geometry>
+        </visual>
+    </link>
+
+
+
+</robot>

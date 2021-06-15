@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!-- Launching the Gazebo world scene -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/MYROBOT.world"/>
+        <!-- more default parameters can be changed here -->
+        <arg name="paused" value="true"/>
+    </include>
+
+    <!-- Importing urdf informations to create a model of Crazyflie -->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find crazyflie_description)/urdf/crazyflie_basic.urdf'" />
+
+    <!-- Parameters to set the spawn position of the model -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0.2"/>
+
+    <!-- Spawning the model -->
+    <node name="cf1_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+          args="-urdf -param robot_description -model cf1 -x $(arg x) -y $(arg y) -z $(arg z)" />
+    <!-- <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model cf1 -x $(arg x) -y $(arg y) -z $(arg z) -param robot_description -y -6"/> -->
+
+    <!-- loads the controllers -->
+    <rosparam file="$(find crazyflie_description)/config/config.yaml" command="load" />
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" ns="/cf1" args="crazyflie_M1_joint_position_controller joint_state_controller"/>
+    <!-- converts joint states to TF transforms -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
+        <remap from="/joint_states" to="/cf1/joint_states" />
+    </node>
+</launch>

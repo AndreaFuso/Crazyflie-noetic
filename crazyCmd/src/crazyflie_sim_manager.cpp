@@ -69,6 +69,14 @@ class CrazyflieSimulatorManager {
         }
 };
 
+/*class CrazyflieController {
+    private:
+        ros::Subscriber sub;
+        ros::ServiceServer;
+    public:
+
+};
+*/
 
 
 
