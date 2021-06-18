@@ -14,6 +14,8 @@
     <arg name="csvFilesStoringTime" default="15.0"/> <!-- seconds -->
     <arg name="user_account" default="andrea"/>
 
+    <arg name="enable_internal_model_controller" default="true"/>
+
     <!-- The following line causes gzmsg and gzerr messages to be printed to the console
       (even when Gazebo is started through roslaunch) -->
     <arg name="verbose" default="false"/>
@@ -54,15 +56,23 @@
       <rosparam unless="$(arg enable_state_estimator)" command="load" file="$(find rotors_gazebo)/resource/controller_$(arg mav_name).yaml" />
       <rosparam if="$(arg enable_state_estimator)" command="load" file="$(find rotors_gazebo)/resource/controller_$(arg mav_name)_with_stateEstimator.yaml" />
       <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
+      <param name="enable_mellinger_controller" value="true"  />
     </node>
 
-    <node name="roll_pitch_yawrate_thrust_crazyflie_node" pkg="rotors_control" type="roll_pitch_yawrate_thrust_crazyflie_node">
+    <!--<node name="roll_pitch_yawrate_thrust_controller_node" pkg="rotors_control" type="roll_pitch_yawrate_thrust_controller_node" output="screen">-->
+      <!-- Enabling internal model controller-->
+      <!--<param name="enable_internal_model_controller" value="$(arg enable_internal_model_controller)"  /> -->
+      <!-- Crazyflie file parameters used within the Internal Model Controller controller -->
+      <!--<rosparam command="load" file="$(find rotors_gazebo)/resource/crazyflie_parameters.yaml" />-->
+      <!--<rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" /> -->
+      <!-- Loading Internal Model Controller's parameters -->
+      <!--<rosparam command="load" file="$(find rotors_gazebo)/resource/crazyflie_internal_model_controller.yaml" />-->
+    <!--</node>-->
 
-    </node>
-     <!--
-    <node name="hovering_example" pkg="rotors_gazebo" type="hovering_example" output="screen" /> -->
-    <node name="crazyflie_sim_manager" pkg="crazyCmd" type="crazyflie_sim_manager" output="screen" />
-    <node name="basic_example" pkg="crazyCmd" type="basic_example.py" output="screen" />
+    <!--<node name="roll_pitch_yawrate_thrust_crazyflie_node" pkg="rotors_control" type="roll_pitch_yawrate_thrust_crazyflie_node">
+
+    </node>-->
+
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
     <node name="quaternion_to_rpy" pkg="rotors_gazebo" type="quaternion_to_rpy" output="screen" >

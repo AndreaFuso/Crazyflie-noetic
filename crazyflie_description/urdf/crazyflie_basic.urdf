@@ -5,9 +5,9 @@
                                   L I N K S
     =========================================================================
     -->
-    <link name="dummy">
+    <!--<link name="dummy">
     <pose>0 0 0 0 0 0</pose>
-    </link>
+    </link>-->
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                         C R A Z Y F L I E  B O D Y
@@ -29,7 +29,7 @@
       </visual>
       <collision>
         <geometry>
-          <box size="0.045 0.045 0.03"/>
+          <box size="0.045 0.045 0.03"/>  <!-- "0.045 0.045 0.03" -->
         </geometry>
       </collision>
     </link>
@@ -139,10 +139,10 @@
                                   J O I N T S
     =========================================================================
     -->
-    <joint name="dummy_joint" type="fixed">
+    <!--<joint name="dummy_joint" type="fixed">
      <parent link="dummy"/>
      <child link="crazyflie_main_body"/>
-    </joint>
+    </joint>-->
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     R E V O L U T E  J O I N T  M O T O R  1
@@ -154,7 +154,7 @@
       <child link="crazyflie_prop_M1"/>
       <origin xyz="0.032527 -0.032527 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
-      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
 
     <!--
@@ -168,7 +168,7 @@
       <child link="crazyflie_prop_M2"/>
       <origin xyz="-0.032527 -0.032527 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
-      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
 
     <!--
@@ -182,7 +182,7 @@
       <child link="crazyflie_prop_M3"/>
       <origin xyz="-0.032527 0.032527 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
-      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
 
     <!--
@@ -196,7 +196,7 @@
       <child link="crazyflie_prop_M4"/>
       <origin xyz="0.032527 0.032527 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
-      <limit lower="-1e+16" upper="1e+16" effort="-1" velocity="-1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
 
     <!--
@@ -216,11 +216,63 @@
     -->
     <transmission name="transmission_M1">
         <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M1_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
         <actuator name="M1">
           <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
         </actuator>
-        <joint name="crazyflie_M1_joint">
-          <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <transmission name="transmission_M2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M2_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
         </joint>
+        <actuator name="M2">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <transmission name="transmission_M3">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M3_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M3">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <transmission name="transmission_M4">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M4_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M4">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
     </transmission>
 </robot>

@@ -22,9 +22,10 @@
 
     <!-- loads the controllers -->
     <rosparam file="$(find crazyflie_description)/config/config.yaml" command="load" />
-    <node name="controller_spawner" pkg="controller_manager" type="spawner" ns="/cf1" args="crazyflie_M1_joint_position_controller joint_state_controller"/>
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" ns="/cf1" args="crazyflie_M1_joint_velocity_controller crazyflie_M2_joint_velocity_controller crazyflie_M3_joint_velocity_controller crazyflie_M4_joint_velocity_controller joint_state_controller"/>
     <!-- converts joint states to TF transforms -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
         <remap from="/joint_states" to="/cf1/joint_states" />
     </node>
+
 </launch>

@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   mav_msgs
   trajectory_msgs
   crazyflie_messages
+  rotors_control
 )
 
 ## System dependencies are found with CMake's conventions
