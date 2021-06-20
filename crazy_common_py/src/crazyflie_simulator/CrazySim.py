@@ -1,11 +1,16 @@
 # ROS MODULES
 import rospy
 import roslaunch
+import rospkg
 # GAZEBO MODULES
 from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 
 # CUSTOM MODULES
 from crazy_common_py.dataTypes import Vector3
+
+
+# OTHER MODULES
+import os
 
 class CrazySim:
     # ==================================================================================================================
@@ -74,7 +79,7 @@ class CrazySim:
         # Setting up the request message to spawn the crazyflie in the simulation:
         self.__spawn_model_request_srv.model_name = self.name
         self.__spawn_model_request_srv.model_xml = self.__setup_custom_urdf(
-            '/home/andrea/catkin_ws/src/crazyflie_description/urdf/crazyflie_basic.urdf')
+            '/home/andrea/catkin_ws/src/crazyflie_description/urdf/crazyflie_reference.urdf')
         self.__spawn_model_request_srv.robot_namespace = self.name
         self.__spawn_model_request_srv.initial_pose.position.x = self.__initial_position.x
         self.__spawn_model_request_srv.initial_pose.position.y = self.__initial_position.y
@@ -129,17 +134,44 @@ class CrazySim:
     #
     #                                   __S E T U P  C U S T O M  U R D F
     #
-    # This method is used to modify the urdf of the model to spawn, since in the "PLUGINS" section we need a unique
-    # <robotNamespace> tag, which is set equal to the name of the spawned crazyflie.
+    # This method is used to modify the urdf of the model to spawn, in particular:
+    #   1) in the "PLUGINS" section we need a unique <robotNamespace> tag, which is set equal to the name of the
+    #   spawned crazyflie;
+    #   2) change the path where the .dae parts are placed;
     # ------------------------------------------------------------------------------------------------------------------
     def __setup_custom_urdf(self, urdf_path):
         # Saving all the file as a string:
         urdf_file = open(urdf_path).read()
 
-        # Finding and modifying robot namespace:
-        initial_pos = urdf_file.find('/cf1')
-        custom_urdf_file = urdf_file[:initial_pos]
-        custom_urdf_file = custom_urdf_file + '/' + self.name + urdf_file[initial_pos+4:]
+        # Setting up default paths for meshes:
+        rospack = rospkg.RosPack()
+        basic_link_mesh_path = rospack.get_path('crazyflie_description') + '/meshes/crazyflie2.dae'
+        cw_propeller_mesh_path = rospack.get_path('crazyflie_description') + '/meshes/propeller_cw.dae'
+        ccw_propeller_mesh_path = rospack.get_path('crazyflie_description') + '/meshes/propeller_ccw.dae'
+
+        # Finding and modifying the path of the base link .dae and robotNamespace tag:
+        tag_bl = 'PATH_BASE'
+        tag_p1 = 'PATH_PROP_1'
+        tag_p2 = 'PATH_PROP_2'
+        tag_p3 = 'PATH_PROP_3'
+        tag_p4 = 'PATH_PROP_4'
+        tag_ns = 'ROBOT_NAMESPACE'
+
+        initial_pos_bl = urdf_file.find(tag_bl)
+        initial_pos_p1 = urdf_file.find(tag_p1)
+        initial_pos_p2 = urdf_file.find(tag_p2)
+        initial_pos_p3 = urdf_file.find(tag_p3)
+        initial_pos_p4 = urdf_file.find(tag_p4)
+        initial_pos_ns = urdf_file.find(tag_ns)
+
+        custom_urdf_file = urdf_file[:initial_pos_bl]
+        custom_urdf_file = custom_urdf_file + basic_link_mesh_path + urdf_file[initial_pos_bl + len(tag_bl):initial_pos_p1]
+        custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p1 + len(tag_p1):initial_pos_p2]
+        custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p2 + len(tag_p2):initial_pos_p3]
+        custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p3 + len(tag_p3):initial_pos_p4]
+        custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p4 + len(tag_p4):initial_pos_ns]
+        custom_urdf_file = custom_urdf_file + '/' + self.name + urdf_file[initial_pos_ns + len(tag_ns):]
+
         return custom_urdf_file
 
     # ------------------------------------------------------------------------------------------------------------------
