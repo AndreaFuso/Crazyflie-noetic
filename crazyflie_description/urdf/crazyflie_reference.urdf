@@ -204,14 +204,41 @@
                               P L U G I N S
     =========================================================================
     -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        G A Z E B O  R O S  C O N T R O L
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
     <gazebo>
         <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
           <robotNamespace>ROBOT_NAMESPACE</robotNamespace>
         </plugin>
     </gazebo>
+
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                    A C T U A T O R  M O T O R  1
+                                I M U  S E N S O R
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo>
+        <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
+        <alwaysOn>true</alwaysOn>
+        <bodyName>crazyflie_main_body</bodyName>
+        <topicName>imu</topicName>
+        <serviceName>imu_service</serviceName>
+        <gaussianNoise>IMU_GAUSSIAN_NOISE_VALUE</gaussianNoise>
+        <updateRate>IMU_UPDATE_RATE</updateRate>
+    </plugin>
+    </gazebo>
+
+    <!--
+    =========================================================================
+                              A C T U A T O R S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        A C T U A T O R  M O T O R  1
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
 
@@ -229,7 +256,7 @@
 
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                    A C T U A T O R  M O T O R  2
+                        A C T U A T O R  M O T O R  2
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
 

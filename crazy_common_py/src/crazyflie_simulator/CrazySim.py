@@ -6,7 +6,9 @@ import rospkg
 from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 
 # CUSTOM MODULES
-from crazy_common_py.dataTypes import Vector3
+from crazy_common_py.dataTypes import Vector3, GazeboIMU
+from crazyflie_simulator.MotorSim import MotorSim
+from crazy_common_py.constants import *
 
 
 # OTHER MODULES
@@ -17,8 +19,10 @@ class CrazySim:
     #
     #                                               C O N S T R U C T O R
     #
+    # This class completely handle one virtual Crazyflie.
     # INPUTS:
-    #   1) name -> name of the Crazyflie in the simulation
+    #   1) name -> name of the Crazyflie in the simulation;
+    #   2) initialPosition -> Vector3 object with the inital position coordinates;
     # ==================================================================================================================
     def __init__(self, name, initialPosition):
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -35,6 +39,9 @@ class CrazySim:
 
         # Initial position of the crazyflie
         self.__initial_position = initialPosition
+
+        # Simulated IMU instantiation:
+        self.IMU = GazeboIMU(IMU_GAUSSIAN_NOISE_DEFAULT, IMU_UPDATE_RATE_DEFAULT)
 
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -64,6 +71,7 @@ class CrazySim:
         self.__start_gazebo_controllers()
 
 
+
     # ==================================================================================================================
     #
     #                                   I N I T I A L  O P E R A T I O N S  M E T H O D S
@@ -76,10 +84,13 @@ class CrazySim:
     # This method is used to spawn a virtual crazyflie in the actual opened Gazebo world.
     # ------------------------------------------------------------------------------------------------------------------
     def __spawn_cf(self):
+        # Getting the urdf path:
+        rospack = rospkg.RosPack()
+        urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_reference.urdf'
+
         # Setting up the request message to spawn the crazyflie in the simulation:
         self.__spawn_model_request_srv.model_name = self.name
-        self.__spawn_model_request_srv.model_xml = self.__setup_custom_urdf(
-            '/home/andrea/catkin_ws/src/crazyflie_description/urdf/crazyflie_reference.urdf')
+        self.__spawn_model_request_srv.model_xml = self.__setup_custom_urdf(urdf_path)
         self.__spawn_model_request_srv.robot_namespace = self.name
         self.__spawn_model_request_srv.initial_pose.position.x = self.__initial_position.x
         self.__spawn_model_request_srv.initial_pose.position.y = self.__initial_position.y
@@ -156,6 +167,8 @@ class CrazySim:
         tag_p3 = 'PATH_PROP_3'
         tag_p4 = 'PATH_PROP_4'
         tag_ns = 'ROBOT_NAMESPACE'
+        tag_imu_gn = 'IMU_GAUSSIAN_NOISE_VALUE'
+        tag_imu_ur = 'IMU_UPDATE_RATE'
 
         initial_pos_bl = urdf_file.find(tag_bl)
         initial_pos_p1 = urdf_file.find(tag_p1)
@@ -163,6 +176,8 @@ class CrazySim:
         initial_pos_p3 = urdf_file.find(tag_p3)
         initial_pos_p4 = urdf_file.find(tag_p4)
         initial_pos_ns = urdf_file.find(tag_ns)
+        initial_pos_imu_gn = urdf_file.find(tag_imu_gn)
+        initial_pos_imu_ur = urdf_file.find(tag_imu_ur)
 
         custom_urdf_file = urdf_file[:initial_pos_bl]
         custom_urdf_file = custom_urdf_file + basic_link_mesh_path + urdf_file[initial_pos_bl + len(tag_bl):initial_pos_p1]
@@ -170,7 +185,9 @@ class CrazySim:
         custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p2 + len(tag_p2):initial_pos_p3]
         custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p3 + len(tag_p3):initial_pos_p4]
         custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p4 + len(tag_p4):initial_pos_ns]
-        custom_urdf_file = custom_urdf_file + '/' + self.name + urdf_file[initial_pos_ns + len(tag_ns):]
+        custom_urdf_file = custom_urdf_file + '/' + self.name + urdf_file[initial_pos_ns + len(tag_ns):initial_pos_imu_gn]
+        custom_urdf_file = custom_urdf_file + str(self.IMU.gaussian_noise) + urdf_file[initial_pos_imu_gn + len(tag_imu_gn):initial_pos_imu_ur]
+        custom_urdf_file = custom_urdf_file + str(self.IMU.update_rate) + urdf_file[initial_pos_imu_ur + len(tag_imu_ur):]
 
         return custom_urdf_file
 

@@ -34,3 +34,8 @@ class Vector3:
         self.x = x
         self.y = y
         self.z = z
+
+class GazeboIMU:
+    def __init__(self, gaussianNoise, updateRate):
+        self.gaussian_noise = gaussianNoise
+        self.update_rate = updateRate
