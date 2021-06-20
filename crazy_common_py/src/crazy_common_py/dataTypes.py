@@ -27,3 +27,10 @@ class CfAgent():
     def add_log_item(self, item_path_, item_type_):
         log_item = LogItem(item_path_, item_type_)
         self.log_items.append(log_item)
+
+
+class Vector3:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z

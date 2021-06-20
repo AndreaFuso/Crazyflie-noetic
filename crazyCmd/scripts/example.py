@@ -2,9 +2,11 @@
 # ROS modules
 import rospy
 
+
 # CUSTOM MODULES
 from crazyflie_simulator.CrazySim import CrazySim
 from crazyflie_manager.CrazyManager import *
+from crazy_common_py.dataTypes import Vector3
 
 
 if __name__ == '__main__':
@@ -27,6 +29,7 @@ if __name__ == '__main__':
 
     rospy.on_shutdown(shutdown_operations)'''
 
-    CrazySim('cf1')
+    CF1 = CrazySim('cf1', Vector3(0, 0, 0.2))
+    CF2 = CrazySim('cf2', Vector3(0.5, 0.5, 0.2))
 
     rospy.spin()
