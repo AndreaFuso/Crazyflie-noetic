@@ -9,6 +9,7 @@ from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 from crazy_common_py.dataTypes import Vector3, GazeboIMU
 from crazyflie_simulator.MotorSim import MotorSim
 from crazy_common_py.constants import *
+from pid import FlightControllerSim
 
 
 # OTHER MODULES
@@ -40,8 +41,11 @@ class CrazySim:
         # Initial position of the crazyflie
         self.__initial_position = initialPosition
 
-        # Simulated IMU instantiation:
+        # Simulated IMU parameters:
         self.IMU = GazeboIMU(IMU_GAUSSIAN_NOISE_DEFAULT, IMU_UPDATE_RATE_DEFAULT)
+
+        # Instance of a flight controller:
+        self.flight_controller = FlightControllerSim()
 
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -116,15 +120,18 @@ class CrazySim:
         rospy.set_param('/' + self.name + '/joint_state_controller/publish_rate', 50)
 
         # Setting up rosparameters used by velocity controllers of motor joints in Gazebo:
-        self.__set_motor_parameters('crazyflie_M1_joint_velocity_controller', 'crazyflie_M1_joint', 1.0, 1.0, 0.0,
-                                    100.0)
-        self.__set_motor_parameters('crazyflie_M2_joint_velocity_controller', 'crazyflie_M2_joint', 1.0, 1.0, 0.0,
-                                    100.0)
-        self.__set_motor_parameters('crazyflie_M3_joint_velocity_controller', 'crazyflie_M3_joint', 1.0, 1.0, 0.0,
-                                    100.0)
-        self.__set_motor_parameters('crazyflie_M4_joint_velocity_controller', 'crazyflie_M4_joint', 1.0, 1.0, 0.0,
-                                    100.0)
-
+        self.__set_motor_parameters('crazyflie_M1_joint_velocity_controller', 'crazyflie_M1_joint',
+                                    ACTUATOR_VELOCITY_CONTROLLER_KP, ACTUATOR_VELOCITY_CONTROLLER_KI,
+                                    ACTUATOR_VELOCITY_CONTROLLER_KD, ACTUATOR_VELOCITY_CONTROLLER_I_CLAMP)
+        self.__set_motor_parameters('crazyflie_M2_joint_velocity_controller', 'crazyflie_M2_joint',
+                                    ACTUATOR_VELOCITY_CONTROLLER_KP, ACTUATOR_VELOCITY_CONTROLLER_KI,
+                                    ACTUATOR_VELOCITY_CONTROLLER_KD, ACTUATOR_VELOCITY_CONTROLLER_I_CLAMP)
+        self.__set_motor_parameters('crazyflie_M3_joint_velocity_controller', 'crazyflie_M3_joint',
+                                    ACTUATOR_VELOCITY_CONTROLLER_KP, ACTUATOR_VELOCITY_CONTROLLER_KI,
+                                    ACTUATOR_VELOCITY_CONTROLLER_KD, ACTUATOR_VELOCITY_CONTROLLER_I_CLAMP)
+        self.__set_motor_parameters('crazyflie_M4_joint_velocity_controller', 'crazyflie_M4_joint',
+                                    ACTUATOR_VELOCITY_CONTROLLER_KP, ACTUATOR_VELOCITY_CONTROLLER_KI,
+                                    ACTUATOR_VELOCITY_CONTROLLER_KD, ACTUATOR_VELOCITY_CONTROLLER_I_CLAMP)
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                               __S T A R T  G A Z E B O  C O N T R O L L E R S
