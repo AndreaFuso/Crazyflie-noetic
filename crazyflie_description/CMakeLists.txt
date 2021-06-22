@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   joint_state_publisher
   robot_state_publisher
+  sensor_msgs
+  nav_msgs
 )
 
 ## System dependencies are found with CMake's conventions

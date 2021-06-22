@@ -9,7 +9,9 @@ from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 from crazy_common_py.dataTypes import Vector3, GazeboIMU
 from crazyflie_simulator.MotorSim import MotorSim
 from crazy_common_py.constants import *
-from pid import FlightControllerSim
+from crazyflie_simulator.pid import *
+from crazyflie_simulator.FlightControllerSim import FlightControllerSim
+from crazyflie_simulator.StateEstimatorSim import FakeStateEstimator
 
 
 # OTHER MODULES
@@ -43,9 +45,10 @@ class CrazySim:
 
         # Simulated IMU parameters:
         self.IMU = GazeboIMU(IMU_GAUSSIAN_NOISE_DEFAULT, IMU_UPDATE_RATE_DEFAULT)
+        self.state_estimator = FakeStateEstimator(name)
 
         # Instance of a flight controller:
-        self.flight_controller = FlightControllerSim()
+        self.flight_controller = FlightControllerSim(name)
 
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P

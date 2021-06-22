@@ -1,0 +1,15 @@
+# INPUTS
+# Desired position:
+geometry_msgs/Vector3 desired_position
+
+---
+
+# OUTPUTS
+# Correct execution check:
+bool response_status
+
+# Thrust command:
+float64 thrust
+
+# Desired attitude:
+crazyflie_messages/RollPitchYaw desired_attitude
