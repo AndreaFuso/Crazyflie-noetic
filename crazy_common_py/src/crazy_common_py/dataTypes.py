@@ -39,3 +39,15 @@ class GazeboIMU:
     def __init__(self, gaussianNoise, updateRate):
         self.gaussian_noise = gaussianNoise
         self.update_rate = updateRate
+
+class CfRPY:
+    def __init__(self, roll=0, pitch=0, yaw=0):
+        self.roll = roll
+        self.pitch = pitch
+        self.yaw = yaw
+
+class CfState:
+    def __init__(self, position=Vector3(), velocity=Vector3(), orientation=CfRPY()):
+        self.position = position
+        self.velocity = velocity
+        self.orientation = orientation

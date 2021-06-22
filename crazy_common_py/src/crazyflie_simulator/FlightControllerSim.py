@@ -5,9 +5,10 @@ import rospy
 from crazyflie_simulator.filters import *
 from crazyflie_simulator.pid import *
 from crazyflie_simulator.stabilizer_types import *
-
+from crazy_common_py.dataTypes import CfState
 # SERVICE MESSAGES
 from crazyflie_messages.srv import DesiredPosition_srv, DesiredPosition_srvResponse, DesiredPosition_srvRequest
+from crazyflie_messages.srv import DesiredVelocity_srv, DesiredVelocity_srvResponse, DesiredVelocity_srvRequest
 
 # TOPIC MESSAGES
 from crazyflie_messages.msg import RollPitchYaw, CrazyflieState
@@ -17,7 +18,7 @@ DT = (1.0 / POSITION_RATE)
 POSITION_LPF_CUTOFF_FREQ = 20.0
 POSITION_LPF_ENABLE = True
 
-rpLimit  = 20;
+rpLimit  = 45   #20
 rpLimitOverhead = 1.10
 # Velocity maximums
 xyVelMax = 1.0
@@ -64,12 +65,12 @@ class FlightControllerSim:
     # ==================================================================================================================
     def __init__(self, name):
         # this_s instantiation:
-        self.this = this_s(pidAxis_s(PidObject(),pidInit_s(25.0, 1.0, 0.0),stab_mode_t.modeDisable),
-                           pidAxis_s(PidObject(), pidInit_s(25.0, 1.0, 0.0), stab_mode_t.modeDisable),
-                           pidAxis_s(PidObject(), pidInit_s(25.0, 15.0, 0.0), stab_mode_t.modeDisable),
-                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.0, 0.0), stab_mode_t.modeDisable),
-                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.0, 0.0), stab_mode_t.modeDisable),
-                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.5, 0.0), stab_mode_t.modeDisable),
+        self.this = this_s(pidAxis_s(PidObject(),pidInit_s(25.0, 1.0, 0.0),stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(25.0, 1.0, 0.0), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(25.0, 15.0, 0.0), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.0, 0.0), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.0, 0.0), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.5, 0.0), stab_mode_t.modeAbs),
                            36000, 20000)
         self.name = name
 
@@ -79,14 +80,20 @@ class FlightControllerSim:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        state_sub = rospy.Subscriber('/' + name + '/state', CrazyflieState, )
-        self.actual_state = CrazyflieState()
+        # Subscriber to get the actual state of the drone in the simulation:
+        state_sub = rospy.Subscriber('/' + name + '/state', CrazyflieState, self.__state_sub_callback)
+        self.actual_state = CfState()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Service to calculate the desired attitude from a position setpoint:
         self.set_position_target_srv = rospy.Service('/' + name + '/set_target_position', DesiredPosition_srv,
                                                      self.__set_position_target_srv_callback)
+
+        #Service to calculate the desired attitude from a velocity setpoint:
+        self.set_velocity_target_srv = rospy.Service('/' + name + '/set_target_velocity', DesiredVelocity_srv,
+                                                     self.__set_velocity_target_srv_callback)
     # ==================================================================================================================
     #
     #                                               C A L L B A C K S
@@ -107,9 +114,11 @@ class FlightControllerSim:
             mode=mode(x=stab_mode_t.modeAbs, y=stab_mode_t.modeAbs, z=stab_mode_t.modeAbs))
         state = state_t(position=Vector3(self.actual_state.position.x, self.actual_state.position.y,
                                   self.actual_state.position.z))
+        print("ACTUAL POS: [", self.actual_state.position.x, '; ', self.actual_state.position.y, '; ', self.actual_state.position.z, ']')
         # Calling positionController():
         result = self.positionController(thrust, attitude, setpoint, state)
         attitude = result[0]
+
         # Ceating the response:
         response = DesiredPosition_srvResponse()
         response.response_status = True
@@ -120,13 +129,46 @@ class FlightControllerSim:
 
         return response
 
+    def __set_velocity_target_srv_callback(self, request):
+        # Setting up the parameters needed by velocityController():
+        thrust = 0
+        attitude = attitude_t()
+        setpoint = setpoint_t(
+            velocity=Vector3(request.desired_velocity.x, request.desired_velocity.y, request.desired_velocity.z),
+            mode=mode(x=stab_mode_t.modeAbs, y=stab_mode_t.modeAbs, z=stab_mode_t.modeAbs))
+        state = state_t(velocity=Vector3(self.actual_state.velocity.x, self.actual_state.velocity.y,
+                                         self.actual_state.velocity.z))
+        # Calling velocityController():
+        result = self.velocityController(thrust, attitude, setpoint, state)
+        attitude = result[0]
+
+        # Creating the response:
+        response = DesiredVelocity_srvResponse()
+        response.response_status = True
+        response.thrust = result[1]
+        response.desired_attitude.roll = attitude.roll
+        response.desired_attitude.pitch = attitude.pitch
+        response.desired_attitude.yaw = attitude.yaw
+
+        return response
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                           S U B S C R I B E R S  C A L L B A C K S
     #
     # ------------------------------------------------------------------------------------------------------------------
     def __state_sub_callback(self, msg):
-        self.actual_state = msg
+        self.actual_state.position.x = msg.position.x
+        self.actual_state.position.y = msg.position.y
+        self.actual_state.position.z = msg.position.z
+
+        self.actual_state.velocity.x = msg.velocity.x
+        self.actual_state.velocity.y = msg.velocity.y
+        self.actual_state.velocity.z = msg.velocity.z
+
+        self.actual_state.orientation.roll = msg.orientation.roll
+        self.actual_state.orientation.pitch = msg.orientation.pitch
+        self.actual_state.orientation.yaw = msg.orientation.yaw
+
 
     # ==================================================================================================================
     #
@@ -176,17 +218,27 @@ class FlightControllerSim:
         bodyvy = setpoint.velocity.y
 
         if setpoint.mode.x == stab_mode_t.modeAbs:
-            setpoint.velocity.x = self.runPid(state.position.x, self.this.pidX, setpoint.position.x, DT)
+            res = self.runPid(state.position.x, self.this.pidX, setpoint.position.x, DT)
+            self.this.pidX.pid = res[0]
+            setpoint.velocity.x = res[1]
+            #setpoint.velocity.x = self.runPid(state.position.x, self.this.pidX, setpoint.position.x, DT)
         elif setpoint.velocity_body:
             setpoint.velocity.x = bodyvx * cosyaw - bodyvy * sinyaw
 
         if setpoint.mode.y == stab_mode_t.modeAbs:
-            setpoint.velocity.y = self.runPid(state.position.y, self.this.pidY, setpoint.position.y, DT)
+            res = self.runPid(state.position.y, self.this.pidY, setpoint.position.y, DT)
+            self.this.pidY.pid = res[0]
+            setpoint.velocity.y = res[1]
+            print("Desired Y = ", setpoint.position.y, '; Actual Y = ', state.position.y, '; VELY setpoint = ', setpoint.velocity.y)
+            #setpoint.velocity.y = self.runPid(state.position.y, self.this.pidY, setpoint.position.y, DT)
         elif setpoint.velocity_body:
             setpoint.velocity.y = bodyvy * cosyaw + bodyvx * sinyaw
 
         if setpoint.mode.z == stab_mode_t.modeAbs:
-            setpoint.velocity.z = self.runPid(state.position.z, self.this.pidZ, setpoint.position.z, DT)
+            res = self.runPid(state.position.z, self.this.pidZ, setpoint.position.z, DT)
+            self.this.pidZ.pid = res[0]
+            setpoint.velocity.z = res[1]
+            #setpoint.velocity.z = self.runPid(state.position.z, self.this.pidZ, setpoint.position.z, DT)
 
         return self.velocityController(thrust, attitude, setpoint, state)
 
@@ -200,8 +252,15 @@ class FlightControllerSim:
         self.this.pidVY.pid.outputLimit = rpLimit * rpLimitOverhead
         self.this.pidVZ.pid.outputLimit = 65535 / 2 / thrustScale
 
-        rollRaw = self.runPid(state.velocity.x, self.this.pidVX, setpoint.velocity.x, DT)
-        pitchRaw = self.runPid(state.velocity.y, self.this.pidVY, setpoint.velocity.y, DT)
+        resRoll = self.runPid(state.velocity.x, self.this.pidVX, setpoint.velocity.x, DT)
+        self.this.pidVX.pid = resRoll[0]
+        rollRaw = resRoll[1]
+
+        resPitch = self.runPid(state.velocity.y, self.this.pidVY, setpoint.velocity.y, DT)
+        self.this.pidVY.pid = resRoll[0]
+        pitchRaw = resPitch[1]
+        #rollRaw = self.runPid(state.velocity.x, self.this.pidVX, setpoint.velocity.x, DT)
+        #pitchRaw = self.runPid(state.velocity.y, self.this.pidVY, setpoint.velocity.y, DT)
         yawRad = state.attitude.yaw * M_PI / 180
 
         attitude.pitch = - (rollRaw * math.cos(yawRad)) - (pitchRaw * math.sin(yawRad))
@@ -210,7 +269,10 @@ class FlightControllerSim:
         attitude.roll = constrain(attitude.roll, -rpLimit, rpLimit)
         attitude.pitch = constrain(attitude.pitch, -rpLimit, rpLimit)
 
-        thrustRaw = self.runPid(state.velocity.z, self.this.pidVZ, setpoint.velocity.z, DT)
+        resThrust = self.runPid(state.velocity.z, self.this.pidVZ, setpoint.velocity.z, DT)
+        self.this.pidVZ.pid = resThrust[0]
+        thrustRaw = resThrust[1]
+        #thrustRaw = self.runPid(state.velocity.z, self.this.pidVZ, setpoint.velocity.z, DT)
         thrust = thrustRaw * thrustScale + self.this.thrustBase
 
         if thrust < self.this.thrustMin:
@@ -227,8 +289,8 @@ class FlightControllerSim:
         axis.setpoint = setpoint
         axis.pid = pidSetDesired(axis.pid, axis.setpoint)
         result = pidUpdate(axis.pid, input, True)
-        axis.pid = result[0]
-        return result[1]
+        #axis.pid = result[0]
+        return result
 
     def positionControlResetAllPID(self):
         self.this.pidX.pid = pidReset(self.this.pidX.pid)
