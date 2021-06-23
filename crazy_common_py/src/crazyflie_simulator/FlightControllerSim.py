@@ -31,6 +31,8 @@ ATTITUDE_LPF_CUTOFF_FREQ = 15.0
 ATTITUDE_LPF_ENABLE = False
 ATTITUDE_RATE_LPF_CUTOFF_FREQ = 30.0
 ATTITUDE_RATE_LPF_ENABLE = False
+ATTITUDE_CONTROLLER_FREQ = 500
+ATTITUDE_CONTROLLER_DT = 1 / ATTITUDE_CONTROLLER_FREQ
 
 # NUMBERS
 INT16_MAX = 32767
@@ -67,6 +69,13 @@ class this_s:
         self.pidZ = pidElZ
         self.thrustBase = thurstBase
         self.thrustMin = thrustMin
+
+class control_s:
+    def __init__(self, roll=0, pitch=0, yaw=0, thrust=0):
+        self.roll = roll
+        self.pitch = pitch
+        self.yaw = yaw
+        self.thrust = thrust
 
 # ======================================================================================================================
 #
@@ -111,7 +120,7 @@ class FlightControllerSim:
         self.__positionControllerInit()
 
         # Initializing attitude and attitude rate controllers:
-        self.__attitudeControllerInit()
+        self.__attitudeControllerInit(ATTITUDE_CONTROLLER_DT)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S U B S C R I B E R S  S E T U P
@@ -406,6 +415,8 @@ class FlightControllerSim:
         yawOutput = saturateSignedInt16(yawRateRes[1])
 
         return (rollOutput, pitchOutput, yawOutput)
+
+
     # ==================================================================================================================
     #
     #                       S U P P O R T  M E T H O D S  P O S I T I O N  C O N T R O L L E R S
