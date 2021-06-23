@@ -13,18 +13,33 @@ from crazyflie_messages.srv import DesiredVelocity_srv, DesiredVelocity_srvRespo
 # TOPIC MESSAGES
 from crazyflie_messages.msg import RollPitchYaw, CrazyflieState
 
-# CONSTANTS
+# CONSTANTS POSITION & VELOCITY CONTROLLERS
 DT = (1.0 / POSITION_RATE)
 POSITION_LPF_CUTOFF_FREQ = 20.0
 POSITION_LPF_ENABLE = True
 
-rpLimit  = 45   #20
+rpLimit  = 20   #20
 rpLimitOverhead = 1.10
 # Velocity maximums
 xyVelMax = 1.0
 zVelMax  = 1.0
 velMaxOverhead = 1.10
 thrustScale = 1000.0
+
+# CONSTANTS ATTITUDE CONTROLLER
+ATTITUDE_LPF_CUTOFF_FREQ = 15.0
+ATTITUDE_LPF_ENABLE = False
+ATTITUDE_RATE_LPF_CUTOFF_FREQ = 30.0
+ATTITUDE_RATE_LPF_ENABLE = False
+
+# NUMBERS
+INT16_MAX = 32767
+
+# ======================================================================================================================
+#
+#                                               T Y P E S  D E F I N I T I O N S
+#
+# ======================================================================================================================
 
 class pidInit_s:
     def __init__(self, kp, ki, kd):
@@ -53,6 +68,24 @@ class this_s:
         self.thrustBase = thurstBase
         self.thrustMin = thrustMin
 
+# ======================================================================================================================
+#
+#                                               F U N C T I O N S
+#
+# ======================================================================================================================
+def saturateSignedInt16(input):
+    if input > INT16_MAX:
+        return INT16_MAX
+    elif input < INT16_MAX:
+        return -INT16_MAX
+    else:
+        return input
+
+# ======================================================================================================================
+#
+#                                               C L A S S E S
+#
+# ======================================================================================================================
 
 class FlightControllerSim:
     # ==================================================================================================================
@@ -75,7 +108,10 @@ class FlightControllerSim:
         self.name = name
 
         # Initializing the position controller:
-        self.positionControllerInit()
+        self.__positionControllerInit()
+
+        # Initializing attitude and attitude rate controllers:
+        self.__attitudeControllerInit()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S U B S C R I B E R S  S E T U P
@@ -114,9 +150,8 @@ class FlightControllerSim:
             mode=mode(x=stab_mode_t.modeAbs, y=stab_mode_t.modeAbs, z=stab_mode_t.modeAbs))
         state = state_t(position=Vector3(self.actual_state.position.x, self.actual_state.position.y,
                                   self.actual_state.position.z))
-        print("ACTUAL POS: [", self.actual_state.position.x, '; ', self.actual_state.position.y, '; ', self.actual_state.position.z, ']')
         # Calling positionController():
-        result = self.positionController(thrust, attitude, setpoint, state)
+        result = self.__positionController(thrust, attitude, setpoint, state)
         attitude = result[0]
 
         # Ceating the response:
@@ -139,7 +174,7 @@ class FlightControllerSim:
         state = state_t(velocity=Vector3(self.actual_state.velocity.x, self.actual_state.velocity.y,
                                          self.actual_state.velocity.z))
         # Calling velocityController():
-        result = self.velocityController(thrust, attitude, setpoint, state)
+        result = self.__velocityController(thrust, attitude, setpoint, state)
         attitude = result[0]
 
         # Creating the response:
@@ -186,7 +221,7 @@ class FlightControllerSim:
     #                                           __P O S I T I O N  C O N T R O L L E R
     #
     # ------------------------------------------------------------------------------------------------------------------
-    def positionControllerInit(self):
+    def __positionControllerInit(self):
         self.this.pidX.pid = pidInit(self.this.pidX.pid, self.this.pidX.setpoint, self.this.pidX.init.kp,
                                      self.this.pidX.init.ki, self.this.pidX.init.kd, self.this.pidX.dt, POSITION_RATE,
                                      POSITION_LPF_CUTOFF_FREQ, POSITION_LPF_ENABLE)
@@ -207,7 +242,7 @@ class FlightControllerSim:
                                      self.this.pidVZ.init.ki, self.this.pidVZ.init.kd, self.this.pidVZ.dt, POSITION_RATE,
                                      POSITION_LPF_CUTOFF_FREQ, POSITION_LPF_ENABLE)
 
-    def positionController(self, thrust, attitude, setpoint, state):
+    def __positionController(self, thrust, attitude, setpoint, state):
         self.this.pidX.pid.outputLimit = xyVelMax * velMaxOverhead
         self.this.pidY.pid.outputLimit = xyVelMax * velMaxOverhead
         self.this.pidZ.pid.outputLimit = max(zVelMax, 0.5) * velMaxOverhead
@@ -218,7 +253,7 @@ class FlightControllerSim:
         bodyvy = setpoint.velocity.y
 
         if setpoint.mode.x == stab_mode_t.modeAbs:
-            res = self.runPid(state.position.x, self.this.pidX, setpoint.position.x, DT)
+            res = self.__runPid(state.position.x, self.this.pidX, setpoint.position.x, DT)
             self.this.pidX.pid = res[0]
             setpoint.velocity.x = res[1]
             #setpoint.velocity.x = self.runPid(state.position.x, self.this.pidX, setpoint.position.x, DT)
@@ -226,37 +261,36 @@ class FlightControllerSim:
             setpoint.velocity.x = bodyvx * cosyaw - bodyvy * sinyaw
 
         if setpoint.mode.y == stab_mode_t.modeAbs:
-            res = self.runPid(state.position.y, self.this.pidY, setpoint.position.y, DT)
+            res = self.__runPid(state.position.y, self.this.pidY, setpoint.position.y, DT)
             self.this.pidY.pid = res[0]
             setpoint.velocity.y = res[1]
-            print("Desired Y = ", setpoint.position.y, '; Actual Y = ', state.position.y, '; VELY setpoint = ', setpoint.velocity.y)
             #setpoint.velocity.y = self.runPid(state.position.y, self.this.pidY, setpoint.position.y, DT)
         elif setpoint.velocity_body:
             setpoint.velocity.y = bodyvy * cosyaw + bodyvx * sinyaw
 
         if setpoint.mode.z == stab_mode_t.modeAbs:
-            res = self.runPid(state.position.z, self.this.pidZ, setpoint.position.z, DT)
+            res = self.__runPid(state.position.z, self.this.pidZ, setpoint.position.z, DT)
             self.this.pidZ.pid = res[0]
             setpoint.velocity.z = res[1]
             #setpoint.velocity.z = self.runPid(state.position.z, self.this.pidZ, setpoint.position.z, DT)
 
-        return self.velocityController(thrust, attitude, setpoint, state)
+        return self.__velocityController(thrust, attitude, setpoint, state)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                           __V E L O C I T Y  C O N T R O L L E R
     #
     # ------------------------------------------------------------------------------------------------------------------
-    def velocityController(self, thrust, attitude, setpoint, state):
+    def __velocityController(self, thrust, attitude, setpoint, state):
         self.this.pidVX.pid.outputLimit = rpLimit * rpLimitOverhead
         self.this.pidVY.pid.outputLimit = rpLimit * rpLimitOverhead
         self.this.pidVZ.pid.outputLimit = 65535 / 2 / thrustScale
 
-        resRoll = self.runPid(state.velocity.x, self.this.pidVX, setpoint.velocity.x, DT)
+        resRoll = self.__runPid(state.velocity.x, self.this.pidVX, setpoint.velocity.x, DT)
         self.this.pidVX.pid = resRoll[0]
         rollRaw = resRoll[1]
 
-        resPitch = self.runPid(state.velocity.y, self.this.pidVY, setpoint.velocity.y, DT)
+        resPitch = self.__runPid(state.velocity.y, self.this.pidVY, setpoint.velocity.y, DT)
         self.this.pidVY.pid = resRoll[0]
         pitchRaw = resPitch[1]
         #rollRaw = self.runPid(state.velocity.x, self.this.pidVX, setpoint.velocity.x, DT)
@@ -269,7 +303,7 @@ class FlightControllerSim:
         attitude.roll = constrain(attitude.roll, -rpLimit, rpLimit)
         attitude.pitch = constrain(attitude.pitch, -rpLimit, rpLimit)
 
-        resThrust = self.runPid(state.velocity.z, self.this.pidVZ, setpoint.velocity.z, DT)
+        resThrust = self.__runPid(state.velocity.z, self.this.pidVZ, setpoint.velocity.z, DT)
         self.this.pidVZ.pid = resThrust[0]
         thrustRaw = resThrust[1]
         #thrustRaw = self.runPid(state.velocity.z, self.this.pidVZ, setpoint.velocity.z, DT)
@@ -280,22 +314,134 @@ class FlightControllerSim:
 
         return (attitude, thrust)
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   __A T T I T U D E  C O N T R O L L E R
+    #
+    # ------------------------------------------------------------------------------------------------------------------
+    def __attitudeControllerInit(self, updateDt):
+        # Properties creation:
+        self.__pidRollRate = PidObject()
+        self.__pidPitchRate = PidObject()
+        self.__pidYawRate = PidObject()
+        self.__pidRoll = PidObject()
+        self.__pidPitch = PidObject()
+        self.__pidYaw = PidObject()
+
+        # Attitude rate pids initialization:
+        self.__pidRollRate = pidInit(self.__pidRollRate, 0, PID_ROLL_RATE_KP, PID_ROLL_RATE_KD, PID_ROLL_RATE_KI,
+                                     updateDt, ATTITUDE_RATE, ATTITUDE_RATE_LPF_CUTOFF_FREQ, ATTITUDE_RATE_LPF_ENABLE)
+        self.__pidPitchRate = pidInit(self.__pidPitchRate, 0, PID_PITCH_RATE_KP, PID_PITCH_RATE_KD, PID_PITCH_RATE_KI,
+                                      updateDt, ATTITUDE_RATE, ATTITUDE_RATE_LPF_CUTOFF_FREQ, ATTITUDE_RATE_LPF_ENABLE)
+        self.__pidYawRate = pidInit(self.__pidYawRate, 0, PID_YAW_RATE_KP, PID_YAW_RATE_KD, PID_YAW_RATE_KI,
+                                    updateDt, ATTITUDE_RATE, ATTITUDE_RATE_LPF_CUTOFF_FREQ, ATTITUDE_RATE_LPF_ENABLE)
+
+        self.__pidRollRate = pidSetIntegralLimit(self.__pidRollRate, PID_ROLL_RATE_INTEGRATION_LIMIT)
+        self.__pidPitchRate = pidSetIntegralLimit(self.__pidPitchRate, PID_PITCH_INTEGRATION_LIMIT)
+        self.__pidYawRate = pidSetIntegralLimit(self.__pidYawRate, PID_YAW_RATE_INTEGRATION_LIMIT)
+
+        # Attitude pids initialization:
+        self.__pidRoll = pidInit(self.__pidRoll, 0, PID_ROLL_KP, PID_ROLL_KD, PID_ROLL_KI, updateDt, ATTITUDE_RATE,
+                                ATTITUDE_LPF_CUTOFF_FREQ, ATTITUDE_LPF_ENABLE)
+        self.__pidPitch = pidInit(self.__pidPitch, 0, PID_PITCH_KP, PID_PITCH_KD, PID_PITCH_KI, updateDt, ATTITUDE_RATE,
+                                ATTITUDE_LPF_CUTOFF_FREQ, ATTITUDE_LPF_ENABLE)
+        self.__pidYaw = pidInit(self.__pidYaw, 0, PID_YAW_KP, PID_YAW_KD, PID_YAW_KI, updateDt, ATTITUDE_RATE,
+                                ATTITUDE_LPF_CUTOFF_FREQ, ATTITUDE_LPF_ENABLE)
+
+        self.__pidRoll = pidSetIntegralLimit(self.__pidRoll, PID_ROLL_INTEGRATION_LIMIT)
+        self.__pidPitch = pidSetIntegralLimit(self.__pidPitch, PID_PITCH_INTEGRATION_LIMIT)
+        self.__pidYaw = pidSetIntegralLimit(self.__pidYaw, PID_YAW_INTEGRATION_LIMIT)
+
+    def __attitudeControllerCorrectAttitudePID(self, eulerRollActual, eulerPitchActual, eulerYawActual,
+                                               eulerRollDesired, eulerPitchDesired, eulerYawDesired):
+        # Roll rate desired:
+        self.__pidRoll = pidSetDesired(self.__pidRoll, eulerRollDesired)
+        roll = pidUpdate(self.__pidRoll, eulerRollActual, True)
+        self.__pidRoll = rollRes[0]
+        rollRateDesired = rollRes[1]
+
+        # Pitch rate desired:
+        self.__pidPitch = pidSetDesired(self.__pidPitch, eulerPitchDesired)
+        pitchRes = pidUpdate(self.__pidPitch, eulerPitchActual, True)
+        self.__pidPitch = pitchRes[0]
+        pitchRateDesired = pitchRes[1]
+
+        # Yaw rate desired:
+        yawError = eulerYawDesired - eulerYawActual
+        if yawError > 180.0:
+            yawError = yawError - 360.0
+        elif yawError < -180.0:
+            yawError = yawError + 360.0
+
+        self.__pidYaw = pidSetError(self.__pidYaw, yawError)
+        yawRes = pidUpdate(self.__pidYaw, eulerYawActual, False)
+        self.__pidYaw = yawRes[0]
+        yawRateDesired = yawRes[1]
+
+        return (rollRateDesired, pitchRateDesired, yawRateDesired)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   __A T T I T U D E  R A T E  C O N T R O L L E R
+    #
+    # ------------------------------------------------------------------------------------------------------------------
+    def __attitudeControllerCorrectRatePID(self, rollRateActual, pitchRateActual, yawRateActual,
+                                           rollRateDesired, pitchRateDesired, yawRateDesired):
+        # Roll output:
+        self.__pidRollRate = pidSetDesired(self.__pidRollRate, rollRateDesired)
+        rollRateRes = pidUpdate(self.__pidRollRate, rollRateActual, True)
+        self.__pidRollRate = rollRateRes[0]
+        rollOutput = saturateSignedInt16(rollRateRes[1])
+
+        # Pitch output:
+        self.__pidPitchRate = pidSetDesired(self.__pidPitchRate, pitchRateDesired)
+        pitchRateRes = pidUpdate(self.__pidPitchRate, pitchRateActual, True)
+        self.__pidPitchRate = pitchRateRes[0]
+        pitchOutput = saturateSignedInt16(pitchRateRes[1])
+
+        # Yaw output:
+        self.__pidYawRate = pidSetDesired(self.__pidYawRate, yawRateDesired)
+        yawRateRes = pidUpdate(self.__pidYawRate, yawRateActual, True)
+        self.__pidYawRate = yawRateRes[0]
+        yawOutput = saturateSignedInt16(yawRateRes[1])
+
+        return (rollOutput, pitchOutput, yawOutput)
     # ==================================================================================================================
     #
     #                       S U P P O R T  M E T H O D S  P O S I T I O N  C O N T R O L L E R S
     #
     # ==================================================================================================================
-    def runPid(self, input, axis, setpoint, dt):
+    def __runPid(self, input, axis, setpoint, dt):
         axis.setpoint = setpoint
         axis.pid = pidSetDesired(axis.pid, axis.setpoint)
         result = pidUpdate(axis.pid, input, True)
         #axis.pid = result[0]
         return result
 
-    def positionControlResetAllPID(self):
+    def __positionControlResetAllPID(self):
         self.this.pidX.pid = pidReset(self.this.pidX.pid)
         self.this.pidY.pid = pidReset(self.this.pidY.pid)
         self.this.pidZ.pid = pidReset(self.this.pidZ.pid)
         self.this.pidVX.pid = pidReset(self.this.pidVX.pid)
         self.this.pidVY.pid = pidReset(self.this.pidVY.pid)
         self.this.pidVZ.pid = pidReset(self.this.pidVZ.pid)
+
+    # ==================================================================================================================
+    #
+    #                       S U P P O R T  M E T H O D S  A T T I T U D E  C O N T R O L L E R S
+    #
+    # ==================================================================================================================
+    def __attitudeControllerResetRollAttitudePID(self):
+        self.__pidRoll = pidReset(self.__pidRoll)
+
+    def __attitudeControllerResetPitchAttitudePID(self):
+        self.__pidPitch = pidReset(self.__pidPitch)
+
+    def __attitudeControllerResetAllPID(self):
+        self.__pidRoll = pidReset(self.__pidRoll)
+        self.__pidPitch = pidReset(self.__pidPitch)
+        self.__pidYaw = pidReset(self.__pidYaw)
+
+        self.__pidRollRate = pidReset(self.__pidRollRate)
+        self.__pidPitchRate = pidReset(self.__pidPitchRate)
+        self.__pidYawRate = pidReset(self.__pidYawRate)
