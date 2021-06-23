@@ -7,11 +7,12 @@ from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 
 # CUSTOM MODULES
 from crazy_common_py.dataTypes import Vector3, GazeboIMU
-from crazyflie_simulator.MotorControllerSim import MotorSim
+from crazyflie_simulator.MotorControllerSim import MotorControllerSim
 from crazy_common_py.constants import *
 from crazyflie_simulator.pid import *
 from crazyflie_simulator.FlightControllerSim import FlightControllerSim
 from crazyflie_simulator.StateEstimatorSim import FakeStateEstimator
+from crazyflie_simulator.MotionCommanderSim import MotionCommanderSim
 
 
 # OTHER MODULES
@@ -49,6 +50,12 @@ class CrazySim:
 
         # Instance of a flight controller:
         self.flight_controller = FlightControllerSim(name)
+
+        # Instance of a motor controller:
+        self.motor_controller = MotorControllerSim(name)
+
+        # Istance of motion commander:
+        self.motion_commander = MotionCommanderSim(name)
 
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P

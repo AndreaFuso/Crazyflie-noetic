@@ -26,3 +26,9 @@ def quat2euler(x, y, z, w):
     yaw = math.atan2(siny_cosp, cosy_cosp)
 
     return (roll, pitch, yaw)
+
+def rad2deg(rad):
+    return (rad * 180.0 / math.pi)
+
+def deg2rad(deg):
+    return (deg * math.pi / 180.0)

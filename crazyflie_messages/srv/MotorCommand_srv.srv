@@ -1,0 +1,9 @@
+# INPUTS
+# Orientation output (roll, pitch and yaw):
+crazyflie_messages/RollPitchYaw rpy_output
+float64 thrust
+
+---
+
+# OUTPUTS
+bool result

@@ -6,12 +6,13 @@ from crazyflie_simulator.filters import *
 from crazyflie_simulator.pid import *
 from crazyflie_simulator.stabilizer_types import *
 from crazy_common_py.dataTypes import CfState
+from crazy_common_py.common_functions import rad2deg, deg2rad
 # SERVICE MESSAGES
 from crazyflie_messages.srv import DesiredPosition_srv, DesiredPosition_srvResponse, DesiredPosition_srvRequest
 from crazyflie_messages.srv import DesiredVelocity_srv, DesiredVelocity_srvResponse, DesiredVelocity_srvRequest
 
 # TOPIC MESSAGES
-from crazyflie_messages.msg import RollPitchYaw, CrazyflieState
+from crazyflie_messages.msg import RollPitchYaw, CrazyflieState, Attitude, Position
 
 # CONSTANTS POSITION & VELOCITY CONTROLLERS
 DT = (1.0 / POSITION_RATE)
@@ -36,6 +37,7 @@ ATTITUDE_CONTROLLER_DT = 1 / ATTITUDE_CONTROLLER_FREQ
 
 # NUMBERS
 INT16_MAX = 32767
+MAX_THRUST = 65535
 
 # ======================================================================================================================
 #
@@ -127,8 +129,20 @@ class FlightControllerSim:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber to get the actual state of the drone in the simulation:
         state_sub = rospy.Subscriber('/' + name + '/state', CrazyflieState, self.__state_sub_callback)
-        self.actual_state = CfState()
+        self.actual_state = CrazyflieState()
 
+
+        # Subscriber looking for a point to go:
+        self.desired_position_sub = rospy.Subscriber('/' + name + '/set_destination_position', Position,
+                                                     self.__desired_position_sub_callback)
+
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                                           P U B L I S H E R S  S E T U P
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #self.desired_attitude_pub = rospy.Publisher('/' + name + '/set_desired_attitude', Attitude)
+
+        self.motor_command_pub = rospy.Publisher('/' + name + '/set_desired_motor_command', Attitude, queue_size=1)
+        self.desired_motor_command = Attitude()
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -139,6 +153,8 @@ class FlightControllerSim:
         #Service to calculate the desired attitude from a velocity setpoint:
         self.set_velocity_target_srv = rospy.Service('/' + name + '/set_target_velocity', DesiredVelocity_srv,
                                                      self.__set_velocity_target_srv_callback)
+
+
     # ==================================================================================================================
     #
     #                                               C A L L B A C K S
@@ -209,9 +225,46 @@ class FlightControllerSim:
         self.actual_state.velocity.y = msg.velocity.y
         self.actual_state.velocity.z = msg.velocity.z
 
-        self.actual_state.orientation.roll = msg.orientation.roll
-        self.actual_state.orientation.pitch = msg.orientation.pitch
-        self.actual_state.orientation.yaw = msg.orientation.yaw
+        self.actual_state.orientation.roll = rad2deg(msg.orientation.roll)
+        self.actual_state.orientation.pitch = rad2deg(msg.orientation.pitch)
+        self.actual_state.orientation.yaw = rad2deg(msg.orientation.yaw)
+
+    def __desired_position_sub_callback(self, msg):
+        thrust = 0
+        attitude = attitude_t()
+        setpoint = setpoint_t(position=Vector3(msg.desired_position.x, msg.desired_position.y, msg.desired_position.z),
+                              mode=mode(x=stab_mode_t.modeAbs, y=stab_mode_t.modeAbs, z=stab_mode_t.modeAbs))
+        state = state_t(position=Vector3(self.actual_state.position.x, self.actual_state.position.y,
+                                         self.actual_state.position.z))
+        # Calling positionController():
+        attitudeResult = self.__positionController(thrust, attitude, setpoint, state)
+        thrust = attitudeResult[1]
+
+        # Calling attitudeController:
+        attitudeRateResult = self.__attitudeControllerCorrectAttitudePID(rad2deg(self.actual_state.orientation.roll),
+                                                    rad2deg(self.actual_state.orientation.pitch),
+                                                    rad2deg(self.actual_state.orientation.yaw),
+                                                    attitudeResult[0].roll,
+                                                    attitudeResult[0].pitch,
+                                                    attitudeResult[0].yaw)
+        # Calling attitudeRateController():
+        outputResult = self.__attitudeControllerCorrectRatePID(rad2deg(self.actual_state.rotating_speed.x),
+                                                               rad2deg(self.actual_state.rotating_speed.y),
+                                                               rad2deg(self.actual_state.rotating_speed.z),
+                                                               attitudeRateResult[0],
+                                                               attitudeRateResult[1],
+                                                               attitudeRateResult[2])
+        # Setting up messaghe to be published:
+        self.desired_motor_command.desired_attitude.roll = outputResult[0]
+        self.desired_motor_command.desired_attitude.pitch = outputResult[1]
+        self.desired_motor_command.desired_attitude.yaw = outputResult[2]
+        self.desired_motor_command.desired_thrust = thrust
+
+        # Publishing motor command:
+        self.motor_command_pub.publish(self.desired_motor_command)
+
+
+
 
 
     # ==================================================================================================================
@@ -293,7 +346,7 @@ class FlightControllerSim:
     def __velocityController(self, thrust, attitude, setpoint, state):
         self.this.pidVX.pid.outputLimit = rpLimit * rpLimitOverhead
         self.this.pidVY.pid.outputLimit = rpLimit * rpLimitOverhead
-        self.this.pidVZ.pid.outputLimit = 65535 / 2 / thrustScale
+        self.this.pidVZ.pid.outputLimit = MAX_THRUST / 2 / thrustScale
 
         resRoll = self.__runPid(state.velocity.x, self.this.pidVX, setpoint.velocity.x, DT)
         self.this.pidVX.pid = resRoll[0]
@@ -365,7 +418,7 @@ class FlightControllerSim:
                                                eulerRollDesired, eulerPitchDesired, eulerYawDesired):
         # Roll rate desired:
         self.__pidRoll = pidSetDesired(self.__pidRoll, eulerRollDesired)
-        roll = pidUpdate(self.__pidRoll, eulerRollActual, True)
+        rollRes = pidUpdate(self.__pidRoll, eulerRollActual, True)
         self.__pidRoll = rollRes[0]
         rollRateDesired = rollRes[1]
 
