@@ -8,6 +8,28 @@
     <!--<link name="dummy">
     <pose>0 0 0 0 0 0</pose>
     </link>-->
+
+    <link name="DIOCANE">
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.000001"/>
+            <inertia ixx="1e-11" ixy="0" ixz="0" iyy="1e-11" iyz="0" izz="1e-11" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </collision>
+    </link>
+
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                         C R A Z Y F L I E  B O D Y
@@ -16,9 +38,10 @@
     <link name="crazyflie_main_body">
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <mass value="0.025"/>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <inertia ixx="1.65717e-05" ixy="0" ixz="0" iyy="1.65717e-05" iyz="0" izz="2.92617e-05"/>
+        <mass value="0.027"/>
+        <origin xyz="0 0 0.01745" rpy="0 0 0"/>
+        <!--<inertia ixx="1.65717e-05" ixy="0" ixz="0" iyy="1.65717e-05" iyz="0" izz="2.92617e-05"/>-->
+        <inertia ixx="16.823890e-06" ixy="0" ixz="0" iyy="16.655602e-06" iyz="0" izz="29.261652e-06"/>
       </inertial>
 
       <visual>
@@ -143,6 +166,13 @@
      <parent link="dummy"/>
      <child link="crazyflie_main_body"/>
     </joint>-->
+
+    <joint name="DIOCANE_JOINT" type="fixed">
+        <parent link="crazyflie_main_body" />
+        <child link="DIOCANE" />
+        <origin xyz="0 0 0.018" rpy="0 0 0" />
+    </joint>
+
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     R E V O L U T E  J O I N T  M O T O R  1
@@ -224,7 +254,7 @@
         <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
             <alwaysOn>true</alwaysOn>
             <updateRate>50.0</updateRate>
-            <bodyName>crazyflie_main_body</bodyName>
+            <bodyName>DIOCANE</bodyName> <!--crazyflie_main_body-->
             <topicName>odom</topicName>
             <gaussianNoise>0.0</gaussianNoise>
             <frameName>world</frameName>
@@ -326,4 +356,40 @@
 
     </transmission>
 
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>500</update>
+              <updateRate>500.0</updateRate>
+              <bodyName>crazyflie_prop_M1</bodyName>
+              <topicName>lift_M1</topicName>
+        </plugin>
+    </gazebo>
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>500</update>
+              <updateRate>500.0</updateRate>
+              <bodyName>crazyflie_prop_M2</bodyName>
+              <topicName>lift_M2</topicName>
+        </plugin>
+    </gazebo>
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>500</update>
+              <updateRate>500.0</updateRate>
+              <bodyName>crazyflie_prop_M3</bodyName>
+              <topicName>lift_M3</topicName>
+        </plugin>
+    </gazebo>
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>500</update>
+              <updateRate>500.0</updateRate>
+              <bodyName>crazyflie_prop_M4</bodyName>
+              <topicName>lift_M4</topicName>
+        </plugin>
+    </gazebo>
 </robot>

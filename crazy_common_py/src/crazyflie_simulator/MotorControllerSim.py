@@ -1,9 +1,10 @@
 # ROS MODULES
 import rospy
-
+import time
 # MESSAGE
 from std_msgs.msg import Float64
 from crazyflie_messages.msg import Position, Attitude
+from geometry_msgs.msg import Wrench
 
 # CUSTOM MODULES
 from crazyflie_simulator.FlightControllerSim import MAX_THRUST, INT16_MAX
@@ -13,6 +14,7 @@ from enum import Enum
 
 # SERVICES MESSAGES
 from crazyflie_messages.srv import MotorCommand_srv, MotorCommand_srvResponse
+from gazebo_msgs.srv import ApplyBodyWrench, ApplyBodyWrenchRequest, BodyRequest, BodyRequestRequest
 
 # CONSTANTS
 # Polyfit thrust - lift (Crazyflie Modelling Paper)
@@ -63,7 +65,13 @@ class MotorSim:
                                                       '_joint_velocity_controller/command', Float64, queue_size=1)
         self.__velocitySetpoint = Float64()
 
+        self.lift_pub = rospy.Publisher('/' + cfName + '/lift_M' + str(motorID), Wrench, queue_size=1)
+        self.lift_pub_msg = Wrench()
 
+        self.remove_forces_srv = rospy.ServiceProxy('/gazebo/clear_body_wrenches', BodyRequest)
+        self.remove_forces_srv_request = BodyRequestRequest()
+
+        rospy.wait_for_service('/gazebo/clear_body_wrenches')
 
 
 
@@ -79,15 +87,29 @@ class MotorSim:
         # Publish the velocity setpoint to the relative controller:
         self.__velocitySetpoint_pub.publish(self.__velocitySetpoint)
 
-    def __setLiftForce(self, thrust, duration):
-        pass
+    def __setLiftForce(self, thrust):
+        # Remove actual force:
+        '''self.remove_forces_srv_request.body_name = self.cfName + '::crazyflie_prop_M' + str(self.motorID)
+        self.remove_forces_srv(self.remove_forces_srv_request)'''
 
-    def sendThrustCommand(self, thrust, duration):
+        # Setting the new force:
+        self.lift_pub_msg.force.z = self.__thrustToLift(thrust)
+        self.lift_pub.publish(self.lift_pub_msg)
+
+    def sendThrustCommand(self, thrust):
         # Setting the velocity setpoint:
         self.__setVelocitySetpoint(thrust)
 
         # Generating corresponding lift force:
-        self.__setLiftForce(thrust, duration)
+        self.__setLiftForce(thrust)
+
+    def stopMotor(self):
+        # Publish the velocity setpoint to the relative controller:
+        self.__velocitySetpoint_pub.publish(0)
+
+        # Setting the new force:
+        self.lift_pub_msg.force.z = 0
+        self.lift_pub.publish(self.lift_pub_msg)
 
     # ==================================================================================================================
     #
@@ -103,7 +125,7 @@ class MotorSim:
 
     def __thrustToLift(self, thrust):
         totalLift = A2_THRUST_LIFT * (thrust ** 2) + A1_THRUST_LIFT * thrust + A0_THRUST_LIFT   # [N]
-        return totalLift / 4
+        return totalLift
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -113,8 +135,8 @@ class MotorSim:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __thrustToVelocity(self, thrust):
-        rotatinSpeed = A1_THRUST_ROTATING_SPEED * thrust + A0_THRUST_ROTATING_SPEED # [rad/s]
-        return rotatinSpeed
+        rotatingSpeed = A1_THRUST_ROTATING_SPEED * thrust + A0_THRUST_ROTATING_SPEED # [rad/s]
+        return rotatingSpeed
 
 class MotorControllerSim:
     def __init__(self, cfName):
@@ -125,9 +147,7 @@ class MotorControllerSim:
         self.M3 = MotorSim(cfName, 3, rotatingDirection.CCW)
         self.M4 = MotorSim(cfName, 4, rotatingDirection.CW)
 
-        self.motor_command_srv = rospy.Service('/' + cfName + '/motor_command', MotorCommand_srv,
-                                               self.__motor_command_srv_callback)
-        self.motor_command_sub = rospy.Subscriber('/' + cfName + '/set_desired_motor_command', Attitude,
+        self.motor_command_sub = rospy.Subscriber('/' + cfName + '/motor_command', Attitude,
                                                   self.__motor_command_sub_callback)
 
     def __motor_command_sub_callback(self, msg):
@@ -144,38 +164,14 @@ class MotorControllerSim:
         thrust_M4 = limitThrust(thrust + roll + pitch - yaw)
 
         # Sending the thrust command:
-        self.M1.sendThrustCommand(thrust_M1, 1)
-        self.M2.sendThrustCommand(thrust_M2, 1)
-        self.M3.sendThrustCommand(thrust_M3, 1)
-        self.M4.sendThrustCommand(thrust_M4, 1)
+        self.M1.sendThrustCommand(thrust_M1)
+        self.M2.sendThrustCommand(thrust_M2)
+        self.M3.sendThrustCommand(thrust_M3)
+        self.M4.sendThrustCommand(thrust_M4)
 
-    def __motor_command_srv_callback(self, request):
-        # Extracting request info:
-        roll = request.rpy_output.roll / 2.0
-        pitch = request.rpy_output.pitch / 2.0
-        yaw = request.rpy_output.yaw
-        thrust = request.thrust
-
-        # Calculating the thrust for each motor:
-        thrust_M1 = limitThrust(thrust - roll + pitch + yaw)
-        thrust_M2 = limitThrust(thrust - roll - pitch - yaw)
-        thrust_M3 = limitThrust(thrust + roll - pitch + yaw)
-        thrust_M4 = limitThrust(thrust + roll + pitch - yaw)
-
-        # Sending the thrust command:
-        self.M1.sendThrustCommand(thrust_M1, 1)
-        self.M2.sendThrustCommand(thrust_M2, 1)
-        self.M3.sendThrustCommand(thrust_M3, 1)
-        self.M4.sendThrustCommand(thrust_M4, 1)
-
-        # Response formulation:
-        response = MotorCommand_srvResponse()
-        response.result = True
-
-        return response
 
     def stopMotors(self):
-        self.M1.sendThrustCommand(0, 1)
-        self.M2.sendThrustCommand(0, 1)
-        self.M3.sendThrustCommand(0, 1)
-        self.M4.sendThrustCommand(0, 1)
+        self.M1.stopMotor()
+        self.M2.stopMotor()
+        self.M3.stopMotor()
+        self.M4.stopMotor()

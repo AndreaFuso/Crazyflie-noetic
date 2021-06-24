@@ -75,7 +75,9 @@ class FakeStateEstimator:
         self.__actual_state.velocity.y = msg.twist.twist.linear.y
         self.__actual_state.velocity.z = msg.twist.twist.linear.z
 
-        #self.__actual_state.rotating_speed.x = msg.twist.twist
+        self.__actual_state.rotating_speed.x = msg.twist.twist.angular.x
+        self.__actual_state.rotating_speed.y = msg.twist.twist.angular.y
+        self.__actual_state.rotating_speed.z = msg.twist.twist.angular.z
 
         # Publishing the state:
         self.state_pub.publish(self.__actual_state)
