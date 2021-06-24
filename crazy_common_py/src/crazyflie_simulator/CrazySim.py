@@ -7,7 +7,7 @@ from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 
 # CUSTOM MODULES
 from crazy_common_py.dataTypes import Vector3, GazeboIMU
-from crazyflie_simulator.MotorSim import MotorSim
+from crazyflie_simulator.MotorControllerSim import MotorSim
 from crazy_common_py.constants import *
 from crazyflie_simulator.pid import *
 from crazyflie_simulator.FlightControllerSim import FlightControllerSim
