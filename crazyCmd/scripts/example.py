@@ -17,15 +17,25 @@ if __name__ == '__main__':
     CF1 = CrazySim('cf1', Vector3(1.0, 0.5, 0.2))
     #CF2 = CrazySim('cf2', Vector3(0.5, 0.5, 0.2))
 
-    CF1.motion_commander.go_to(Vector3(1.0, 0.5, 0.5))
+    CF1.motion_commander.takeoff()
+    time.sleep(3)
 
-    '''thrustCmd = 38180
+    CF1.motion_commander.go_to(Vector3(1.0, 0.5, 0.5))
+    time.sleep(3)
+
+    CF1.motion_commander.go_to(Vector3(2.5, 0.5, 1.0))
+    #time.sleep(10)
+
+    #CF1.motion_commander.go_to(Vector3(1.0, 0.5, 0.5))
+
+
+    '''thrustCmd = 38180 #38180
     rate = rospy.Rate(500)
     cont = 0
     time.sleep(5)
     print("ENTRO NEL CICLO")
     while not rospy.is_shutdown():
-        if cont < 3000:
+        if cont < 20000:
             CF1.motor_controller.M1.sendThrustCommand(thrustCmd)
             CF1.motor_controller.M2.sendThrustCommand(thrustCmd)
             CF1.motor_controller.M3.sendThrustCommand(thrustCmd)
