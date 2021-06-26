@@ -16,6 +16,7 @@ from std_msgs.msg import Empty
 # Takeoff:
 DEFAULT_TAKEOFF_HEIGHT = 0.2    # [m]
 DEFAULT_TAKEOFF_SPEED = 0.5     # [m/s]
+DEFAULT_LAND_HEIGHT = 0.15
 
 class MotionCommanderSim:
     def __init__(self, name):
@@ -67,17 +68,24 @@ class MotionCommanderSim:
 
 
     def takeoff(self, height=DEFAULT_TAKEOFF_HEIGHT, speed=DEFAULT_TAKEOFF_SPEED):
-        pass
+        # Getting actual position:
+        actual_state = self.actual_state
+        time.sleep(5)
+        self.OK = True
+        self.go_to(Vector3(actual_state.position.x, actual_state.position.y, height))
+
+    def prepareLanding(self, height=DEFAULT_LAND_HEIGHT):
+        actual_state = self.actual_state
+        self.go_to(Vector3(actual_state.position.x, actual_state.position.y, height))
 
     def go_to(self, destination=Vector3()):
-        time.sleep(5)
-        self.position_target.desired_position.x = destination.x
-        self.position_target.desired_position.y = destination.y
-        self.position_target.desired_position.z = destination.z
-        self.trajectory_pub.publish(self.position_target)
+        if self.OK == True:
+            self.position_target.desired_position.x = destination.x
+            self.position_target.desired_position.y = destination.y
+            self.position_target.desired_position.z = destination.z
+            self.trajectory_pub.publish(self.position_target)
 
-        self.motor_command_pub.publish(self.desired_motor_command)
-        self.OK = True
+            self.motor_command_pub.publish(self.desired_motor_command)
 
 
 

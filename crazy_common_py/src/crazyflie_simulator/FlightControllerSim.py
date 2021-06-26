@@ -44,7 +44,7 @@ ATTITUDE_CONTROLLER_DT = 1 / ATTITUDE_CONTROLLER_FREQ
 INT16_MAX = 32767
 MAX_THRUST = 65535
 
-
+THRUST_BASE = 38180
 
 # ======================================================================================================================
 #
@@ -116,13 +116,13 @@ class FlightControllerSim:
     # ==================================================================================================================
     def __init__(self, name):
         # this_s instantiation:
-        self.this = this_s(pidAxis_s(PidObject(),pidInit_s(25.0, 1.0, 0.0),stab_mode_t.modeAbs),
-                           pidAxis_s(PidObject(), pidInit_s(25.0, 1.0, 0.0), stab_mode_t.modeAbs),
-                           pidAxis_s(PidObject(), pidInit_s(25.0, 15.0, 0.0), stab_mode_t.modeAbs),
-                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.0, 0.0), stab_mode_t.modeAbs),
-                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.0, 0.0), stab_mode_t.modeAbs),
-                           pidAxis_s(PidObject(), pidInit_s(2.0, 0.5, 0.0), stab_mode_t.modeAbs),
-                           36000, 20000)
+        self.this = this_s(pidAxis_s(PidObject(),pidInit_s(PID_VELOCITY_X_KP, PID_VELOCITY_X_KI, PID_VELOCITY_X_KD),stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(PID_VELOCITY_Y_KP, PID_VELOCITY_Y_KI, PID_VELOCITY_Y_KD), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(PID_VELOCITY_Z_KP, PID_VELOCITY_Z_KI, PID_VELOCITY_Z_KD), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(PID_POSITION_X_KP, PID_POSITION_X_KI, PID_POSITION_X_KD), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(PID_POSITION_Y_KP, PID_POSITION_Y_KI, PID_POSITION_Y_KD), stab_mode_t.modeAbs),
+                           pidAxis_s(PidObject(), pidInit_s(PID_POSITION_Z_KP, PID_POSITION_Z_KI, PID_POSITION_Z_KD), stab_mode_t.modeAbs),
+                           THRUST_BASE, 20000)
         self.name = name
 
         # Initializing the position controller:
@@ -196,6 +196,9 @@ class FlightControllerSim:
                                                                          desired_attitude.desired_attitude.roll,
                                                                          desired_attitude.desired_attitude.pitch,
                                                                          desired_attitude.desired_attitude.yaw)
+        # Reading actual state:
+        actual_state = self.actual_state
+
         # Calling attitudeRateController():
         outputResult = self.__attitudeControllerCorrectRatePID(actual_state.rotating_speed.x,
                                                                actual_state.rotating_speed.y,
@@ -208,11 +211,13 @@ class FlightControllerSim:
         print('Actual attitude rate: [', actual_state.rotating_speed.x, ';', actual_state.rotating_speed.y, '; ',
               actual_state.rotating_speed.z, ']')
         print(' ')
-        print('OUTPUT: [', outputResult[0], '; ', outputResult[1], '; ', outputResult[2], ']')'''
+        print('OUTPUT: [', outputResult[0], '; ', outputResult[1], '; ', outputResult[2], ']')
+        print(' ')
+        print(' ')'''
 
         # Setting up messaghe to be published:
-        self.desired_motor_command.desired_attitude.roll = - outputResult[0]
-        self.desired_motor_command.desired_attitude.pitch = - outputResult[1]
+        self.desired_motor_command.desired_attitude.roll = outputResult[0]
+        self.desired_motor_command.desired_attitude.pitch = outputResult[1]
         self.desired_motor_command.desired_attitude.yaw = outputResult[2]
         self.desired_motor_command.desired_thrust = desired_attitude.desired_thrust
 
@@ -262,8 +267,8 @@ class FlightControllerSim:
         self.desired_attitude_msg.desired_thrust = thrust
 
 
-
-        '''# Calling attitudeController:
+        '''
+        # Calling attitudeController:
         attitudeRateResult = self.__attitudeControllerCorrectAttitudePID(actual_state.orientation.roll,
                                                     actual_state.orientation.pitch,
                                                     actual_state.orientation.yaw,

@@ -80,7 +80,7 @@ class MotorSim:
         velocity = self.__thrustToVelocity(thrust)
 
         # Change the sign based on the rotating direction:
-        if self.direction == rotatingDirection.CCW:
+        if self.direction == rotatingDirection.CW:
             velocity = velocity * (-1)
         self.__velocitySetpoint.data = velocity
 
