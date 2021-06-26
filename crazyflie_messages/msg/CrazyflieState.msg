@@ -4,3 +4,4 @@ crazyflie_messages/RollPitchYaw orientation
 
 # Linear velocity:
 geometry_msgs/Vector3 velocity
+geometry_msgs/Vector3 rotating_speed

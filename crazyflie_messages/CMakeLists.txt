@@ -55,6 +55,8 @@ add_message_files(
     CustomTrajectoryPointYaw_msg.msg
     Takeoff_msg.msg
     CrazyflieState.msg
+    Position.msg
+    Attitude.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -64,6 +66,7 @@ add_service_files(
     Takeoff_srv.srv
     DesiredPosition_srv.srv
     DesiredVelocity_srv.srv
+    MotorCommand_srv.srv
 )
 
 ## Generate actions in the 'action' folder

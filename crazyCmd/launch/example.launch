@@ -7,10 +7,14 @@
         <arg name="paused" value="true"/>
     </include>
 
+    <node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>
+    <node name="node_500Hz" pkg="crazyCmd" type="node_500Hz.py" output="screen"/>
+
     <!-- Importing urdf informations to create a model of Crazyflie -->
     <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find crazyflie_description)/urdf/crazyflie_basic.urdf'" />
 
     <!-- Starting up the example node -->
     <node name="example" pkg="crazyCmd" type="example.py" output="screen"/>
+
 
 </launch>
