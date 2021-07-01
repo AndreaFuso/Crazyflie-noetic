@@ -105,7 +105,7 @@ def saturateSignedInt16(input):
 #
 # ======================================================================================================================
 
-class FlightControllerSim:
+class FlightControllerSimFirmwr:
     # ==================================================================================================================
     #
     #                                               C O N S T R U C T O R
@@ -197,7 +197,7 @@ class FlightControllerSim:
                                                                          desired_attitude.desired_attitude.pitch,
                                                                          desired_attitude.desired_attitude.yaw)
         # Reading actual state:
-        actual_state = self.actual_state
+        #actual_state = self.actual_state
 
         # Calling attitudeRateController():
         outputResult = self.__attitudeControllerCorrectRatePID(actual_state.rotating_speed.x,

@@ -10,7 +10,9 @@ from crazy_common_py.dataTypes import Vector3, GazeboIMU
 from crazyflie_simulator.MotorControllerSim import MotorControllerSim
 from crazy_common_py.constants import *
 from crazyflie_simulator.pid import *
-from crazyflie_simulator.FlightControllerSim import FlightControllerSim
+from crazyflie_simulator.FlightControllerSimFirmwr import FlightControllerSimFirmwr
+from crazyflie_simulator.MyFlightControllerFirmwr import MyFlightControllerFirmwr
+from crazyflie_simulator.FlightControllerSimCustom import FlightControllerCustom
 from crazyflie_simulator.StateEstimatorSim import FakeStateEstimator
 from crazyflie_simulator.MotionCommanderSim import MotionCommanderSim
 
@@ -49,7 +51,9 @@ class CrazySim:
         self.state_estimator = FakeStateEstimator(name)
 
         # Instance of a flight controller:
-        self.flight_controller = FlightControllerSim(name)
+        #self.flight_controller = FlightControllerSimFirmwr(name)
+        #self.flight_controller = MyFlightControllerFirmwr(name)
+        self.flight_controller = FlightControllerCustom(name)
 
         # Instance of a motor controller:
         self.motor_controller = MotorControllerSim(name)

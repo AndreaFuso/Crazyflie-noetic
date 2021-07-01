@@ -1,11 +1,12 @@
 import math
-
+from crazy_common_py.dataTypes import Vector3
 def constrain(value, lowerVal, upperVal):
     if value < lowerVal:
         return lowerVal
-    if value > upperVal:
+    elif value > upperVal:
         return upperVal
-    return value
+    else:
+        return value
 
 def quat2euler(x, y, z, w):
     # Roll:
@@ -32,3 +33,44 @@ def rad2deg(rad):
 
 def deg2rad(deg):
     return (deg * math.pi / 180.0)
+
+def sameSign(number1, number2):
+    if (number1 > 0 and number2 > 0) or (number1 < 0 and number2 < 0 ):
+        return True
+    else:
+        return False
+
+def isSameVector(vector1 = Vector3(), vector2 = Vector3()):
+    if vector1.x == vector2.x and vector1.y == vector2.y and vector1.z == vector2.z:
+        return True
+    else:
+        return False
+
+
+def RotateVector(vector=Vector3(), rotation=Vector3()):
+    cosR = math.cos(rotation.x)
+    sinR = math.sin(rotation.x)
+
+    cosP = math.cos(rotation.y)
+    sinP = math.sin(rotation.y)
+
+    cosY = math.cos(rotation.z)
+    sinY = math.sin(rotation.z)
+
+    R11 = cosY * cosP
+    R12 = cosY * sinP * sinR - sinY * cosR
+    R13 = cosY * sinP * cosR + sinY * sinR
+    R21 = sinY * cosP
+    R22 = sinY * sinP * sinR + cosY * cosR
+    R23 = sinY * sinP * cosR - cosY * sinR
+    R31 = - sinP
+    R32 = cosP * sinR
+    R33 = cosP * cosR
+
+    output = Vector3()
+
+    output.x = vector.x * R11 + vector.y * R12 + vector.z * R13
+    output.y = vector.x * R21 + vector.y * R22 + vector.z * R23
+    output.z = vector.x * R31 + vector.y * R32 + vector.z * R33
+
+    return output

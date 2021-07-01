@@ -37,6 +37,9 @@ class MotionCommanderSim:
         self.desired_motor_command_sub = rospy.Subscriber('/' + name + '/set_desired_motor_command', Attitude, self.__desired_motor_command_callback)
         self.desired_motor_command = Attitude()
 
+        self.destination_DEBUG_sub = rospy.Subscriber('/' + name + '/DEBUG_destination_publisher', Position,
+                                                      self.__DEBUG_destination_callback)
+
         self.OK = False
 
         #TODO: in FlightControllerSim bisogna mettere anche il yaw desired come input!!
@@ -47,11 +50,20 @@ class MotionCommanderSim:
         self.position_target.desired_position.z = self.actual_state.position.z
 
     def __pace_100Hz_callback(self, msg):
-        self.trajectory_pub.publish(self.position_target)
+        if self.OK:
+            self.trajectory_pub.publish(self.position_target)
 
     def __pace_500Hz_callback(self, msg):
         if self.OK:
             self.motor_command_pub.publish(self.desired_motor_command)
+
+    def __DEBUG_destination_callback(self, msg):
+        self.OK = False
+        self.position_target.desired_position.x = msg.desired_position.x
+        self.position_target.desired_position.y = msg.desired_position.y
+        self.position_target.desired_position.z = msg.desired_position.z
+        self.trajectory_pub.publish(self.position_target)
+        self.OK = True
 
     def __desired_motor_command_callback(self, msg):
         self.desired_motor_command.desired_attitude.roll = msg.desired_attitude.roll
@@ -63,7 +75,21 @@ class MotionCommanderSim:
         pass
 
     def __actual_state_sub_callback(self, msg):
-        self.actual_state = msg
+        self.actual_state.position.x = msg.position.x
+        self.actual_state.position.y = msg.position.y
+        self.actual_state.position.z = msg.position.z
+
+        self.actual_state.orientation.roll = msg.orientation.roll
+        self.actual_state.orientation.pitch = msg.orientation.pitch
+        self.actual_state.orientation.yaw = msg.orientation.yaw
+
+        self.actual_state.velocity.x = msg.velocity.x
+        self.actual_state.velocity.y = msg.velocity.y
+        self.actual_state.velocity.z = msg.velocity.z
+
+        self.actual_state.rotating_speed.x = msg.rotating_speed.x
+        self.actual_state.rotating_speed.y = msg.rotating_speed.y
+        self.actual_state.rotating_speed.z = msg.rotating_speed.z
 
 
 

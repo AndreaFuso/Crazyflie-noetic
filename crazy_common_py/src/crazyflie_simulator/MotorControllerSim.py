@@ -3,14 +3,16 @@ import rospy
 import time
 # MESSAGE
 from std_msgs.msg import Float64
-from crazyflie_messages.msg import Position, Attitude
+from crazyflie_messages.msg import Position, Attitude, CrazyflieState
 from geometry_msgs.msg import Wrench
 
 # CUSTOM MODULES
-from crazyflie_simulator.FlightControllerSim import MAX_THRUST, INT16_MAX
-
+from crazyflie_simulator.FlightControllerSimFirmwr import MAX_THRUST, INT16_MAX
+from crazy_common_py.common_functions import RotateVector
+from crazy_common_py.dataTypes import Vector3
 # OTHER MODULES
 from enum import Enum
+import math
 
 # SERVICES MESSAGES
 from crazyflie_messages.srv import MotorCommand_srv, MotorCommand_srvResponse
@@ -71,9 +73,15 @@ class MotorSim:
         self.remove_forces_srv = rospy.ServiceProxy('/gazebo/clear_body_wrenches', BodyRequest)
         self.remove_forces_srv_request = BodyRequestRequest()
 
+        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/state', CrazyflieState, self.__actual_state_callback)
+        self.actual_state = CrazyflieState()
+
         rospy.wait_for_service('/gazebo/clear_body_wrenches')
 
-
+    def __actual_state_callback(self, msg):
+        self.actual_state.orientation.roll = msg.orientation.roll
+        self.actual_state.orientation.pitch = msg.orientation.pitch
+        self.actual_state.orientation.yaw = msg.orientation.yaw
 
     def __setVelocitySetpoint(self, thrust):
         # Getting the rotating speed:
@@ -91,9 +99,17 @@ class MotorSim:
         # Remove actual force:
         '''self.remove_forces_srv_request.body_name = self.cfName + '::crazyflie_prop_M' + str(self.motorID)
         self.remove_forces_srv(self.remove_forces_srv_request)'''
+        # Getting actual state:
+        actual_state = self.actual_state
+
+        # Calculating force components:
+        force = self.__thrustToLift(thrust)
+        res = RotateVector(Vector3(0.0, 0.0, force), Vector3(actual_state.orientation.roll, actual_state.orientation.pitch, actual_state.orientation.yaw))
 
         # Setting the new force:
-        self.lift_pub_msg.force.z = self.__thrustToLift(thrust)
+        self.lift_pub_msg.force.x = res.x
+        self.lift_pub_msg.force.y = res.y
+        self.lift_pub_msg.force.z = res.z
         self.lift_pub.publish(self.lift_pub_msg)
 
     def sendThrustCommand(self, thrust):
@@ -108,7 +124,9 @@ class MotorSim:
         self.__velocitySetpoint_pub.publish(0)
 
         # Setting the new force:
-        self.lift_pub_msg.force.z = 0
+        self.lift_pub_msg.force.x = 0.0
+        self.lift_pub_msg.force.y = 0.0
+        self.lift_pub_msg.force.z = 0.0
         self.lift_pub.publish(self.lift_pub_msg)
 
     # ==================================================================================================================

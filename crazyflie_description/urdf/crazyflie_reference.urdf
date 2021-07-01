@@ -9,7 +9,7 @@
     <pose>0 0 0 0 0 0</pose>
     </link>-->
 
-    <link name="DIOCANE">
+    <link name="imu_sensor">
         <pose>0 0 0 0 0 0</pose>
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -167,9 +167,9 @@
      <child link="crazyflie_main_body"/>
     </joint>-->
 
-    <joint name="DIOCANE_JOINT" type="fixed">
+    <joint name="imu_sensor_joint" type="fixed">
         <parent link="crazyflie_main_body" />
-        <child link="DIOCANE" />
+        <child link="imu_sensor" />
         <origin xyz="0 0 0.018" rpy="0 0 0" />
     </joint>
 
@@ -254,7 +254,7 @@
         <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
             <alwaysOn>true</alwaysOn>
             <updateRate>50.0</updateRate>
-            <bodyName>DIOCANE</bodyName> <!--crazyflie_main_body-->
+            <bodyName>imu_sensor</bodyName> <!--crazyflie_main_body-->
             <topicName>odom</topicName>
             <gaussianNoise>0.0</gaussianNoise>
             <frameName>world</frameName>
@@ -271,7 +271,7 @@
     <gazebo>
         <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
         <alwaysOn>true</alwaysOn>
-        <bodyName>crazyflie_main_body</bodyName>
+        <bodyName>imu_sensor</bodyName> <!-- crazyflie_main_body -->
         <topicName>imu</topicName>
         <serviceName>imu_service</serviceName>
         <gaussianNoise>IMU_GAUSSIAN_NOISE_VALUE</gaussianNoise>

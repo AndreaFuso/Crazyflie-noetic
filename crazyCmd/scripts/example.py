@@ -18,16 +18,18 @@ if __name__ == '__main__':
     #CF2 = CrazySim('cf2', Vector3(0.5, 0.5, 0.2))
 
     CF1.motion_commander.takeoff()
-    time.sleep(3)
+    #time.sleep(2)
 
-    CF1.motion_commander.go_to(Vector3(1.0, 0.5, 0.5))
-    time.sleep(3)
-
-    CF1.motion_commander.go_to(Vector3(2.5, 0.5, 1.0))
-    #time.sleep(10)
+    '''for ii in range(0, 10):
+        CF1.motion_commander.go_to(Vector3(1.0, 0.5, 0.5))
+        time.sleep(2)
+        CF1.motion_commander.go_to(Vector3(1.0, 0.5, 1.0))
+        time.sleep(2)'''
 
     #CF1.motion_commander.go_to(Vector3(1.0, 0.5, 0.5))
+    #time.sleep(2)
 
+    #CF1.motion_commander.go_to(Vector3(1.5, 0.5, 0.5))
 
     '''thrustCmd = 38180 #38180
     rate = rospy.Rate(500)
