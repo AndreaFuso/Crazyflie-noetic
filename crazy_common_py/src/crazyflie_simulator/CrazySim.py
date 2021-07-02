@@ -5,6 +5,11 @@ import rospkg
 # GAZEBO MODULES
 from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 
+import sys
+import xacro
+import subprocess
+import time
+
 # CUSTOM MODULES
 from crazy_common_py.dataTypes import Vector3, GazeboIMU
 from crazyflie_simulator.MotorControllerSim import MotorControllerSim
@@ -30,7 +35,7 @@ class CrazySim:
     #   1) name -> name of the Crazyflie in the simulation;
     #   2) initialPosition -> Vector3 object with the inital position coordinates;
     # ==================================================================================================================
-    def __init__(self, name, initialPosition):
+    def __init__(self, name, initialPosition, testBench=False):
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                               W A I T I N G  F O R  S E R V I C E S
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -61,6 +66,9 @@ class CrazySim:
         # Istance of motion commander:
         self.motion_commander = MotionCommanderSim(name)
 
+        # Test bench choice:
+        self.testBench = testBench
+
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -84,6 +92,7 @@ class CrazySim:
         #---------------------------------------------------------------------------------------------------------------
         #                                       I N I T I A L  O P E R A T I O N S
         #---------------------------------------------------------------------------------------------------------------
+        self.__set_robot_description_parameter()
         self.__spawn_cf()
         self.__set_control_parameters()
         self.__start_gazebo_controllers()
@@ -104,15 +113,18 @@ class CrazySim:
     def __spawn_cf(self):
         # Getting the urdf path:
         rospack = rospkg.RosPack()
-        urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_reference.urdf'
-
+        if not self.testBench:
+            urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_reference.urdf'
+        else:
+            urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_test_bench.urdf'
         # Setting up the request message to spawn the crazyflie in the simulation:
         self.__spawn_model_request_srv.model_name = self.name
         self.__spawn_model_request_srv.model_xml = self.__setup_custom_urdf(urdf_path)
         self.__spawn_model_request_srv.robot_namespace = self.name
-        self.__spawn_model_request_srv.initial_pose.position.x = self.__initial_position.x
-        self.__spawn_model_request_srv.initial_pose.position.y = self.__initial_position.y
-        self.__spawn_model_request_srv.initial_pose.position.z = self.__initial_position.z
+        if not self.testBench:
+            self.__spawn_model_request_srv.initial_pose.position.x = self.__initial_position.x
+            self.__spawn_model_request_srv.initial_pose.position.y = self.__initial_position.y
+            self.__spawn_model_request_srv.initial_pose.position.z = self.__initial_position.z
         self.__spawn_model_request_srv.initial_pose.orientation.x = 0.0
         self.__spawn_model_request_srv.initial_pose.orientation.y = 0.0
         self.__spawn_model_request_srv.initial_pose.orientation.z = 0.0
@@ -146,6 +158,24 @@ class CrazySim:
         self.__set_motor_parameters('crazyflie_M4_joint_velocity_controller', 'crazyflie_M4_joint',
                                     ACTUATOR_VELOCITY_CONTROLLER_KP, ACTUATOR_VELOCITY_CONTROLLER_KI,
                                     ACTUATOR_VELOCITY_CONTROLLER_KD, ACTUATOR_VELOCITY_CONTROLLER_I_CLAMP)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                          __S E T  R O B O T  D E S C R I P T I O N  P A R A M E T E R
+    #
+    # This method is used to create the parameter containing the urdf info used by gazebo ros control plugin.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __set_robot_description_parameter(self):
+        # Getting the urdf path:
+        rospack = rospkg.RosPack()
+        if not self.testBench:
+            urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_reference.urdf'
+        else:
+            urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_test_bench.urdf'
+        # Setting up the ros parameter:
+        robot_description = self.__setup_custom_urdf(urdf_path)
+        rospy.set_param('/robot_description', robot_description)
+
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                               __S T A R T  G A Z E B O  C O N T R O L L E R S
