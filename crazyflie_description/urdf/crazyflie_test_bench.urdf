@@ -10,7 +10,10 @@
                             W O R L D  L I N K
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
-    <link name="world"/>
+
+    <link name="world_link">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </link>
 
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -21,14 +24,22 @@
     <link name="column">
         <pose>0 0 0 0 0 0</pose>
         <inertial>
-            <mass value="1.0" />
-            <inertia ixx="1e-11" ixy="0" ixz="0" iyy="1e-11" iyz="0" izz="1e-11" />
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="1000.0" />
+            <inertia ixx="1e11" ixy="0" ixz="0" iyy="1e11" iyz="0" izz="1e11" />
         </inertial>
         <visual>
+            <origin xyz="0 0 0.25" rpy="0 0 0"/>
             <geometry>
                 <cylinder radius="0.01" length="0.5" />
             </geometry>
         </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </collision>
     </link>
 
     <!--
@@ -227,9 +238,9 @@
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
     <joint name="fixed_column_joint" type="fixed">
-        <parent link="world" />
+        <parent link="world_link" />
         <child link="column" />
-        <origin xyz="0 0 0.25" rpy="0 0 0" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
     </joint>
 
     <!--
@@ -238,10 +249,12 @@
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
 
-    <joint name="fixed_cf_joint" type="fixed">
+    <joint name="fixed_cf_joint" type="revolute">
         <parent link="column" />
         <child link="crazyflie_main_body" />
-        <origin xyz="0 0 0.5" rpy="0 0 0" />
+        <origin xyz="0 0 0.482" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
+        <limit lower="-0.785" upper="0.785" effort="1000" velocity="100"/>
     </joint>
 
     <!--
@@ -266,6 +279,7 @@
         <axis xyz="0 0 1" />
     </joint>
     -->
+
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 I M U  S E N S O R  F I X E D  J O I N T
@@ -358,7 +372,7 @@
     <gazebo>
         <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
             <alwaysOn>true</alwaysOn>
-            <updateRate>50.0</updateRate>
+            <updateRate>500.0</updateRate>
             <bodyName>imu_sensor</bodyName> <!--crazyflie_main_body-->
             <topicName>odom</topicName>
             <gaussianNoise>0.0</gaussianNoise>
@@ -461,6 +475,17 @@
 
     </transmission>
 
+    <!--
+    =========================================================================
+                    F O R C E S & T O R Q U E S  P L U G I N S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
@@ -470,6 +495,13 @@
               <topicName>lift_M1</topicName>
         </plugin>
     </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
@@ -479,6 +511,13 @@
               <topicName>lift_M2</topicName>
         </plugin>
     </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
@@ -488,6 +527,13 @@
               <topicName>lift_M3</topicName>
         </plugin>
     </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
@@ -497,5 +543,4 @@
               <topicName>lift_M4</topicName>
         </plugin>
     </gazebo>
-
 </robot>

@@ -93,8 +93,8 @@ class CrazySim:
         #                                       I N I T I A L  O P E R A T I O N S
         #---------------------------------------------------------------------------------------------------------------
         self.__set_robot_description_parameter()
-        self.__spawn_cf()
         self.__set_control_parameters()
+        self.__spawn_cf()
         self.__start_gazebo_controllers()
 
 
@@ -117,18 +117,20 @@ class CrazySim:
             urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_reference.urdf'
         else:
             urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_test_bench.urdf'
+
         # Setting up the request message to spawn the crazyflie in the simulation:
         self.__spawn_model_request_srv.model_name = self.name
         self.__spawn_model_request_srv.model_xml = self.__setup_custom_urdf(urdf_path)
         self.__spawn_model_request_srv.robot_namespace = self.name
+
         if not self.testBench:
             self.__spawn_model_request_srv.initial_pose.position.x = self.__initial_position.x
             self.__spawn_model_request_srv.initial_pose.position.y = self.__initial_position.y
             self.__spawn_model_request_srv.initial_pose.position.z = self.__initial_position.z
-        self.__spawn_model_request_srv.initial_pose.orientation.x = 0.0
-        self.__spawn_model_request_srv.initial_pose.orientation.y = 0.0
-        self.__spawn_model_request_srv.initial_pose.orientation.z = 0.0
-        self.__spawn_model_request_srv.initial_pose.orientation.w = 0.0
+            self.__spawn_model_request_srv.initial_pose.orientation.x = 0.0
+            self.__spawn_model_request_srv.initial_pose.orientation.y = 0.0
+            self.__spawn_model_request_srv.initial_pose.orientation.z = 0.0
+            self.__spawn_model_request_srv.initial_pose.orientation.w = 0.0
 
         # Calling the service to spawn the model:
         self.spawn_model_service(self.__spawn_model_request_srv)
@@ -143,7 +145,7 @@ class CrazySim:
     def __set_control_parameters(self):
         # Joint State Controller parameters:
         rospy.set_param('/' + self.name + '/joint_state_controller/type', 'joint_state_controller/JointStateController')
-        rospy.set_param('/' + self.name + '/joint_state_controller/publish_rate', 50)
+        rospy.set_param('/' + self.name + '/joint_state_controller/publish_rate', 500)
 
         # Setting up rosparameters used by velocity controllers of motor joints in Gazebo:
         self.__set_motor_parameters('crazyflie_M1_joint_velocity_controller', 'crazyflie_M1_joint',

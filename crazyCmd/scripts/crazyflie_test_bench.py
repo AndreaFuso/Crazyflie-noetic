@@ -14,4 +14,4 @@ if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('test_bench', log_level=rospy.INFO)
 
-    CF1 = CrazySim('cf1', Vector3(1.0, 0.5, 0.2), True)
+    CF1 = CrazySim('cf1', Vector3(), True)

@@ -28,6 +28,10 @@ A2_THRUST_LIFT = 2.130295e-11
 A0_THRUST_ROTATING_SPEED = 380.8359
 A1_THRUST_ROTATING_SPEED = 0.04076521
 
+# Polyfit lift - torquw (Crazyflie Modelling Paper):
+A0_LIFT_TORQUE = 1.563383e-5
+A1_LIFT_TORQUE = 0.005964552
+
 def limitThrust(thrust):
     if thrust > MAX_THRUST:
         thrust = MAX_THRUST
@@ -67,8 +71,8 @@ class MotorSim:
                                                       '_joint_velocity_controller/command', Float64, queue_size=1)
         self.__velocitySetpoint = Float64()
 
-        self.lift_pub = rospy.Publisher('/' + cfName + '/lift_M' + str(motorID), Wrench, queue_size=1)
-        self.lift_pub_msg = Wrench()
+        self.lift_drag_pub = rospy.Publisher('/' + cfName + '/lift_M' + str(motorID), Wrench, queue_size=1)
+        self.lift_drag_pub_msg = Wrench()
 
         self.remove_forces_srv = rospy.ServiceProxy('/gazebo/clear_body_wrenches', BodyRequest)
         self.remove_forces_srv_request = BodyRequestRequest()
@@ -78,56 +82,133 @@ class MotorSim:
 
         rospy.wait_for_service('/gazebo/clear_body_wrenches')
 
+    # ==================================================================================================================
+    #
+    #                                       C A L L B A C K S  M E T H O D S
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   __A C T U A L S T A T E C A L L B A C K
+    #
+    # Everytime the actual state is received, this callback saves the informations whitin an internal variable.
+    # ------------------------------------------------------------------------------------------------------------------
+
     def __actual_state_callback(self, msg):
         self.actual_state.orientation.roll = msg.orientation.roll
         self.actual_state.orientation.pitch = msg.orientation.pitch
         self.actual_state.orientation.yaw = msg.orientation.yaw
 
-    def __setVelocitySetpoint(self, thrust):
+    # ==================================================================================================================
+    #
+    #                                       S I M U L A T I O N  M E T H O D S
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   __S E T V E L O C I T Y S E T P O I N T
+    #
+    # This method publishes the reference velocity to the corresponding propeller in Gazebo simulation.
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __setVelocitySetpoint(self, input):
         # Getting the rotating speed:
-        velocity = self.__thrustToVelocity(thrust)
+        velocity = self.__inputCommandToVelocity(input)
 
         # Change the sign based on the rotating direction:
         if self.direction == rotatingDirection.CW:
-            velocity = velocity * (-1)
+            velocity = velocity * (-1.0)
         self.__velocitySetpoint.data = velocity
 
         # Publish the velocity setpoint to the relative controller:
         self.__velocitySetpoint_pub.publish(self.__velocitySetpoint)
 
-    def __setLiftForce(self, thrust):
-        # Remove actual force:
-        '''self.remove_forces_srv_request.body_name = self.cfName + '::crazyflie_prop_M' + str(self.motorID)
-        self.remove_forces_srv(self.remove_forces_srv_request)'''
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   __S E T F O R C E T O R Q U E
+    #
+    # This method sets up the force & torque state we have around the propeller:
+    #   - lift force;
+    #   - torque due to the drag force;
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __setForceTorque(self, input):
         # Getting actual state:
         actual_state = self.actual_state
 
-        # Calculating force components:
-        force = self.__thrustToLift(thrust)
-        res = RotateVector(Vector3(0.0, 0.0, force), Vector3(actual_state.orientation.roll, actual_state.orientation.pitch, actual_state.orientation.yaw))
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                                           F O R C E S
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        # Calculating lift force components:
+        liftForce = self.__inputCommandToThrust(input)
+        resLiftForce = RotateVector(Vector3(0.0, 0.0, liftForce),
+                                Vector3(actual_state.orientation.roll,
+                                        actual_state.orientation.pitch,
+                                        actual_state.orientation.yaw))
 
         # Setting the new force:
-        self.lift_pub_msg.force.x = res.x
-        self.lift_pub_msg.force.y = res.y
-        self.lift_pub_msg.force.z = res.z
-        self.lift_pub.publish(self.lift_pub_msg)
+        self.lift_drag_pub_msg.force.x = resLiftForce.x
+        self.lift_drag_pub_msg.force.y = resLiftForce.y
+        self.lift_drag_pub_msg.force.z = resLiftForce.z
 
-    def sendThrustCommand(self, thrust):
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                                           T O R Q U E S
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        # Calculating drag torque components:
+        dragTorque = self.__inputCommandToTorque(input)
+        if self.direction == rotatingDirection.CCW:
+            dragTorque = (-1.0) * dragTorque
+
+        resDragTorque = RotateVector(Vector3(0.0, 0.0, dragTorque),
+                                 Vector3(actual_state.orientation.roll,
+                                         actual_state.orientation.pitch,
+                                         actual_state.orientation.yaw))
+        # Setting the new torque:
+        self.lift_drag_pub_msg.torque.x = resDragTorque.x
+        self.lift_drag_pub_msg.torque.y = resDragTorque.y
+        self.lift_drag_pub_msg.torque.z = resDragTorque.z
+
+        self.lift_drag_pub.publish(self.lift_drag_pub_msg)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       S E N D I N P U T C O M M A N D
+    #
+    # This method performs all the operations in the simulation for a certain input command (it sets the rotating
+    # target velocity for propellers, sets up the force and torque).
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def sendInputCommand(self, input):
         # Setting the velocity setpoint:
-        self.__setVelocitySetpoint(thrust)
+        self.__setVelocitySetpoint(input)
 
-        # Generating corresponding lift force:
-        self.__setLiftForce(thrust)
+        # Generating corresponding resulting force and torque:
+        self.__setForceTorque(input)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                               S T O P M O T O R
+    #
+    # This method stops the motor.
+    # ------------------------------------------------------------------------------------------------------------------
 
     def stopMotor(self):
         # Publish the velocity setpoint to the relative controller:
         self.__velocitySetpoint_pub.publish(0)
 
-        # Setting the new force:
-        self.lift_pub_msg.force.x = 0.0
-        self.lift_pub_msg.force.y = 0.0
-        self.lift_pub_msg.force.z = 0.0
-        self.lift_pub.publish(self.lift_pub_msg)
+        # Setting up a null force:
+        self.lift_drag_pub_msg.force.x = 0.0
+        self.lift_drag_pub_msg.force.y = 0.0
+        self.lift_drag_pub_msg.force.z = 0.0
+
+        # Setting up a null torque:
+        self.lift_drag_pub_msg.torque.x = 0.0
+        self.lift_drag_pub_msg.torque.y = 0.0
+        self.lift_drag_pub_msg.torque.z = 0.0
+
+        self.lift_drag_pub.publish(self.lift_drag_pub_msg)
 
     # ==================================================================================================================
     #
@@ -136,25 +217,41 @@ class MotorSim:
     # ==================================================================================================================
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                                           __T H R U S T T O L I F T
+    #                                   __I N P U T C O M M A N D T O T H R U S T
     #
     # For a given thrust command, it converts it into a force [N] (lift force) to be sent in Gazebo simulation.
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __thrustToLift(self, thrust):
-        totalLift = A2_THRUST_LIFT * (thrust ** 2) + A1_THRUST_LIFT * thrust + A0_THRUST_LIFT   # [N]
+    def __inputCommandToThrust(self, input):
+        totalLift = A2_THRUST_LIFT * (input ** 2) + A1_THRUST_LIFT * input + A0_THRUST_LIFT   # [N]
         return totalLift
 
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                                       __T H R U S T T O V E L O C I T Y
+    #                               __I N P U T C O M M A N D T O V E L O C I T Y
     #
     # For a given thrust command, it converts it into the rotating speed [rad/s] to be sent in Gazebo simulation.
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __thrustToVelocity(self, thrust):
-        rotatingSpeed = A1_THRUST_ROTATING_SPEED * thrust + A0_THRUST_ROTATING_SPEED # [rad/s]
+    def __inputCommandToVelocity(self, input):
+        rotatingSpeed = A1_THRUST_ROTATING_SPEED * input + A0_THRUST_ROTATING_SPEED # [rad/s]
         return rotatingSpeed
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __I N P U T C O M M A N D T O T O R Q U E
+    #
+    # For a given input command, it converts it into the torque [Nm] to be sent in Gazebo simulation (due to drag
+    # force acting on the rotating propeller); this torque is considered in static condition.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __inputCommandToTorque(self, input):
+        # Calculating the lift value [N]:
+        lift = self.__inputCommandToThrust(input)
+
+        # Calcualting the torque value [Nm]:
+        torque = A1_LIFT_TORQUE * lift + A0_LIFT_TORQUE
+
+        return torque
 
 class MotorControllerSim:
     def __init__(self, cfName):
@@ -182,10 +279,10 @@ class MotorControllerSim:
         thrust_M4 = limitThrust(thrust + roll + pitch - yaw)
 
         # Sending the thrust command:
-        self.M1.sendThrustCommand(thrust_M1)
-        self.M2.sendThrustCommand(thrust_M2)
-        self.M3.sendThrustCommand(thrust_M3)
-        self.M4.sendThrustCommand(thrust_M4)
+        self.M1.sendInputCommand(thrust_M1)
+        self.M2.sendInputCommand(thrust_M2)
+        self.M3.sendInputCommand(thrust_M3)
+        self.M4.sendInputCommand(thrust_M4)
 
 
     def stopMotors(self):

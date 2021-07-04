@@ -5,9 +5,11 @@
                                   L I N K S
     =========================================================================
     -->
-    <!--<link name="dummy">
-    <pose>0 0 0 0 0 0</pose>
-    </link>-->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        I M U  S E N S O R  L I N K
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
 
     <link name="imu_sensor">
         <pose>0 0 0 0 0 0</pose>
@@ -162,10 +164,11 @@
                                   J O I N T S
     =========================================================================
     -->
-    <!--<joint name="dummy_joint" type="fixed">
-     <parent link="dummy"/>
-     <child link="crazyflie_main_body"/>
-    </joint>-->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                I M U  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
 
     <joint name="imu_sensor_joint" type="fixed">
         <parent link="crazyflie_main_body" />
@@ -253,7 +256,7 @@
     <gazebo>
         <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
             <alwaysOn>true</alwaysOn>
-            <updateRate>50.0</updateRate>
+            <updateRate>500.0</updateRate>
             <bodyName>imu_sensor</bodyName> <!--crazyflie_main_body-->
             <topicName>odom</topicName>
             <gaussianNoise>0.0</gaussianNoise>
@@ -356,6 +359,17 @@
 
     </transmission>
 
+    <!--
+    =========================================================================
+                    F O R C E S & T O R Q U E S  P L U G I N S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
@@ -365,6 +379,13 @@
               <topicName>lift_M1</topicName>
         </plugin>
     </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
@@ -374,6 +395,13 @@
               <topicName>lift_M2</topicName>
         </plugin>
     </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
@@ -383,6 +411,13 @@
               <topicName>lift_M3</topicName>
         </plugin>
     </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
