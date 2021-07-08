@@ -5,32 +5,6 @@
                                   L I N K S
     =========================================================================
     -->
-    <!--
-    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                        I M U  S E N S O R  L I N K
-    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    -->
-
-    <link name="imu_sensor">
-        <pose>0 0 0 0 0 0</pose>
-        <inertial>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-            <mass value="0.000001"/>
-            <inertia ixx="1e-11" ixy="0" ixz="0" iyy="1e-11" iyz="0" izz="1e-11" />
-        </inertial>
-        <visual>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-            <geometry>
-                <sphere radius="0.005" />
-            </geometry>
-        </visual>
-        <collision>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-            <geometry>
-                <sphere radius="0.005" />
-            </geometry>
-        </collision>
-    </link>
 
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -38,7 +12,7 @@
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
     <link name="crazyflie_main_body">
-      <pose>0 0 0 0 0 0</pose>
+      <origin xyz="0 0 0"/>
       <inertial>
         <mass value="0.027"/>
         <origin xyz="0 0 0.01745" rpy="0 0 0"/>
@@ -61,12 +35,39 @@
 
     <!--
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        I M U  S E N S O R  L I N K
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="imu_sensor">
+        <origin xyz="0 0 0"/>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx="1e-11" ixy="0" ixz="0" iyy="1e-11" iyz="0" izz="1e-11" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                         P R O P E L L E R  M O T O R  1
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
 
     <link name="crazyflie_prop_M1">
-      <origin xyz="0.032527 -0.032527 0.024"/>
+      <origin xyz="0 0 0"/> <!-- 0.032527 -0.032527 0.024 -->
       <inertial>
         <mass value="0.0005"/>
         <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
@@ -91,7 +92,7 @@
     -->
 
     <link name="crazyflie_prop_M2">
-      <origin xyz="-0.032527 -0.032527 0.024"/>
+      <origin xyz="0 0 0"/>
       <inertial>
         <mass value="0.0005"/>
         <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
@@ -116,7 +117,7 @@
     -->
 
     <link name="crazyflie_prop_M3">
-      <origin xyz="-0.032527 0.032527 0.024"/>
+      <origin xyz="0 0 0"/>
       <inertial>
         <mass value="0.0005"/>
         <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
@@ -141,7 +142,7 @@
     -->
 
     <link name="crazyflie_prop_M4">
-      <origin xyz="0.032527 0.032527 0.024"/>
+      <origin xyz="0 0 0"/>
       <inertial>
         <mass value="0.0005"/>
         <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
@@ -173,7 +174,7 @@
     <joint name="imu_sensor_joint" type="fixed">
         <parent link="crazyflie_main_body" />
         <child link="imu_sensor" />
-        <origin xyz="0 0 0.018" rpy="0 0 0" />
+        <origin xyz="0 0 0.01745" rpy="0 0 0" />
     </joint>
 
     <!--
@@ -185,7 +186,7 @@
     <joint name="crazyflie_M1_joint" type="revolute">
       <parent link="crazyflie_main_body"/>
       <child link="crazyflie_prop_M1"/>
-      <origin xyz="0.032527 -0.032527 0.024" rpy="0 0 0" />
+      <origin xyz="0.0326695 -0.0326695 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
       <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
@@ -199,7 +200,7 @@
     <joint name="crazyflie_M2_joint" type="revolute">
       <parent link="crazyflie_main_body"/>
       <child link="crazyflie_prop_M2"/>
-      <origin xyz="-0.032527 -0.032527 0.024" rpy="0 0 0" />
+      <origin xyz="-0.0326695 -0.0326695 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
       <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
@@ -213,7 +214,7 @@
     <joint name="crazyflie_M3_joint" type="revolute">
       <parent link="crazyflie_main_body"/>
       <child link="crazyflie_prop_M3"/>
-      <origin xyz="-0.032527 0.032527 0.024" rpy="0 0 0" />
+      <origin xyz="-0.0326695 0.0326695 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
       <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
@@ -227,7 +228,7 @@
     <joint name="crazyflie_M4_joint" type="revolute">
       <parent link="crazyflie_main_body"/>
       <child link="crazyflie_prop_M4"/>
-      <origin xyz="0.032527 0.032527 0.024" rpy="0 0 0" />
+      <origin xyz="0.0326695 0.0326695 0.024" rpy="0 0 0" />
       <axis xyz="0 0 1"/>
       <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
     </joint>
@@ -257,10 +258,23 @@
         <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
             <alwaysOn>true</alwaysOn>
             <updateRate>500.0</updateRate>
-            <bodyName>imu_sensor</bodyName> <!--crazyflie_main_body-->
-            <topicName>odom</topicName>
+            <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
+            <topicName>odom_absolute</topicName>
             <gaussianNoise>0.0</gaussianNoise>
-            <frameName>world</frameName>
+            <frameName>world</frameName> <!-- world -->
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>500.0</updateRate>
+            <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
+            <topicName>odom_relative</topicName>
+            <gaussianNoise>0.0</gaussianNoise>
+            <frameName>crazyflie_main_body</frameName> <!-- world -->
             <xyzOffsets>0 0 0</xyzOffsets>
             <rpyOffsets>0 0 0</rpyOffsets>
         </plugin>
@@ -373,8 +387,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>500</update>
-              <updateRate>500.0</updateRate>
+              <update>10000</update>
+              <updateRate>10000.0</updateRate>
               <bodyName>crazyflie_prop_M1</bodyName>
               <topicName>lift_M1</topicName>
         </plugin>
@@ -389,8 +403,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>500</update>
-              <updateRate>500.0</updateRate>
+               <update>10000</update>
+              <updateRate>10000.0</updateRate>
               <bodyName>crazyflie_prop_M2</bodyName>
               <topicName>lift_M2</topicName>
         </plugin>
@@ -405,8 +419,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>500</update>
-              <updateRate>500.0</updateRate>
+              <update>10000</update>
+              <updateRate>10000.0</updateRate>
               <bodyName>crazyflie_prop_M3</bodyName>
               <topicName>lift_M3</topicName>
         </plugin>
@@ -421,8 +435,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>500</update>
-              <updateRate>500.0</updateRate>
+              <update>10000</update>
+              <updateRate>10000.0</updateRate>
               <bodyName>crazyflie_prop_M4</bodyName>
               <topicName>lift_M4</topicName>
         </plugin>

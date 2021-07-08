@@ -51,31 +51,34 @@ PID_YAW_RATE_INTEGRATION_LIMIT = 166.7  #166.7 0.7 0.0
 PID_ROLL_KP = 6.0  #6.0 3.0 2.5 3.0 0.25
 PID_ROLL_KI = 3.0   #3.0 3.0 1.0 1.5
 PID_ROLL_KD = 0.0   #0.0 0.035 3.5 0.035
-PID_ROLL_INTEGRATION_LIMIT = 20.0   #20.0
 
-ROLL_KP = 2.0
-ROLL_KI = 1.0
-ROLL_KD = 0.0
+PID_ROLL_INTEGRATION_LIMIT = 50.0   #20.0 400
+
+ROLL_KP = 10.0   # 30 30
+ROLL_KI = 40.0   # 80 60
+ROLL_KD = 100.0  # 60 80
 
 # Desired Pitch VS actual Pitch => DESIRED PITCH RATE
 PID_PITCH_KP = 6.0  #6.0 3.0 0.25
 PID_PITCH_KI = 3.0  #3.0 3.0 1.0 1.5
 PID_PITCH_KD = 0.0  #0.0 0.035 3.5
-PID_PITCH_INTEGRATION_LIMIT = 20.0  #20.0
 
-PITCH_KP = 2.0
-PITCH_KI = 1.0
-PITCH_KD = 0.0
+PID_PITCH_INTEGRATION_LIMIT =50  #20.0 400
+# 50 80 20
+PITCH_KP = 10.0     # 30 30
+PITCH_KI = 40.0     # 80 60
+PITCH_KD = 100.0    # 60 80
 
 # Desired YAW VS actual YAW => DESIRED YAW RATE
 PID_YAW_KP = 6.0    #6.0 0.25
 PID_YAW_KI = 1.0    #1.0 1.0
 PID_YAW_KD = 0.35   #0.35 3.5
-PID_YAW_INTEGRATION_LIMIT = 360.0   #360 0.0
 
-YAW_KP = 1.0   #50
-YAW_KI = 1.0    #5
-YAW_KD = 0.0    #0
+PID_YAW_INTEGRATION_LIMIT = 50.0   #360 0.0 400
+
+YAW_KP = 10.0   #30 30
+YAW_KI = 40.0    #80 60
+YAW_KD = 100.0    #60 80
 
 
 DEFAULT_PID_INTEGRATION_LIMIT = 5000.0 #5000.0 0.0
@@ -84,18 +87,18 @@ DEFAULT_PID_OUTPUT_LIMIT = 0.0  #0.0 0.0
 #                                           P O S I T I O N  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
 # Fwd velocity desired VS actual fwd velocity => DESIRED PITCH
-PID_VELOCITY_X_KP = 25.0    #25.0 0.02
-PID_VELOCITY_X_KI = 1.0     #1.0 0.01
-PID_VELOCITY_X_KD = 0.0     #0.0 0.01
+PID_VELOCITY_X_KP = 20.0    #25.0
+PID_VELOCITY_X_KI = 1.0     #1.0
+PID_VELOCITY_X_KD = 0.0     #0.0
 
 # Lateral velocity desired VS actual lateral velocity => DESIRED ROLL
-PID_VELOCITY_Y_KP = 25.0    #25.0 0.02
-PID_VELOCITY_Y_KI = 1.0     #1.0 0.01
-PID_VELOCITY_Y_KD = 0.0     #0.0 0.01
+PID_VELOCITY_Y_KP = 20.0    #25.0
+PID_VELOCITY_Y_KI = 1.0     #1.0
+PID_VELOCITY_Y_KD = 0.0     #0.0
 
 # Vertical velocity desired VS actual vertical velocity => THRUST
-PID_VELOCITY_Z_KP = 25.0   #25.0 1.0
-PID_VELOCITY_Z_KI = 15.0     #15.0 0.0
+PID_VELOCITY_Z_KP = 20.0   #25.0
+PID_VELOCITY_Z_KI = 15.0     #15.0
 PID_VELOCITY_Z_KD = 0.0   #0.0 7.0
 
 # Forward velocity desired:

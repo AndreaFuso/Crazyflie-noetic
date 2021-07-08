@@ -14,6 +14,14 @@ from crazy_common_py.dataTypes import Vector3
 from crazyflie_messages.msg import CrazyflieState, Attitude, Position, RollPitchYaw
 from std_msgs.msg import Empty
 
+# NUMBERS
+INT16_MAX = 32767
+
+THRUST_BASE = 38180
+thrustScale = 1000.0
+
+DEFAULT_WINDUP_TYPE = WindupType.Exclusion
+
 # CONSTANTS
 MAX_VELOCITY_X = 1.0    # [m/s]
 MAX_VELOCITY_Y = 1.0    # [m/s]
@@ -25,17 +33,15 @@ MIN_THRUST = 20000
 MAX_PITCH = 20  # [deg]
 MAX_ROLL = 20   # [deg]
 
-MAX_ROLL_OUTPUT = 10  #5000
-MAX_PITCH_OUTPUT = 10 #5000
-MAX_YAW_OUTPUT = 10 #6000
+'''DELTA_THRUST = min(MAX_THRUST - THRUST_BASE, THRUST_BASE - MIN_THRUST)
+MAX_ROLL_OUTPUT = 1.0 * DELTA_THRUST  #5000
+MAX_PITCH_OUTPUT = 1.0 * DELTA_THRUST #5000
+MAX_YAW_OUTPUT = 1.0 * DELTA_THRUST #6000'''
 
-# NUMBERS
-INT16_MAX = 32767
+MAX_ROLL_OUTPUT = 7000 #5000
+MAX_PITCH_OUTPUT = 7000 #5000
+MAX_YAW_OUTPUT = 7000 #6000
 
-THRUST_BASE = 38180
-thrustScale = 1000.0
-
-DEFAULT_WINDUP_TYPE = WindupType.Exclusion
 
 
 class FlightControllerCustom:
@@ -83,7 +89,6 @@ class FlightControllerCustom:
         pass
 
     def __pace_500Hz_callback(self, msg):
-
         if self.OK500:
             # Saving actual state:
             actual_state = self.actual_state
@@ -96,7 +101,7 @@ class FlightControllerCustom:
             # Saving actual desired attitude:
             desired_attitude = self.desired_attitude
 
-            print('\nDESIRED POSITION: ', desired_position.x, '; ', desired_position.y, '; ', desired_position.z,
+            '''print('\nDESIRED POSITION: ', desired_position.x, '; ', desired_position.y, '; ', desired_position.z,
                   '\nACTUAL POSITION: ', actual_state.position.x, '; ', actual_state.position.y, '; ',
                   actual_state.position.z)
 
@@ -106,15 +111,16 @@ class FlightControllerCustom:
 
 
             print('DESIRED ATTITUDE: ', desired_attitude.x, '; ', desired_attitude.y, '; ', desired_attitude.z,
-                  '\nACTUAL ATTITUDE: ', actual_state.orientation.roll, '; ', actual_state.orientation.pitch, '; ', actual_state.orientation.yaw)
+                  '\nACTUAL ATTITUDE: ', actual_state.orientation.roll, '; ', actual_state.orientation.pitch, '; ', actual_state.orientation.yaw)'''
 
             # Calling attitude controller:
             desired_rpy_command = self.__attitudeController(desired_attitude, actual_state)
-            print('DESIRED RPY COMMAND: ', desired_rpy_command.x, '; ', desired_rpy_command.y, ';', desired_rpy_command.z)
+            #print('DESIRED RPY COMMAND: ', desired_rpy_command.x, '; ', desired_rpy_command.y, ';', desired_rpy_command.z)
 
             motor_commands = self.__motor_simulator(desired_rpy_command, desired_thrust)
 
-            print('MOTOR COMMANDS: ', motor_commands[0], '; ', motor_commands[1], '; ', motor_commands[2], '; ', motor_commands[3], '\n')
+
+            #print('MOTOR COMMANDS: ', motor_commands[0], '; ', motor_commands[1], '; ', motor_commands[2], '; ', motor_commands[3], '\n')
             # Setting up messaghe to be published:
             self.desired_motor_command.desired_attitude.roll = desired_rpy_command.x
             self.desired_motor_command.desired_attitude.pitch = desired_rpy_command.y
@@ -132,10 +138,15 @@ class FlightControllerCustom:
         thrust = desired_thrust
 
         # Calculating the thrust for each motor:
-        thrust_M1 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
+        '''thrust_M1 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
         thrust_M2 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
         thrust_M3 = constrain(thrust + roll - pitch + yaw, 0, MAX_THRUST)
-        thrust_M4 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)
+        thrust_M4 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)'''
+
+        thrust_M1 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
+        thrust_M2 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
+        thrust_M3 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)
+        thrust_M4 = constrain(thrust + roll - pitch + yaw, 0, MAX_THRUST)
 
         return  (thrust_M1, thrust_M2, thrust_M3, thrust_M4)
 
@@ -270,13 +281,21 @@ class FlightControllerCustom:
         desired_attitude = Vector3()
 
         # Calculating the desired attitude:
-        rawRoll = self.PID_velocity_x.updatePID(actualState.velocity.x, desiredVelocity.x)
-        rawPitch = self.PID_velocity_y.updatePID(actualState.velocity.y, desiredVelocity.y)
+        deltaVX = self.PID_velocity_x.updatePID(actualState.velocity.x, desiredVelocity.x)
+        deltaVY = self.PID_velocity_y.updatePID(actualState.velocity.y, desiredVelocity.y)
 
         yawRad = actualState.orientation.yaw * M_PI / 180.0
 
-        desired_attitude.x = - (rawRoll * math.cos(yawRad)) - (rawPitch * math.sin(yawRad))
-        desired_attitude.y = - (rawPitch * math.cos(yawRad)) + (rawRoll * math.sin(yawRad))
+        # MODIFICA
+
+        '''desired_attitude.x = - (deltaVY * math.cos(yawRad)) + (deltaVX * math.sin(yawRad))
+        desired_attitude.y = - (deltaVX * math.cos(yawRad)) - (deltaVY * math.sin(yawRad))'''
+
+        '''desired_attitude.x =  - (deltaVY * math.cos(yawRad)) + (deltaVX * math.sin(yawRad))
+        desired_attitude.y =  (deltaVX * math.cos(yawRad)) + (deltaVY * math.sin(yawRad))'''
+
+        desired_attitude.x = deltaVX * math.sin(yawRad) - deltaVY * math.cos(yawRad)
+        desired_attitude.y = deltaVX * math.cos(yawRad) + deltaVY * math.sin(yawRad)
 
         # Calculating desired thrust:
         rawThrust = self.PID_velocity_z.updatePID(actualState.velocity.z, desiredVelocity.z)
@@ -297,6 +316,7 @@ class FlightControllerCustom:
     # ------------------------------------------------------------------------------------------------------------------
     def __init_attitude_controller(self):
         windup_type = DEFAULT_WINDUP_TYPE
+        windup_type = WindupType.Clamped
         windup_info = WindupInfo()
         dt = 1 / 500
         self.PID_attitude_roll = PidController(Kp=ROLL_KP, Ki=ROLL_KI, Kd=ROLL_KD,
@@ -310,14 +330,14 @@ class FlightControllerCustom:
                                               windup_info=WindupInfo(- MAX_YAW_OUTPUT, MAX_YAW_OUTPUT))
 
     def __attitudeController(self, desiredAttitude=Vector3(), actualState=CrazyflieState()):
-        # Output [rollRate, pitchRate, yawRate]:
-        desired_attitude_rate = Vector3()
+        # Output [rollCmd, pitchCmd, yawCmd]:
+        desired_output_command = Vector3()
 
-        # Calculating desired attitude rate (roll and pitch):
-        desired_attitude_rate.x = self.PID_attitude_roll.updatePID(actualState.orientation.roll, desiredAttitude.x)
-        desired_attitude_rate.y = self.PID_attitude_pitch.updatePID(actualState.orientation.pitch, desiredAttitude.y)
+        # Calculating desired output command (roll and pitch):
+        desired_output_command.x = self.PID_attitude_roll.updatePID(actualState.orientation.roll, desiredAttitude.x)
+        desired_output_command.y = self.PID_attitude_pitch.updatePID(actualState.orientation.pitch, desiredAttitude.y)
 
-        # Calculating desired attitude rate for yaw:
+        # Calculating desired output command for yaw:
         yawError = desiredAttitude.z - actualState.orientation.yaw
         if yawError > 180.0:
             yawError = yawError - 360.0
@@ -325,14 +345,14 @@ class FlightControllerCustom:
             yawError = yawError + 360.0
 
         self.PID_attitude_yaw.error = yawError
-        desired_attitude_rate.z = self.PID_attitude_yaw.updatePID(actualState.orientation.yaw, desiredAttitude.z)
+        desired_output_command.z = self.PID_attitude_yaw.updatePID(actualState.orientation.yaw, desiredAttitude.z, False)
 
         # Clamping to be sure:
-        desired_attitude_rate.x = constrain(desired_attitude_rate.x, -MAX_ROLL_OUTPUT, MAX_ROLL_OUTPUT)
-        desired_attitude_rate.y = constrain(desired_attitude_rate.y, -MAX_PITCH_OUTPUT, MAX_PITCH_OUTPUT)
-        desired_attitude_rate.z = constrain(desired_attitude_rate.z, -MAX_YAW_OUTPUT, MAX_YAW_OUTPUT)
+        desired_output_command.x = constrain(desired_output_command.x, -MAX_ROLL_OUTPUT, MAX_ROLL_OUTPUT)
+        desired_output_command.y = constrain(desired_output_command.y, -MAX_PITCH_OUTPUT, MAX_PITCH_OUTPUT)
+        desired_output_command.z = constrain(desired_output_command.z, -MAX_YAW_OUTPUT, MAX_YAW_OUTPUT)
 
-        return desired_attitude_rate
+        return desired_output_command
 
     # ------------------------------------------------------------------------------------------------------------------
     #

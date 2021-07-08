@@ -57,6 +57,7 @@ add_message_files(
     CrazyflieState.msg
     Position.msg
     Attitude.msg
+    KeyboardKeys.msg
 )
 
 ## Generate services in the 'srv' folder

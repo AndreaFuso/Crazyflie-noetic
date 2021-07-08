@@ -96,7 +96,7 @@ class MotionCommanderSim:
     def takeoff(self, height=DEFAULT_TAKEOFF_HEIGHT, speed=DEFAULT_TAKEOFF_SPEED):
         # Getting actual position:
         actual_state = self.actual_state
-        time.sleep(5)
+        time.sleep(3)
         self.OK = True
         self.go_to(Vector3(actual_state.position.x, actual_state.position.y, height))
 

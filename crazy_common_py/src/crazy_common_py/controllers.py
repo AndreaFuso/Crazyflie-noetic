@@ -71,7 +71,7 @@ class PidController:
         # Preventing windup problem:
         if self.windupType == WindupType.Clamped:
             if self.integralLimit != 0:
-                clampValue(self.integral, - self.integralLimit, self.integralLimit)
+                self.integral = constrain(self.integral, - self.integralLimit, self.integralLimit)
         elif self.windupType == WindupType.Exclusion:
             # Checking if saturation occured:
             beforeClamping = self.proportional + self.integral + self.derivative

@@ -32,6 +32,7 @@ A1_THRUST_ROTATING_SPEED = 0.04076521
 A0_LIFT_TORQUE = 1.563383e-5
 A1_LIFT_TORQUE = 0.005964552
 
+# Function to limit the thrust value:
 def limitThrust(thrust):
     if thrust > MAX_THRUST:
         thrust = MAX_THRUST
@@ -39,6 +40,7 @@ def limitThrust(thrust):
         thrust = 0
     return thrust
 
+# Enumerator to identify the rotating direction of a single propeller:
 class rotatingDirection(Enum):
     CW = 1
     CCW = -1
@@ -48,7 +50,7 @@ class MotorSim:
     #
     #                                               C O N S T R U C T O R
     #
-    # This class completely handle one virtual Crazyflie.
+    # This class completely handles one virtual motor of a Crazyflie.
     # INPUTS:
     #   1) cfName -> name of the crazyflie in the simulation;
     #   2) motorID -> number of the motor;
@@ -61,24 +63,24 @@ class MotorSim:
         self.direction = direction
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           S U B S C R I B E R S  S E T U P
+        #                                   S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Subscriber to receive informations about the state of the virtual Crazyflie:
+        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/state', CrazyflieState, self.__actual_state_callback)
+        self.actual_state = CrazyflieState()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           P U B L I S H E R S  S E T U P
+        #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Publisher to sends velocity setpoint to Gazebo pid controller:
         self.__velocitySetpoint_pub = rospy.Publisher('/' + cfName + '/crazyflie_M' + str(motorID) +
                                                       '_joint_velocity_controller/command', Float64, queue_size=1)
         self.__velocitySetpoint = Float64()
 
+        # Publisher to send the force&torque state to the Gazebo simulation:
         self.lift_drag_pub = rospy.Publisher('/' + cfName + '/lift_M' + str(motorID), Wrench, queue_size=1)
         self.lift_drag_pub_msg = Wrench()
 
-        self.remove_forces_srv = rospy.ServiceProxy('/gazebo/clear_body_wrenches', BodyRequest)
-        self.remove_forces_srv_request = BodyRequestRequest()
-
-        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/state', CrazyflieState, self.__actual_state_callback)
-        self.actual_state = CrazyflieState()
 
         rospy.wait_for_service('/gazebo/clear_body_wrenches')
 
@@ -253,7 +255,20 @@ class MotorSim:
 
         return torque
 
+
+
+
+
+
 class MotorControllerSim:
+    # ==================================================================================================================
+    #
+    #                                               C O N S T R U C T O R
+    #
+    # This class completely handles all for virtual Crazyflie propellers/motors.
+    # INPUTS:
+    #   1) cfName -> name of the crazyflie in the simulation;
+    # ==================================================================================================================
     def __init__(self, cfName):
         # Properties setup:
         self.cfName = cfName
@@ -262,9 +277,25 @@ class MotorControllerSim:
         self.M3 = MotorSim(cfName, 3, rotatingDirection.CCW)
         self.M4 = MotorSim(cfName, 4, rotatingDirection.CW)
 
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                                   S U B S C R I B E R S  S E T U P
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Subscriber that receives motor commands coming from MotionCommanderSim:
         self.motor_command_sub = rospy.Subscriber('/' + cfName + '/motor_command', Attitude,
                                                   self.__motor_command_sub_callback)
 
+    # ==================================================================================================================
+    #
+    #                                           C A L L B A C K  M E T H O D S
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                  __M O T O R C O M M A N D S U B C A L L B A C K
+    #
+    # This callback is called everytime a motor command is sent from the MotionCommanderSim; it converts the commands
+    # coming from the flight controller to input commands for the motors.
+    # ------------------------------------------------------------------------------------------------------------------
     def __motor_command_sub_callback(self, msg):
         # Extracting request info:
         roll = msg.desired_attitude.roll / 2.0
@@ -273,10 +304,15 @@ class MotorControllerSim:
         thrust = msg.desired_thrust
 
         # Calculating the thrust for each motor:
-        thrust_M1 = limitThrust(thrust - roll + pitch + yaw)
+        '''thrust_M1 = limitThrust(thrust - roll + pitch + yaw)
         thrust_M2 = limitThrust(thrust - roll - pitch - yaw)
         thrust_M3 = limitThrust(thrust + roll - pitch + yaw)
-        thrust_M4 = limitThrust(thrust + roll + pitch - yaw)
+        thrust_M4 = limitThrust(thrust + roll + pitch - yaw)'''
+
+        thrust_M1 = limitThrust(thrust - roll - pitch - yaw)
+        thrust_M2 = limitThrust(thrust - roll + pitch + yaw)
+        thrust_M3 = limitThrust(thrust + roll + pitch - yaw)
+        thrust_M4 = limitThrust(thrust + roll - pitch + yaw)
 
         # Sending the thrust command:
         self.M1.sendInputCommand(thrust_M1)
@@ -284,9 +320,45 @@ class MotorControllerSim:
         self.M3.sendInputCommand(thrust_M3)
         self.M4.sendInputCommand(thrust_M4)
 
-
+    # ==================================================================================================================
+    #
+    #                                            M E T H O D S
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                           S T O P M O T O R S
+    #
+    # This method is used to stop all the motors.
+    # ------------------------------------------------------------------------------------------------------------------
     def stopMotors(self):
         self.M1.stopMotor()
         self.M2.stopMotor()
         self.M3.stopMotor()
         self.M4.stopMotor()
+
+    # ==================================================================================================================
+    #
+    #                                               D E B U G  M E T H O D S
+    #
+    # ==================================================================================================================
+    def sendManualCommand(self, thrustCmd, rollCmd, pitchCmd, yawCmd):
+        # Extracting request info:
+        roll = rollCmd / 2.0
+        pitch = pitchCmd / 2.0
+        yaw = yawCmd
+        thrust = thrustCmd
+
+        # Calculating the thrust for each motor:
+        thrust_M1 = limitThrust(thrust - roll + pitch + yaw)
+        thrust_M2 = limitThrust(thrust - roll - pitch - yaw)
+        thrust_M3 = limitThrust(thrust + roll - pitch + yaw)
+        thrust_M4 = limitThrust(thrust + roll + pitch - yaw)
+
+        print('INPUT COMMANDS: ', thrust_M1, '; ', thrust_M2, '; ', thrust_M3, '; ', thrust_M4)
+
+        # Sending the thrust command:
+        self.M1.sendInputCommand(thrust_M1)
+        self.M2.sendInputCommand(thrust_M2)
+        self.M3.sendInputCommand(thrust_M3)
+        self.M4.sendInputCommand(thrust_M4)
