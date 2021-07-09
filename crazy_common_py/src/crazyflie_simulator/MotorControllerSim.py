@@ -270,8 +270,13 @@ class MotorControllerSim:
     #   1) cfName -> name of the crazyflie in the simulation;
     # ==================================================================================================================
     def __init__(self, cfName):
-        # Properties setup:
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Name of the virtual Crazyflie:
         self.cfName = cfName
+
+        # Motors instantiation:
         self.M1 = MotorSim(cfName, 1, rotatingDirection.CCW)
         self.M2 = MotorSim(cfName, 2, rotatingDirection.CW)
         self.M3 = MotorSim(cfName, 3, rotatingDirection.CCW)
@@ -304,11 +309,6 @@ class MotorControllerSim:
         thrust = msg.desired_thrust
 
         # Calculating the thrust for each motor:
-        '''thrust_M1 = limitThrust(thrust - roll + pitch + yaw)
-        thrust_M2 = limitThrust(thrust - roll - pitch - yaw)
-        thrust_M3 = limitThrust(thrust + roll - pitch + yaw)
-        thrust_M4 = limitThrust(thrust + roll + pitch - yaw)'''
-
         thrust_M1 = limitThrust(thrust - roll - pitch - yaw)
         thrust_M2 = limitThrust(thrust - roll + pitch + yaw)
         thrust_M3 = limitThrust(thrust + roll + pitch - yaw)

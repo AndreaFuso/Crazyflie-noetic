@@ -1,1 +1,2 @@
 geometry_msgs/Vector3 desired_position
+float64 desired_yaw

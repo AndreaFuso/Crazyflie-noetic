@@ -45,11 +45,24 @@ MAX_YAW_OUTPUT = 7000 #6000
 
 
 class FlightControllerCustom:
+    # ==================================================================================================================
+    #
+    #                                               C O N S T R U C T O R
+    #
+    # This class replicates the internal flight controller of the Crazyflie, even if all the four pids running in the
+    # real cf are implemented, just three of them are used (position, velocity and attitude).
+    # INPUTS:
+    #   1) cfName -> name of the crazyflie in the simulation;
+    # ==================================================================================================================
     def __init__(self, cfName):
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Name of the virtual Crazyflie:
         self.cfName = cfName
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           S U B S C R I B E R S  S E T U P
+        #                                    S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         self.pace_100Hz_sub = rospy.Subscriber('/pace_100Hz', Empty, self.__pace_100Hz_callback)
         self.pace_500Hz_sub = rospy.Subscriber('/pace_500Hz', Empty, self.__pace_500Hz_callback)
@@ -63,7 +76,7 @@ class FlightControllerCustom:
                                                      self.__desired_position_sub_callback)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           P U B L I S H E R S  S E T U P
+        #                                      P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # self.desired_attitude_pub = rospy.Publisher('/' + name + '/set_desired_attitude', Attitude)
 
@@ -100,6 +113,7 @@ class FlightControllerCustom:
             desired_velocity = self.desired_velocity
             # Saving actual desired attitude:
             desired_attitude = self.desired_attitude
+            desired_attitude.z = self.desired_yaw
 
             '''print('\nDESIRED POSITION: ', desired_position.x, '; ', desired_position.y, '; ', desired_position.z,
                   '\nACTUAL POSITION: ', actual_state.position.x, '; ', actual_state.position.y, '; ',
@@ -174,6 +188,7 @@ class FlightControllerCustom:
         desired_position = Vector3(msg.desired_position.x, msg.desired_position.y, msg.desired_position.z)
 
         self.desired_position = desired_position
+        self.desired_yaw = msg.desired_yaw
 
         # Check if there's a new desired position:
         if not isSameVector(self.previous_desired_position, desired_position):

@@ -1,0 +1,8 @@
+# GOAL SECTION
+float64 takeoff_height
+---
+# RESULT SECTION
+bool result
+---
+# FEEDBACK SECTION
+float64 absolute_distance

@@ -12,7 +12,6 @@ import time
 
 # CUSTOM MODULES
 from crazy_common_py.dataTypes import Vector3, GazeboIMU
-from crazyflie_simulator.MotorControllerSim import MotorControllerSim
 from crazy_common_py.constants import *
 from crazyflie_simulator.pid import *
 from crazyflie_simulator.FlightControllerSimFirmwr import FlightControllerSimFirmwr
@@ -59,9 +58,6 @@ class CrazySim:
         #self.flight_controller = FlightControllerSimFirmwr(name)
         #self.flight_controller = MyFlightControllerFirmwr(name)
         self.flight_controller = FlightControllerCustom(name)
-
-        # Instance of a motor controller:
-        self.motor_controller = MotorControllerSim(name)
 
         # Istance of motion commander:
         self.motion_commander = MotionCommanderSim(name)
