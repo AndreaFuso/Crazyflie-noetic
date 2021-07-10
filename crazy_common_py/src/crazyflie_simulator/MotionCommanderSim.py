@@ -2,6 +2,7 @@
 import rospy
 import actionlib
 # CUSTOM MODULES
+
 from crazy_common_py.dataTypes import Vector3
 from crazyflie_simulator.MotorControllerSim import MotorControllerSim
 from crazy_common_py.common_functions import rad2deg
@@ -98,7 +99,12 @@ class MotionCommanderSim:
         #                                           A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Takeoff action (server + client):
-        #TODO: FARE AZIONE PER IL DECOLLO
+        self.takeoff_act = actionlib.SimpleActionServer('/' + cfName + '/' + 'takeoff_actn', TakeoffAction,
+                                                        self.__takeoff_act_callback, False)
+        self.takeoff_act.start()
+        self.takeoff_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + 'takeoff_actn', TakeoffAction)
+
+        
 
     # ==================================================================================================================
     #
@@ -218,14 +224,93 @@ class MotionCommanderSim:
 
     # ==================================================================================================================
     #
+    #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                    __T A K E O F F _ A C T _ C A L L B A C K
+    #
+    # ------------------------------------------------------------------------------------------------------------------
+    def __takeoff_act_callback(self, goal):
+        # Rate definition:
+        rate = rospy.Rate(100.0)
+        success = True
+
+        # Output:
+        feedback = TakeoffFeedback()
+        result = TakeoffResult()
+
+        # Getting initial position:
+        initial_position = Vector3(self.actual_state.position.x, self.actual_state.position.y,
+                                   self.actual_state.position.z)
+        initial_attitude = rad2deg(self.actual_state.orientation.yaw)
+
+        # Getting target takeoff height:
+        takeoff_height = goal.takeoff_height
+
+        while True:
+            # Getting current state:
+            actual_state = self.actual_state
+
+            # Aboslute distance:
+            absolute_distance = math.fabs(takeoff_height - actual_state.position.z)
+
+            # Publishing absolute distance as feedback:
+            feedback.absolute_distance = absolute_distance
+            self.takeoff_act.publish_feedback(feedback)
+
+            # Verify if the Crazyflie has reached the takeoff height:
+            if absolute_distance <= 0.005:
+                self.isFlying = True
+                success = True
+                break
+
+            # Check preemption:
+            if self.takeoff_act.is_preempt_requested():
+                success = False
+                info_msg = 'Takeoff action canceled for ' + self.name
+                rospy.loginfo(info_msg)
+                result.result = False
+                self.takeoff_act.set_preempted()
+                break
+
+            # Sending commands to reach the takeoff height:
+            self.position_target.desired_position.x = initial_position.x
+            self.position_target.desired_position.y = initial_position.y
+            self.position_target.desired_position.z = takeoff_height
+            self.position_target.desired_yaw = initial_attitude
+            self.trajectory_pub.publish(self.position_target)
+
+            self.motor_command_pub.publish(self.desired_motor_command)
+
+            rate.sleep()
+
+        if success:
+            result.result = True
+            self.takeoff_act.set_succeeded(result)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                           __T A K E O F F _ A C T _ C L I E N T _ F E E D B A C K _ C B
+    #
+    # Callback function for the feedback of takeoff action client.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __takeoff_act_client_feedback_cb(self, feedback):
+        message = self.name + ' is taking off; actual absolute distance from target height: ' + str(feedback.absolute_distance)
+        rospy.logdebug(message)
+
+    # ==================================================================================================================
+    #
     #                                           B A S I C  M E T H O D S
     #
     # ==================================================================================================================
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                                             T A K E O F F
+    #                                             T A K E O F F _ S R V
     #
-    # This methods is used to perform a takeoff.
+    # This methods is used to perform a takeoff with service: if there are multiple crazyflies in the scene, they will
+    # takeoff once at time.
     # INPUTS:
     #   - height -> z coordinate [m] where the Crazyflie will move during the takeoff;
     # ------------------------------------------------------------------------------------------------------------------
@@ -236,6 +321,23 @@ class MotionCommanderSim:
 
         # Requesting takeoff:
         self.takeoff_srv_client(request)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                             T A K E O F F _ A C T N
+    #
+    # This methods is used to perform a takeoff action: if there are multuple crazyflies in the scene, they will
+    # takeoff all (almost) at the same time.
+    # INPUTS:
+    #   - height -> z coordinate [m] where the Crazyflie will move during the takeoff;
+    # ------------------------------------------------------------------------------------------------------------------
+    def takeoff_actn(self, height=DEFAULT_TAKEOFF_HEIGHT):
+        # Setting up takeoff request:
+        goal = TakeoffGoal()
+        goal.takeoff_height = height
+
+        # Action requesting;
+        self.takeoff_act_client.send_goal(goal, feedback_cb=self.__takeoff_act_client_feedback_cb)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
