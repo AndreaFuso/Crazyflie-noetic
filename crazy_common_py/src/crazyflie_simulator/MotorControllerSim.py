@@ -276,6 +276,9 @@ class MotorControllerSim:
         # Name of the virtual Crazyflie:
         self.cfName = cfName
 
+        # Variable to decide wether to send or not commands to the motors:
+        self.canSend = True
+
         # Motors instantiation:
         self.M1 = MotorSim(cfName, 1, rotatingDirection.CCW)
         self.M2 = MotorSim(cfName, 2, rotatingDirection.CW)
@@ -302,23 +305,26 @@ class MotorControllerSim:
     # coming from the flight controller to input commands for the motors.
     # ------------------------------------------------------------------------------------------------------------------
     def __motor_command_sub_callback(self, msg):
-        # Extracting request info:
-        roll = msg.desired_attitude.roll / 2.0
-        pitch = msg.desired_attitude.pitch / 2.0
-        yaw = msg.desired_attitude.yaw
-        thrust = msg.desired_thrust
+        if self.canSend:
+            # Extracting request info:
+            roll = msg.desired_attitude.roll / 2.0
+            pitch = msg.desired_attitude.pitch / 2.0
+            yaw = msg.desired_attitude.yaw
+            thrust = msg.desired_thrust
 
-        # Calculating the thrust for each motor:
-        thrust_M1 = limitThrust(thrust - roll - pitch - yaw)
-        thrust_M2 = limitThrust(thrust - roll + pitch + yaw)
-        thrust_M3 = limitThrust(thrust + roll + pitch - yaw)
-        thrust_M4 = limitThrust(thrust + roll - pitch + yaw)
+            # Calculating the thrust for each motor:
+            thrust_M1 = limitThrust(thrust - roll - pitch - yaw)
+            thrust_M2 = limitThrust(thrust - roll + pitch + yaw)
+            thrust_M3 = limitThrust(thrust + roll + pitch - yaw)
+            thrust_M4 = limitThrust(thrust + roll - pitch + yaw)
 
-        # Sending the thrust command:
-        self.M1.sendInputCommand(thrust_M1)
-        self.M2.sendInputCommand(thrust_M2)
-        self.M3.sendInputCommand(thrust_M3)
-        self.M4.sendInputCommand(thrust_M4)
+            # Sending the thrust command:
+            self.M1.sendInputCommand(thrust_M1)
+            self.M2.sendInputCommand(thrust_M2)
+            self.M3.sendInputCommand(thrust_M3)
+            self.M4.sendInputCommand(thrust_M4)
+        else:
+            self.stopMotors()
 
     # ==================================================================================================================
     #

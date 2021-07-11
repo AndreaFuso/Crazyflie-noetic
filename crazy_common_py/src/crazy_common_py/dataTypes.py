@@ -1,5 +1,5 @@
 import rospy
-
+from enum import Enum
 # Deck class is used to bring information of a single deck attached to the Crazyflie, informations about
 # a certain deck are used in order to perform a safety check when trying to instantiate a crazyflie
 class Deck():
@@ -51,3 +51,9 @@ class CfState:
         self.position = position
         self.velocity = velocity
         self.orientation = orientation
+
+class CfStatus(Enum):
+    LANDED = 0
+    TAKING_OFF = 1
+    LANDING = 2
+    FLYING = 3

@@ -19,6 +19,12 @@ if __name__ == '__main__':
     time.sleep(3)
     CF1.motion_commander.takeoff_actn()
     CF2.motion_commander.takeoff_actn()
-    CF1.motion_commander.go_to(Vector3(5.0, 5.0, 2.0), 90.0)
+    time.sleep(5)
+    CF1.motion_commander.go_to(Vector3(1.0, 0.5, 2.0), 90.0)
+    CF2.motion_commander.go_to(Vector3(1.0, 1.5, 2.0), 45.0)
+    time.sleep(8)
+    CF1.motion_commander.land_srv()
+    CF2.motion_commander.land_srv()
+
 
     rospy.spin()

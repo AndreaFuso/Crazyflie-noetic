@@ -3,7 +3,7 @@ import rospy
 import actionlib
 # CUSTOM MODULES
 
-from crazy_common_py.dataTypes import Vector3
+from crazy_common_py.dataTypes import Vector3, CfStatus
 from crazyflie_simulator.MotorControllerSim import MotorControllerSim
 from crazy_common_py.common_functions import rad2deg
 
@@ -44,8 +44,8 @@ class MotionCommanderSim:
         # Name of the virtual Crazyflie:
         self.name = cfName
 
-        # Property to understand if the Crazyflie is flying:
-        self.isFlying = False
+        # Property to understand the actual status of the Crazyflie (default LANDED):
+        self.status = CfStatus.LANDED
 
         # Instance of motor controller:
         self.motors_controller = MotorControllerSim(cfName)
@@ -88,21 +88,27 @@ class MotionCommanderSim:
         #                                           S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Takeoff service (server + client):
-        self.takeoff_srv = rospy.Service('/' + cfName + '/takeoff', Takeoff_srv, self.__takeoff_srv_callback)
-        self.takeoff_srv_client = rospy.ServiceProxy('/' + cfName + '/takeoff', Takeoff_srv)
+        self.__takeoff_srv = rospy.Service('/' + cfName + '/takeoff_srv', Takeoff_srv, self.__takeoff_srv_callback)
+        self.__takeoff_srv_client = rospy.ServiceProxy('/' + cfName + '/takeoff_srv', Takeoff_srv)
 
         # Land service:
-        self.land_srv = rospy.Service('/' + cfName + '/land', Takeoff_srv, self.__takeoff_srv_callback)
-        self.land_srv_client = rospy.ServiceProxy('/' + cfName + '/land', Takeoff_srv)
+        self.__land_srv = rospy.Service('/' + cfName + '/land_srv', Takeoff_srv, self.__land_srv_callback)
+        self.__land_srv_client = rospy.ServiceProxy('/' + cfName + '/land_srv', Takeoff_srv)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Takeoff action (server + client):
-        self.takeoff_act = actionlib.SimpleActionServer('/' + cfName + '/' + 'takeoff_actn', TakeoffAction,
-                                                        self.__takeoff_act_callback, False)
-        self.takeoff_act.start()
-        self.takeoff_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + 'takeoff_actn', TakeoffAction)
+        self.__takeoff_act = actionlib.SimpleActionServer('/' + cfName + '/takeoff_actn', TakeoffAction,
+                                                          self.__takeoff_act_callback, False)
+        self.__takeoff_act.start()
+        self.__takeoff_act_client = actionlib.SimpleActionClient('/' + cfName + '/takeoff_actn', TakeoffAction)
+
+        # Landing action (server + client):
+        self.__land_act = actionlib.SimpleActionServer('/' + cfName + '/land_actn', TakeoffAction,
+                                                       self.__land_act_callback, False)
+        self.__land_act.start()
+        self.__land_act_client = actionlib.SimpleActionClient('/' + cfName + '/land_actn', TakeoffAction)
 
         
 
@@ -119,7 +125,7 @@ class MotionCommanderSim:
     # 100 Hz.
     # ------------------------------------------------------------------------------------------------------------------
     def __pace_100Hz_callback(self, msg):
-        if self.isFlying:
+        if self.status == CfStatus.FLYING:
             self.trajectory_pub.publish(self.position_target)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -130,7 +136,7 @@ class MotionCommanderSim:
     # at 500 Hz.
     # ------------------------------------------------------------------------------------------------------------------
     def __pace_500Hz_callback(self, msg):
-        if self.isFlying:
+        if self.status == CfStatus.FLYING:
             self.motor_command_pub.publish(self.desired_motor_command)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -140,10 +146,13 @@ class MotionCommanderSim:
     # This callback saves the motor commands coming from the FLightControllerSim in a class' variable.
     # ------------------------------------------------------------------------------------------------------------------
     def __desired_motor_command_callback(self, msg):
-        self.desired_motor_command.desired_attitude.roll = msg.desired_attitude.roll
-        self.desired_motor_command.desired_attitude.pitch = msg.desired_attitude.pitch
-        self.desired_motor_command.desired_attitude.yaw = msg.desired_attitude.yaw
-        self.desired_motor_command.desired_thrust = msg.desired_thrust
+        if self.status == CfStatus.FLYING or self.status == CfStatus.TAKING_OFF:
+            self.desired_motor_command.desired_attitude.roll = msg.desired_attitude.roll
+            self.desired_motor_command.desired_attitude.pitch = msg.desired_attitude.pitch
+            self.desired_motor_command.desired_attitude.yaw = msg.desired_attitude.yaw
+            self.desired_motor_command.desired_thrust = msg.desired_thrust
+
+            self.motor_command_pub.publish(self.desired_motor_command)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -187,6 +196,9 @@ class MotionCommanderSim:
     #
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_srv_callback(self, request):
+        # Setting up new status:
+        self.status = CfStatus.TAKING_OFF
+
         # Getting takeoff height:
         takeoff_height = request.takeoff_height
 
@@ -207,7 +219,6 @@ class MotionCommanderSim:
             # Verify if the Crazyflie has reached the takeoff height:
             if math.fabs(takeoff_height - actual_state.position.z) <= 0.005:
                 response.result = True
-                self.isFlying = True
                 break
             # Sending commands to reach the takeoff height:
             self.position_target.desired_position.x = initial_position.x
@@ -216,11 +227,64 @@ class MotionCommanderSim:
             self.position_target.desired_yaw = initial_attitude
             self.trajectory_pub.publish(self.position_target)
 
-            self.motor_command_pub.publish(self.desired_motor_command)
+            # Telling MotorControllerSim that can send motor commands:
+            self.motors_controller.canSend = True
 
             rate.sleep()
 
+        # Updating status:
+        self.status = CfStatus.FLYING
+
         return response
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                    __L A N D _ S R V _ C A L L B A C K
+    #
+    # ------------------------------------------------------------------------------------------------------------------
+    def __land_srv_callback(self, request):
+        # Getting takeoff height:
+        landing_height = request.takeoff_height
+
+        # Getting initial position:
+        initial_position = Vector3(self.actual_state.position.x, self.actual_state.position.y,
+                                   self.actual_state.position.z)
+        initial_attitude = rad2deg(self.actual_state.orientation.yaw)
+
+        # Setting up output:
+        response = Takeoff_srvResponse()
+        response.result = False
+
+        # Returning true when the Crazyflie has reached the desired height:
+        rate = rospy.Rate(100)
+        while True:
+            # Getting current state:
+            actual_state = self.actual_state
+
+            # Verify if the Crazyflie has reached the takeoff height:
+            if math.fabs(landing_height - actual_state.position.z) <= 0.005:
+                response.result = True
+                break
+            # Sending commands to reach the takeoff height:
+            self.position_target.desired_position.x = initial_position.x
+            self.position_target.desired_position.y = initial_position.y
+            self.position_target.desired_position.z = landing_height
+            self.position_target.desired_yaw = initial_attitude
+            self.trajectory_pub.publish(self.position_target)
+
+            # Telling MotorControllerSim that can send motor commands:
+            self.motors_controller.canSend = True
+
+            rate.sleep()
+
+        # Updating status:
+        self.status = CfStatus.LANDED
+
+        # Telling MotorControllerSim that can send motor commands:
+        self.motors_controller.canSend = False
+
+        return response
+
 
     # ==================================================================================================================
     #
@@ -233,6 +297,9 @@ class MotionCommanderSim:
     #
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_act_callback(self, goal):
+        # Setting up new status:
+        self.status = CfStatus.TAKING_OFF
+
         # Rate definition:
         rate = rospy.Rate(100.0)
         success = True
@@ -258,21 +325,20 @@ class MotionCommanderSim:
 
             # Publishing absolute distance as feedback:
             feedback.absolute_distance = absolute_distance
-            self.takeoff_act.publish_feedback(feedback)
+            self.__takeoff_act.publish_feedback(feedback)
 
             # Verify if the Crazyflie has reached the takeoff height:
             if absolute_distance <= 0.005:
-                self.isFlying = True
                 success = True
                 break
 
             # Check preemption:
-            if self.takeoff_act.is_preempt_requested():
+            if self.__takeoff_act.is_preempt_requested():
                 success = False
                 info_msg = 'Takeoff action canceled for ' + self.name
                 rospy.loginfo(info_msg)
                 result.result = False
-                self.takeoff_act.set_preempted()
+                self.__takeoff_act.set_preempted()
                 break
 
             # Sending commands to reach the takeoff height:
@@ -282,13 +348,15 @@ class MotionCommanderSim:
             self.position_target.desired_yaw = initial_attitude
             self.trajectory_pub.publish(self.position_target)
 
-            self.motor_command_pub.publish(self.desired_motor_command)
+            # Telling MotorControllerSim that can send motor commands:
+            self.motors_controller.canSend = True
 
             rate.sleep()
 
         if success:
+            self.status = CfStatus.FLYING
             result.result = True
-            self.takeoff_act.set_succeeded(result)
+            self.__takeoff_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -300,9 +368,74 @@ class MotionCommanderSim:
         message = self.name + ' is taking off; actual absolute distance from target height: ' + str(feedback.absolute_distance)
         rospy.logdebug(message)
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                    __L A N D _ A C T _ C A L L B A C K
+    #
+    # ------------------------------------------------------------------------------------------------------------------
+    def __land_act_callback(self, goal):
+        # Rate definition:
+        rate = rospy.Rate(100.0)
+        success = True
+
+        # Output:
+        feedback = TakeoffFeedback()
+        result = TakeoffResult()
+
+        # Getting initial position:
+        initial_position = Vector3(self.actual_state.position.x, self.actual_state.position.y,
+                                   self.actual_state.position.z)
+        initial_attitude = rad2deg(self.actual_state.orientation.yaw)
+
+        # Getting target takeoff height:
+        landing_height = goal.takeoff_height
+
+        while True:
+            # Getting current state:
+            actual_state = self.actual_state
+
+            # Aboslute distance:
+            absolute_distance = math.fabs(landing_height - actual_state.position.z)
+
+            # Publishing absolute distance as feedback:
+            feedback.absolute_distance = absolute_distance
+            self.__land_act.publish_feedback(feedback)
+
+            # Verify if the Crazyflie has reached the takeoff height:
+            if absolute_distance <= 0.005:
+                success = True
+                break
+
+            # Check preemption:
+            if self.__land_act.is_preempt_requested():
+                success = False
+                info_msg = 'Landing action canceled for ' + self.name
+                rospy.loginfo(info_msg)
+                result.result = False
+                self.__land_act.set_preempted()
+                break
+
+            # Sending commands to reach the takeoff height:
+            self.position_target.desired_position.x = initial_position.x
+            self.position_target.desired_position.y = initial_position.y
+            self.position_target.desired_position.z = landing_height
+            self.position_target.desired_yaw = initial_attitude
+            self.trajectory_pub.publish(self.position_target)
+
+            rate.sleep()
+
+        if success:
+            result.result = True
+            self.status = CfStatus.LANDED
+            self.motors_controller.canSend = False
+            self.__land_act.set_succeeded(result)
+
+    def __land_act_client_feedback_cb(self, feedback):
+        message = self.name + ' is landing; actual absolute distance from target height: ' + str(feedback.absolute_distance)
+        rospy.logdebug(message)
     # ==================================================================================================================
     #
-    #                                           B A S I C  M E T H O D S
+    #                                   T A K E  O F F  &  L A N D I N G  M E T H O D S
     #
     # ==================================================================================================================
     # ------------------------------------------------------------------------------------------------------------------
@@ -320,7 +453,7 @@ class MotionCommanderSim:
         request.takeoff_height = height
 
         # Requesting takeoff:
-        self.takeoff_srv_client(request)
+        self.__takeoff_srv_client(request)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -337,19 +470,41 @@ class MotionCommanderSim:
         goal.takeoff_height = height
 
         # Action requesting;
-        self.takeoff_act_client.send_goal(goal, feedback_cb=self.__takeoff_act_client_feedback_cb)
+        self.__takeoff_act_client.send_goal(goal, feedback_cb=self.__takeoff_act_client_feedback_cb)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                                                L A N D
+    #                                                L A N D _ S R V
     #
-    # This methods is used to perform a landing.
+    # This methods is used to perform a landing service: if there are multuple crazyflies in the scene, they will
+    # land once at time.
     # INPUTS:
     #   - height -> z coordinate [m] where the Crazyflie will move and stops its motors;
     # ------------------------------------------------------------------------------------------------------------------
-    def land(self, height=DEFAULT_LAND_HEIGHT):
-        actual_state = self.actual_state
-        self.go_to(Vector3(actual_state.position.x, actual_state.position.y, height))
+    def land_srv(self, height=DEFAULT_LAND_HEIGHT):
+        # Setting up the landing request:
+        request = Takeoff_srvRequest()
+        request.takeoff_height = height
+
+        # Requesting landing:
+        self.__land_srv_client(request)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                                L A N D _ A C T N
+    #
+    # This methods is used to perform a landing action: if there are multiple crazyflies in the scene, they will
+    # land all (almost) at the same time.
+    # INPUTS:
+    #   - height -> z coordinate [m] where the Crazyflie will move and stops its motors;
+    # ------------------------------------------------------------------------------------------------------------------
+    def land_actn(self, height=DEFAULT_LAND_HEIGHT):
+        # Setting up landing request:
+        goal = TakeoffGoal()
+        goal.takeoff_height = height
+
+        # Action request:
+        self.__land_act_client.send_goal(goal, feedback_cb=self.__land_act_client_feedback_cb)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -361,14 +516,13 @@ class MotionCommanderSim:
     #   - yaw -> yaw value at destination [deg]
     # ------------------------------------------------------------------------------------------------------------------
     def go_to(self, destination=Vector3(), yaw=0.0):
-        if self.isFlying == True:
+        if self.status == CfStatus.FLYING:
             self.position_target.desired_position.x = destination.x
             self.position_target.desired_position.y = destination.y
             self.position_target.desired_position.z = destination.z
             self.position_target.desired_yaw = yaw
             self.trajectory_pub.publish(self.position_target)
 
-            self.motor_command_pub.publish(self.desired_motor_command)
         else:
             error_message = "Crazyflie " + self.name + " has received a destination, but it's not flying! Please takeoff first!"
             rospy.logerr(error_message)
