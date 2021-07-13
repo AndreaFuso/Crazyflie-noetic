@@ -54,11 +54,6 @@ class CrazySim:
         self.IMU = GazeboIMU(IMU_GAUSSIAN_NOISE_DEFAULT, IMU_UPDATE_RATE_DEFAULT)
         self.state_estimator = FakeStateEstimator(name)
 
-        # Instance of a flight controller:
-        #self.flight_controller = FlightControllerSimFirmwr(name)
-        #self.flight_controller = MyFlightControllerFirmwr(name)
-        self.flight_controller = FlightControllerCustom(name)
-
         # Istance of motion commander:
         self.motion_commander = MotionCommanderSim(name)
 
@@ -92,8 +87,6 @@ class CrazySim:
         self.__set_control_parameters()
         self.__spawn_cf()
         self.__start_gazebo_controllers()
-
-
 
     # ==================================================================================================================
     #
@@ -234,7 +227,7 @@ class CrazySim:
         custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p2 + len(tag_p2):initial_pos_p3]
         custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p3 + len(tag_p3):initial_pos_p4]
         custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p4 + len(tag_p4):initial_pos_ns]
-        custom_urdf_file = custom_urdf_file + '/' + self.name + urdf_file[initial_pos_ns + len(tag_ns):initial_pos_imu_gn]
+        custom_urdf_file = custom_urdf_file + self.name + urdf_file[initial_pos_ns + len(tag_ns):initial_pos_imu_gn]
         custom_urdf_file = custom_urdf_file + str(self.IMU.gaussian_noise) + urdf_file[initial_pos_imu_gn + len(tag_imu_gn):initial_pos_imu_ur]
         custom_urdf_file = custom_urdf_file + str(self.IMU.update_rate) + urdf_file[initial_pos_imu_ur + len(tag_imu_ur):]
 

@@ -8,8 +8,10 @@ from geometry_msgs.msg import Wrench
 
 # CUSTOM MODULES
 from crazyflie_simulator.FlightControllerSimFirmwr import MAX_THRUST, INT16_MAX
-from crazy_common_py.common_functions import RotateVector
-from crazy_common_py.dataTypes import Vector3
+from crazy_common_py.common_functions import RotateVector, constrain
+from crazy_common_py.dataTypes import Vector3, rotatingDirection
+from crazy_common_py.constants import *
+
 # OTHER MODULES
 from enum import Enum
 import math
@@ -18,32 +20,6 @@ import math
 from crazyflie_messages.srv import MotorCommand_srv, MotorCommand_srvResponse
 from gazebo_msgs.srv import ApplyBodyWrench, ApplyBodyWrenchRequest, BodyRequest, BodyRequestRequest
 
-# CONSTANTS
-# Polyfit thrust - lift (Crazyflie Modelling Paper)
-A0_THRUST_LIFT = 5.484560e-4
-A1_THRUST_LIFT = 1.032633e-6
-A2_THRUST_LIFT = 2.130295e-11
-
-# Polyfit thrust - rotating speed (Crazyflie Modelling Paper)
-A0_THRUST_ROTATING_SPEED = 380.8359
-A1_THRUST_ROTATING_SPEED = 0.04076521
-
-# Polyfit lift - torquw (Crazyflie Modelling Paper):
-A0_LIFT_TORQUE = 1.563383e-5
-A1_LIFT_TORQUE = 0.005964552
-
-# Function to limit the thrust value:
-def limitThrust(thrust):
-    if thrust > MAX_THRUST:
-        thrust = MAX_THRUST
-    elif thrust < 0:
-        thrust = 0
-    return thrust
-
-# Enumerator to identify the rotating direction of a single propeller:
-class rotatingDirection(Enum):
-    CW = 1
-    CCW = -1
 
 class MotorSim:
     # ==================================================================================================================
@@ -82,7 +58,7 @@ class MotorSim:
         self.lift_drag_pub_msg = Wrench()
 
 
-        rospy.wait_for_service('/gazebo/clear_body_wrenches')
+        #rospy.wait_for_service('/gazebo/clear_body_wrenches')
 
     # ==================================================================================================================
     #
@@ -258,8 +234,6 @@ class MotorSim:
 
 
 
-
-
 class MotorControllerSim:
     # ==================================================================================================================
     #
@@ -277,7 +251,7 @@ class MotorControllerSim:
         self.cfName = cfName
 
         # Variable to decide wether to send or not commands to the motors:
-        self.canSend = True
+        self.canSend = False
 
         # Motors instantiation:
         self.M1 = MotorSim(cfName, 1, rotatingDirection.CCW)
@@ -313,10 +287,10 @@ class MotorControllerSim:
             thrust = msg.desired_thrust
 
             # Calculating the thrust for each motor:
-            thrust_M1 = limitThrust(thrust - roll - pitch - yaw)
-            thrust_M2 = limitThrust(thrust - roll + pitch + yaw)
-            thrust_M3 = limitThrust(thrust + roll + pitch - yaw)
-            thrust_M4 = limitThrust(thrust + roll - pitch + yaw)
+            thrust_M1 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
+            thrust_M2 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
+            thrust_M3 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)
+            thrust_M4 = constrain(thrust + roll - pitch + yaw, 0, MAX_THRUST)
 
             # Sending the thrust command:
             self.M1.sendInputCommand(thrust_M1)
@@ -356,10 +330,10 @@ class MotorControllerSim:
         thrust = thrustCmd
 
         # Calculating the thrust for each motor:
-        thrust_M1 = limitThrust(thrust - roll + pitch + yaw)
-        thrust_M2 = limitThrust(thrust - roll - pitch - yaw)
-        thrust_M3 = limitThrust(thrust + roll - pitch + yaw)
-        thrust_M4 = limitThrust(thrust + roll + pitch - yaw)
+        thrust_M1 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
+        thrust_M2 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
+        thrust_M3 = constrain(thrust + roll - pitch + yaw, 0, MAX_THRUST)
+        thrust_M4 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)
 
         print('INPUT COMMANDS: ', thrust_M1, '; ', thrust_M2, '; ', thrust_M3, '; ', thrust_M4)
 

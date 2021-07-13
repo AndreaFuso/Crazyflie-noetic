@@ -1,0 +1,9 @@
+# GOAL SECTION
+crazyflie_messages/Position destination_info
+float64 time_duration
+---
+# RESULT SECTION
+bool result
+---
+# FEEDBACK SECTION
+float64 remaining_time

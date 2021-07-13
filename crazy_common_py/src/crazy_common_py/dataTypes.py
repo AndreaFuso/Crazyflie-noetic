@@ -52,8 +52,19 @@ class CfState:
         self.velocity = velocity
         self.orientation = orientation
 
+# To understand the status of the Crazyflie:
 class CfStatus(Enum):
     LANDED = 0
     TAKING_OFF = 1
     LANDING = 2
     FLYING = 3
+
+# To understand if we're in velocity or position mode:
+class MovementMode(Enum):
+    POSITION = 0
+    VELOCITY = 1
+
+# Enumerator to identify the rotating direction of a single propeller:
+class rotatingDirection(Enum):
+    CW = 1
+    CCW = -1

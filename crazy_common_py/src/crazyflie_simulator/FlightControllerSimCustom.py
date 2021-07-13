@@ -8,41 +8,11 @@ import math
 from crazy_common_py.controllers import PidController, WindupType, WindupInfo
 from crazy_common_py.constants import *
 from crazy_common_py.common_functions import rad2deg, constrain, isSameVector
-from crazy_common_py.dataTypes import Vector3
+from crazy_common_py.dataTypes import Vector3, MovementMode
 
 # TOPIC MESSAGES
 from crazyflie_messages.msg import CrazyflieState, Attitude, Position, RollPitchYaw
 from std_msgs.msg import Empty
-
-# NUMBERS
-INT16_MAX = 32767
-
-THRUST_BASE = 38180
-thrustScale = 1000.0
-
-DEFAULT_WINDUP_TYPE = WindupType.Exclusion
-
-# CONSTANTS
-MAX_VELOCITY_X = 1.0    # [m/s]
-MAX_VELOCITY_Y = 1.0    # [m/s]
-MAX_VELOCITY_Z = 1.0    # [m/s]
-
-MAX_THRUST = 65535
-MIN_THRUST = 20000
-
-MAX_PITCH = 20  # [deg]
-MAX_ROLL = 20   # [deg]
-
-'''DELTA_THRUST = min(MAX_THRUST - THRUST_BASE, THRUST_BASE - MIN_THRUST)
-MAX_ROLL_OUTPUT = 1.0 * DELTA_THRUST  #5000
-MAX_PITCH_OUTPUT = 1.0 * DELTA_THRUST #5000
-MAX_YAW_OUTPUT = 1.0 * DELTA_THRUST #6000'''
-
-MAX_ROLL_OUTPUT = 7000 #5000
-MAX_PITCH_OUTPUT = 7000 #5000
-MAX_YAW_OUTPUT = 7000 #6000
-
-
 
 class FlightControllerCustom:
     # ==================================================================================================================
@@ -60,6 +30,9 @@ class FlightControllerCustom:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Name of the virtual Crazyflie:
         self.cfName = cfName
+
+        # Movement mode:
+        self.mode = MovementMode.POSITION
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                    S U B S C R I B E R S  S E T U P
@@ -117,21 +90,21 @@ class FlightControllerCustom:
 
             '''print('\nDESIRED POSITION: ', desired_position.x, '; ', desired_position.y, '; ', desired_position.z,
                   '\nACTUAL POSITION: ', actual_state.position.x, '; ', actual_state.position.y, '; ',
-                  actual_state.position.z)
+                  actual_state.position.z)'''
 
-            print('DESIRED VELOCITY: ', desired_velocity.x, '; ', desired_velocity.y, '; ', desired_velocity.z,
+            '''print('DESIRED VELOCITY: ', desired_velocity.x, '; ', desired_velocity.y, '; ', desired_velocity.z,
                   '\nACTUAL VELOCITY: ', actual_state.velocity.x, '; ', actual_state.velocity.y, '; ',
-                  actual_state.velocity.z)
+                  actual_state.velocity.z)'''
 
 
             print('DESIRED ATTITUDE: ', desired_attitude.x, '; ', desired_attitude.y, '; ', desired_attitude.z,
-                  '\nACTUAL ATTITUDE: ', actual_state.orientation.roll, '; ', actual_state.orientation.pitch, '; ', actual_state.orientation.yaw)'''
+                  '\nACTUAL ATTITUDE: ', rad2deg(actual_state.orientation.roll), '; ', rad2deg(actual_state.orientation.pitch), '; ', rad2deg(actual_state.orientation.yaw))
 
             # Calling attitude controller:
             desired_rpy_command = self.__attitudeController(desired_attitude, actual_state)
             #print('DESIRED RPY COMMAND: ', desired_rpy_command.x, '; ', desired_rpy_command.y, ';', desired_rpy_command.z)
 
-            motor_commands = self.__motor_simulator(desired_rpy_command, desired_thrust)
+            #motor_commands = self.__motor_simulator(desired_rpy_command, desired_thrust)
 
 
             #print('MOTOR COMMANDS: ', motor_commands[0], '; ', motor_commands[1], '; ', motor_commands[2], '; ', motor_commands[3], '\n')
@@ -152,11 +125,6 @@ class FlightControllerCustom:
         thrust = desired_thrust
 
         # Calculating the thrust for each motor:
-        '''thrust_M1 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
-        thrust_M2 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
-        thrust_M3 = constrain(thrust + roll - pitch + yaw, 0, MAX_THRUST)
-        thrust_M4 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)'''
-
         thrust_M1 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
         thrust_M2 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
         thrust_M3 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)
@@ -216,8 +184,12 @@ class FlightControllerCustom:
             self.OK500 = False
             #print('\n\n\n\n\n\n\n\n NEW POSITION!!!\n\n\n\n\n\n\n\n')
 
-        # Calling positionController to get desired velocities:
-        desired_velocity = self.__positionController(desired_position, actual_state)
+        # Calculating desired velocity (if in position control) or setting the desired one:
+        if self.mode == MovementMode.POSITION:
+            # Calling positionController to get desired velocities:
+            desired_velocity = self.__positionController(desired_position, actual_state)
+        elif self.mode == MovementMode.VELOCITY:
+            desired_velocity = Vector3(msg.desired_velocity.x, msg.desired_velocity.y, msg.desired_velocity.z)
 
         self.desired_velocity = desired_velocity
 
