@@ -66,10 +66,15 @@ MAX_VELOCITY_Z = 1.0    # [m/s]
 MAX_PITCH = 20  # [deg]
 MAX_ROLL = 20   # [deg]
 
-# Maximum absolute motor command (used as saturation values for AttitudeController pid output):
-MAX_ROLL_OUTPUT = 7000 #5000
-MAX_PITCH_OUTPUT = 7000 #5000
-MAX_YAW_OUTPUT = 7000 #6000
+# Maximum absolute attitude rate (used as saturaration values for AttitudeController pid output):
+MAX_ROLL_RATE = 40      # [deg/s]
+MAX_PITCH_RATE = 40     # [deg/s]
+MAX_YAW_RATE = 40       # [deg/s]
+
+# Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
+MAX_ROLL_OUTPUT = 10000 #7000
+MAX_PITCH_OUTPUT = 10000 #7000
+MAX_YAW_OUTPUT = 10000 #7000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S
@@ -120,57 +125,63 @@ PID_POSITION_Z_KD = 0.0     #0.0 0.01
 #                                           V E L O C I T Y  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
 # Fwd velocity desired VS actual fwd velocity => DESIRED PITCH
-PID_VELOCITY_X_KP = 20.0    #25.0
+PID_VELOCITY_X_KP = 25.0    #25.0 20.0
 PID_VELOCITY_X_KI = 1.0     #1.0
 PID_VELOCITY_X_KD = 0.0     #0.0
 
 # Lateral velocity desired VS actual lateral velocity => DESIRED ROLL
-PID_VELOCITY_Y_KP = 20.0    #25.0
+PID_VELOCITY_Y_KP = 25.0    #25.0 20.0
 PID_VELOCITY_Y_KI = 1.0     #1.0
 PID_VELOCITY_Y_KD = 0.0     #0.0
 
 # Vertical velocity desired VS actual vertical velocity => THRUST
-PID_VELOCITY_Z_KP = 20.0   #25.0
-PID_VELOCITY_Z_KI = 15.0     #15.0
-PID_VELOCITY_Z_KD = 0.0   #0.0 7.0
+PID_VELOCITY_Z_KP = 25.0    #25.0 20.0
+PID_VELOCITY_Z_KI = 15.0    #15.0
+PID_VELOCITY_Z_KD = 0.0     #0.0 7.0
 # ----------------------------------------------------------------------------------------------------------------------
 #                                           A T T I T U D E  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
 ROLL_KP = 10.0   # 10
 ROLL_KI = 40.0   # 40
 ROLL_KD = 110.0  # 100
-PID_ROLL_INTEGRATION_LIMIT = 50.0   #20.0 400
+PID_ROLL_INTEGRATION_LIMIT = 20.0   #20.0 50.0
 
 PITCH_KP = 10.0     # 10
 PITCH_KI = 40.0     # 40
 PITCH_KD = 110.0    # 100
-PID_PITCH_INTEGRATION_LIMIT =50  #20.0 400
+PID_PITCH_INTEGRATION_LIMIT = 20.0  #20.0 50.0
 
 YAW_KP = 10.0     # 10
 YAW_KI = 40.0     # 40
 YAW_KD = 110.0    # 100
-PID_YAW_INTEGRATION_LIMIT = 50.0   #360 0.0 400
+PID_YAW_INTEGRATION_LIMIT = 360.0   #360 50.0
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                                     O T H E R  F I R M W A R E  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
+'''
+Rincontrollare tutti i controllori, angoli e velocita angolare dovrebbero essere in radianti;
+    - non credo sia un problema della odom per la velcoita angolare(dovrebbe arrivare quella relativa, come l'orientation)
+    - le vibrazioni potrebbero arrivare da parametri sbagliati del pid sullo yaw rate?
+    - con angoli piccoli resiste, massimo 30 deg, se supero la soglia oscilla troppo e impazzisce
+'''
 # Desired Roll Rate VS actual Roll Rate => ROLL OUTPUT
-PID_ROLL_RATE_KP = 250.0    #250 0.52 0.25 0.4 0.25 0.21
-PID_ROLL_RATE_KI = 500.0    #500 0.52 0.8 1.5 0.167
-PID_ROLL_RATE_KD = 2.5     #2.5 0.025 3.0 0.25 3.0
+PID_ROLL_RATE_KP = 100.0    #250 15.0 100 20 80 40
+PID_ROLL_RATE_KI = 300.0    #500 30.0 500 100 100 60
+PID_ROLL_RATE_KD = 150.0     #2.5 3.0 200 80 200 150
 PID_ROLL_RATE_INTEGRATION_LIMIT = 33.3     #33.3
 
 # Desired Pitch Rate VS actual Pitch Rate => PITCH OUTPUT
-PID_PITCH_RATE_KP = 250.0   #250 0.52 0.25 0.21
-PID_PITCH_RATE_KI = 500.0  #500 0.52 1.5 0.167
-PID_PITCH_RATE_KD = 2.5    #2.5 0.025 0.25 3.0
+PID_PITCH_RATE_KP = 100.0   #250 15.0
+PID_PITCH_RATE_KI = 300.0  #500 30.0
+PID_PITCH_RATE_KD = 150.0    #2.5 3.0
 PID_PITCH_RATE_INTEGRATION_LIMIT = 33.3 #33.3
 
 # Desired Yaw Rate VS actual Yaw Rate => YAW OUTPUT
-PID_YAW_RATE_KP = 120.0 #120 0.52 0.12 0.21 10
-PID_YAW_RATE_KI = 16.7  #16.7 0.52 0.167 5
-PID_YAW_RATE_KD = 0.0   #0.0 0.025 3.0
-PID_YAW_RATE_INTEGRATION_LIMIT = 166.7  #166.7 0.7 0.0
+PID_YAW_RATE_KP = 120.0 #120 7.0 50
+PID_YAW_RATE_KI = 17.0  #16.7 1.0 250
+PID_YAW_RATE_KD = 0.0   #0.0 100
+PID_YAW_RATE_INTEGRATION_LIMIT = 33.3  #166.7 33.3
 
 # Desired Roll VS actual Roll => DESIRED ROLL RATE
 PID_ROLL_KP = 6.0  #6.0 3.0 2.5 3.0 0.25

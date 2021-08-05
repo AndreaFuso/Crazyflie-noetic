@@ -1,9 +1,12 @@
 # ROS MODULES
+import math
+
 import rospy
 import tf
 
 # CUSTOM MODULES
-from crazy_common_py.common_functions import quat2euler
+from crazy_common_py.common_functions import quat2euler, RotateVector
+from crazy_common_py.dataTypes import Vector3
 
 # MESSAGES
 from sensor_msgs.msg import Imu
@@ -29,7 +32,12 @@ class FakeStateEstimator:
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Setting default values for rotation:
+        self.prevRoll = 0.0
+        self.prevPitch = 0.0
 
+        # Check variable to understand if the values have been correctly initialized:
+        self.prev_values_init = False
 
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -44,6 +52,8 @@ class FakeStateEstimator:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         self.state_pub = rospy.Publisher('/' + cfName + '/state', CrazyflieState, queue_size=1)
         self.__actual_state = CrazyflieState()
+        self.__tmp_rotating_speed = Vector3()
+
 
         #self.state_pubREL = rospy.Publisher('/' + cfName + '/state_rel', CrazyflieState, queue_size=1)
         #self.imu_pub = rospy.Publisher('/' + cfName + '/state_imu', CrazyflieState, queue_size=1)
@@ -69,9 +79,9 @@ class FakeStateEstimator:
         actual_state.orientation.pitch = pitch
         actual_state.orientation.yaw = yaw
 
-        actual_state.rotating_speed.x = msg.angular_velocity.x
-        actual_state.rotating_speed.y = msg.angular_velocity.y
-        actual_state.rotating_speed.z = msg.angular_velocity.z
+        self.__tmp_rotating_speed.x = msg.angular_velocity.x
+        self.__tmp_rotating_speed.y = msg.angular_velocity.y
+        self.__tmp_rotating_speed.z = msg.angular_velocity.z
 
         self.imu_pub.publish(actual_state)'''
 
@@ -109,7 +119,7 @@ class FakeStateEstimator:
         self.__actual_state.position.y = msg.pose.pose.position.y
         self.__actual_state.position.z = msg.pose.pose.position.z
 
-        # Setting the orientation:
+        # Setting the orientation (radians):
         #rpy = quat2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z,
                          #msg.pose.pose.orientation.w)
         (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(
@@ -124,9 +134,20 @@ class FakeStateEstimator:
         self.__actual_state.velocity.y = msg.twist.twist.linear.y
         self.__actual_state.velocity.z = msg.twist.twist.linear.z
 
-        self.__actual_state.rotating_speed.x = msg.twist.twist.angular.x
-        self.__actual_state.rotating_speed.y = msg.twist.twist.angular.y
-        self.__actual_state.rotating_speed.z = msg.twist.twist.angular.z
+        if self.prev_values_init:
+            # Setting the angular velocity:
+            dt = 1 / 500
+            self.__actual_state.rotating_speed.x = (roll - self.prevRoll) / dt
+            self.__actual_state.rotating_speed.y = (pitch - self.prevPitch) / dt
+            self.__actual_state.rotating_speed.z = msg.twist.twist.angular.z
+            self.prevRoll = roll
+            self.prevPitch = pitch
+        else:
+            self.__actual_state.rotating_speed.x = 0.0
+            self.__actual_state.rotating_speed.y = 0.0
+            self.__actual_state.rotating_speed.z = 0.0
+
+        self.prev_values_init = True
 
         # Publishing the state:
         self.state_pub.publish(self.__actual_state)
