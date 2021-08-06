@@ -57,6 +57,7 @@ class FlightControllerCustom:
         self.desired_motor_command = Attitude()
 
         self.previous_desired_position = Vector3(0.0001, 0.0001, 0.0001)
+        self.previous_desired_yaw = 1000.0
 
         self.__init_position_controller()
         self.__init_velocity_controller()
@@ -88,7 +89,7 @@ class FlightControllerCustom:
             desired_attitude = self.desired_attitude
             desired_attitude.z = self.desired_yaw
 
-            print('\nDESIRED POSITION: ', desired_position.x, '; ', desired_position.y, '; ', desired_position.z,
+            '''print('\nDESIRED POSITION: ', desired_position.x, '; ', desired_position.y, '; ', desired_position.z,
                   '\nACTUAL POSITION: ', actual_state.position.x, '; ', actual_state.position.y, '; ',
                   actual_state.position.z)
 
@@ -98,7 +99,7 @@ class FlightControllerCustom:
 
 
             print('DESIRED ATTITUDE: ', desired_attitude.x, '; ', desired_attitude.y, '; ', desired_attitude.z,
-                  '\nACTUAL ATTITUDE: ', actual_state.orientation.roll, '; ', actual_state.orientation.pitch, '; ', actual_state.orientation.yaw)
+                  '\nACTUAL ATTITUDE: ', actual_state.orientation.roll, '; ', actual_state.orientation.pitch, '; ', actual_state.orientation.yaw)'''
 
             '''# Calling attitude controller:
             desired_rpy_command = self.__attitudeController(desired_attitude, actual_state)
@@ -112,17 +113,17 @@ class FlightControllerCustom:
             # Calling attitude controller:
             desired_attitude_rate = self.__attitudeController(desired_attitude, actual_state)
 
-            print('DESIRED ATTITUDE RATE: ', desired_attitude_rate.x, '; ', desired_attitude_rate.y, '; ', desired_attitude_rate.z)
-            print('ACTUAL ATTITUDE RATE: ', actual_state.rotating_speed.x, '; ', actual_state.rotating_speed.y, '; ', actual_state.rotating_speed.z)
+            '''print('DESIRED ATTITUDE RATE: ', desired_attitude_rate.x, '; ', desired_attitude_rate.y, '; ', desired_attitude_rate.z)
+            print('ACTUAL ATTITUDE RATE: ', actual_state.rotating_speed.x, '; ', actual_state.rotating_speed.y, '; ', actual_state.rotating_speed.z)'''
 
             # Calling attitude rate controller:
             desired_rpy_command = self.__attitudeRateController(desired_attitude_rate, actual_state)
 
-            print('RPY COMMANDS: ', desired_rpy_command.x, '; ', desired_rpy_command.y, '; ', desired_rpy_command.z)
+            #print('RPY COMMANDS: ', desired_rpy_command.x, '; ', desired_rpy_command.y, '; ', desired_rpy_command.z)
 
             motor_commands = self.__motor_simulator(desired_rpy_command, desired_thrust)
 
-            print('MOTOR COMMANDS: ', motor_commands[0], '; ', motor_commands[1], '; ', motor_commands[2], '; ', motor_commands[3], '\n')
+            #print('MOTOR COMMANDS: ', motor_commands[0], '; ', motor_commands[1], '; ', motor_commands[2], '; ', motor_commands[3], '\n')
 
             # Setting up messaghe to be published:
             self.desired_motor_command.desired_attitude.roll = desired_rpy_command.x
@@ -181,9 +182,10 @@ class FlightControllerCustom:
         self.desired_yaw = msg.desired_yaw
 
         # Check if there's a new desired position:
-        if not isSameVector(self.previous_desired_position, desired_position):
+        if not isSameVector(self.previous_desired_position, desired_position) or self.previous_desired_yaw != self.desired_yaw:
             # Updating previous desired position:
             self.previous_desired_position = desired_position
+            self.previous_desired_yaw = msg.desired_yaw
 
             # Resetting pids:
             self.PID_position_x.reset()
@@ -204,7 +206,8 @@ class FlightControllerCustom:
 
             self.OK = True
             self.OK500 = False
-            #print('\n\n\n\n\n\n\n\n NEW POSITION!!!\n\n\n\n\n\n\n\n')
+
+            print('Requested new destination for ', self.cfName, ': [', self.desired_position.x, '; ', self.desired_position.y, '; ', self.desired_position.z, '] YAW:', self.desired_yaw, '[deg]')
 
         # Calculating desired velocity (if in position control) or setting the desired one:
         if self.mode == MovementMode.POSITION:

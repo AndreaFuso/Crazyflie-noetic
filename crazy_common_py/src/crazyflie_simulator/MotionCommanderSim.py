@@ -621,7 +621,6 @@ class MotionCommanderSim:
             self.position_target.desired_position.y = destination.y
             self.position_target.desired_position.z = destination.z
             self.position_target.desired_yaw = yaw
-            self.trajectory_pub.publish(self.position_target)
 
         else:
             error_message = "Crazyflie " + self.name + " has received a destination, but it's not flying! Please takeoff first!"

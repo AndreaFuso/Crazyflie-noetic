@@ -159,29 +159,23 @@ PID_YAW_INTEGRATION_LIMIT = 360.0   #360 50.0
 # ----------------------------------------------------------------------------------------------------------------------
 #                                     O T H E R  F I R M W A R E  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
-'''
-Rincontrollare tutti i controllori, angoli e velocita angolare dovrebbero essere in radianti;
-    - non credo sia un problema della odom per la velcoita angolare(dovrebbe arrivare quella relativa, come l'orientation)
-    - le vibrazioni potrebbero arrivare da parametri sbagliati del pid sullo yaw rate?
-    - con angoli piccoli resiste, massimo 30 deg, se supero la soglia oscilla troppo e impazzisce
-'''
 # Desired Roll Rate VS actual Roll Rate => ROLL OUTPUT
-PID_ROLL_RATE_KP = 100.0    #250 15.0 100 20 80 40
-PID_ROLL_RATE_KI = 300.0    #500 30.0 500 100 100 60
-PID_ROLL_RATE_KD = 150.0     #2.5 3.0 200 80 200 150
+PID_ROLL_RATE_KP = 100.0    #250 100.0
+PID_ROLL_RATE_KI = 250.0    #500 250.0
+PID_ROLL_RATE_KD = 200.0     #2.5 200.0
 PID_ROLL_RATE_INTEGRATION_LIMIT = 33.3     #33.3
 
 # Desired Pitch Rate VS actual Pitch Rate => PITCH OUTPUT
-PID_PITCH_RATE_KP = 100.0   #250 15.0
-PID_PITCH_RATE_KI = 300.0  #500 30.0
-PID_PITCH_RATE_KD = 150.0    #2.5 3.0
+PID_PITCH_RATE_KP = 100.0   #250 100.0
+PID_PITCH_RATE_KI = 250.0  #500 250.0
+PID_PITCH_RATE_KD = 200.0    #2.5 200.0
 PID_PITCH_RATE_INTEGRATION_LIMIT = 33.3 #33.3
 
 # Desired Yaw Rate VS actual Yaw Rate => YAW OUTPUT
-PID_YAW_RATE_KP = 120.0 #120 7.0 50
-PID_YAW_RATE_KI = 17.0  #16.7 1.0 250
-PID_YAW_RATE_KD = 0.0   #0.0 100
-PID_YAW_RATE_INTEGRATION_LIMIT = 33.3  #166.7 33.3
+PID_YAW_RATE_KP = 120.0 #120
+PID_YAW_RATE_KI = 16.7  #16.7
+PID_YAW_RATE_KD = 0.0   #0.0
+PID_YAW_RATE_INTEGRATION_LIMIT = 166.7  #166.7 33.3
 
 # Desired Roll VS actual Roll => DESIRED ROLL RATE
 PID_ROLL_KP = 6.0  #6.0 3.0 2.5 3.0 0.25
