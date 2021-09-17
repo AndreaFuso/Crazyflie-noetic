@@ -1,0 +1,444 @@
+<?xml version="1.0"?>
+<robot name="crazyflie">
+    <!--
+    =========================================================================
+                                  L I N K S
+    =========================================================================
+    -->
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        C R A Z Y F L I E  B O D Y
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="crazyflie_main_body">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.027"/>
+        <origin xyz="0 0 0.01745" rpy="0 0 0"/>
+        <!--<inertia ixx="1.65717e-05" ixy="0" ixz="0" iyy="1.65717e-05" iyz="0" izz="2.92617e-05"/>-->
+        <inertia ixx="16.823890e-06" ixy="0" ixz="0" iyy="16.655602e-06" iyz="0" izz="29.261652e-06"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="/home/andrea/catkin_ws/src/crazyflie_description/meshes/crazyflie2.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.045 0.045 0.03"/>  <!-- "0.045 0.045 0.03" -->
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        I M U  S E N S O R  L I N K
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="imu_sensor">
+        <origin xyz="0 0 0"/>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx="1e-11" ixy="0" ixz="0" iyy="1e-11" iyz="0" izz="1e-11" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M1">
+      <origin xyz="0 0 0"/> <!-- 0.032527 -0.032527 0.024 -->
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="/home/andrea/catkin_ws/src/crazyflie_description/meshes/propeller_ccw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M2">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="/home/andrea/catkin_ws/src/crazyflie_description/meshes/propeller_cw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M3">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="/home/andrea/catkin_ws/src/crazyflie_description/meshes/propeller_ccw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M4">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="/home/andrea/catkin_ws/src/crazyflie_description/meshes/propeller_cw.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    =========================================================================
+                                  J O I N T S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                I M U  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="imu_sensor_joint" type="fixed">
+        <parent link="crazyflie_main_body" />
+        <child link="imu_sensor" />
+        <origin xyz="0 0 0.01745" rpy="0 0 0" />
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M1_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M1"/>
+      <origin xyz="0.0326695 -0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M2_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M2"/>
+      <origin xyz="-0.0326695 -0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M3_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M3"/>
+      <origin xyz="-0.0326695 0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M4_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M4"/>
+      <origin xyz="0.0326695 0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    =========================================================================
+                              P L U G I N S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        G A Z E B O  R O S  C O N T R O L
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+          <robotNamespace>cf1</robotNamespace>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                O D O M E T R Y
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo>
+        <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>500.0</updateRate>
+            <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
+            <topicName>odom_absolute</topicName>
+            <gaussianNoise>0.0</gaussianNoise>
+            <frameName>world</frameName> <!-- world -->
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>500.0</updateRate>
+            <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
+            <topicName>odom_relative</topicName>
+            <gaussianNoise>0.0</gaussianNoise>
+            <frameName>crazyflie_main_body</frameName> <!-- world -->
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                I M U  S E N S O R
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo>
+        <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
+        <alwaysOn>true</alwaysOn>
+        <bodyName>imu_sensor</bodyName> <!-- crazyflie_main_body -->
+        <topicName>imu</topicName>
+        <serviceName>imu_service</serviceName>
+        <gaussianNoise>0.0</gaussianNoise>
+        <updateRate>1000</updateRate>
+    </plugin>
+    </gazebo>
+
+    <!--
+    =========================================================================
+                              A C T U A T O R S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        A C T U A T O R  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M1_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M1">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        A C T U A T O R  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M2_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M2">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M3">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M3_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M3">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M4">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M4_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M4">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    =========================================================================
+                    F O R C E S & T O R Q U E S  P L U G I N S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>10000</update>
+              <updateRate>10000.0</updateRate>
+              <bodyName>crazyflie_prop_M1</bodyName>
+              <topicName>lift_M1</topicName>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+               <update>10000</update>
+              <updateRate>10000.0</updateRate>
+              <bodyName>crazyflie_prop_M2</bodyName>
+              <topicName>lift_M2</topicName>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>10000</update>
+              <updateRate>10000.0</updateRate>
+              <bodyName>crazyflie_prop_M3</bodyName>
+              <topicName>lift_M3</topicName>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>10000</update>
+              <updateRate>10000.0</updateRate>
+              <bodyName>crazyflie_prop_M4</bodyName>
+              <topicName>lift_M4</topicName>
+        </plugin>
+    </gazebo>
+</robot>

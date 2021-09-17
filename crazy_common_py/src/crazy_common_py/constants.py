@@ -160,15 +160,15 @@ PID_YAW_INTEGRATION_LIMIT = 360.0   #360 50.0
 #                                     O T H E R  F I R M W A R E  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
 # Desired Roll Rate VS actual Roll Rate => ROLL OUTPUT
-PID_ROLL_RATE_KP = 100.0    #250 100.0
-PID_ROLL_RATE_KI = 250.0    #500 250.0
-PID_ROLL_RATE_KD = 200.0     #2.5 200.0
+PID_ROLL_RATE_KP = 80.0    #250 100.0
+PID_ROLL_RATE_KI = 200.0    #500 250.0
+PID_ROLL_RATE_KD = 350.0     #2.5 200.0
 PID_ROLL_RATE_INTEGRATION_LIMIT = 33.3     #33.3
 
 # Desired Pitch Rate VS actual Pitch Rate => PITCH OUTPUT
-PID_PITCH_RATE_KP = 100.0   #250 100.0
-PID_PITCH_RATE_KI = 250.0  #500 250.0
-PID_PITCH_RATE_KD = 200.0    #2.5 200.0
+PID_PITCH_RATE_KP = 80.0   #250 100.0
+PID_PITCH_RATE_KI = 200.0  #500 250.0
+PID_PITCH_RATE_KD = 350.0    #2.5 200.0
 PID_PITCH_RATE_INTEGRATION_LIMIT = 33.3 #33.3
 
 # Desired Yaw Rate VS actual Yaw Rate => YAW OUTPUT

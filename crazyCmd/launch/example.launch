@@ -14,5 +14,4 @@
     <!-- Starting up the example node -->
     <node name="example" pkg="crazyCmd" type="example.py" output="screen"/>
 
-
 </launch>

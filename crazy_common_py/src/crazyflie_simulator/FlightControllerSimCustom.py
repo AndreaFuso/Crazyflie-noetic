@@ -125,7 +125,7 @@ class FlightControllerCustom:
 
             #print('MOTOR COMMANDS: ', motor_commands[0], '; ', motor_commands[1], '; ', motor_commands[2], '; ', motor_commands[3], '\n')
 
-            # Setting up messaghe to be published:
+            # Setting up message to be published:
             self.desired_motor_command.desired_attitude.roll = desired_rpy_command.x
             self.desired_motor_command.desired_attitude.pitch = desired_rpy_command.y
             self.desired_motor_command.desired_attitude.yaw = desired_rpy_command.z
