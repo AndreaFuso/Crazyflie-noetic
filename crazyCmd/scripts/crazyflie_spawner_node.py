@@ -1,27 +1,10 @@
 #! /usr/bin/env python3
 # ROS MODULES
 import rospy
-import roslaunch
-import rospkg
-# GAZEBO MODULES
-from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
-
-import sys
-import xacro
-import subprocess
-import time
 
 # CUSTOM MODULES
-from crazy_common_py.dataTypes import Vector3, GazeboIMU
-from crazy_common_py.constants import *
-from crazyflie_simulator.pid import *
-from crazyflie_simulator.FlightControllerSimFirmwr import FlightControllerSimFirmwr
-from crazyflie_simulator.MyFlightControllerFirmwr import MyFlightControllerFirmwr
-from crazyflie_simulator.FlightControllerSimCustom import FlightControllerCustom
+from crazy_common_py.dataTypes import Vector3
 from crazyflie_simulator.CrazySim import CrazySim
-
-# OTHER MODULES
-import os
 
 if __name__ == '__main__':
     # Node initialization:

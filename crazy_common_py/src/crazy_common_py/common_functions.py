@@ -87,3 +87,8 @@ def RotateVector(vector=Vector3(), rotation=Vector3()):
 
     return output
 
+def standardNameList(number_of_cfs):
+    cf_names = []
+    for number in range(1, number_of_cfs + 1):
+        cf_names.append('cf' + str(number))
+    return  cf_names

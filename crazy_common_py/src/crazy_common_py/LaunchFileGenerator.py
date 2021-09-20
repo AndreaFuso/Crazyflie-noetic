@@ -1,8 +1,8 @@
 import rospkg
 from crazy_common_py.dataTypes import Vector3
 
-class LaunchFileGenerator:
 
+class LaunchFileGenerator:
     def __init__(self, side, filename_in, filename_out):
         self.side = side
         rospack = rospkg.RosPack()
@@ -12,7 +12,9 @@ class LaunchFileGenerator:
 
 
         self.launchfile = open(self.launch_path, 'w')
+
         self.generateLaunchFile()
+
         self.launchfile.close()
 
     def generateLaunchFile(self):
@@ -55,12 +57,19 @@ class LaunchFileGenerator:
             actual_pos.y = 0.0
             actual_pos.x = actual_pos.x + 1.0
 
+        self.launchfile.write('\n\t<group ns = "swarm">\n')
+        self.launchfile.write('\t\t<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">\n')
+        self.launchfile.write('\t\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
+        self.launchfile.write('\t\t</node>\n')
+        self.launchfile.write('\t</group>\n')
+
+
 
     def finalPart(self):
         self.launchfile.write('\n</launch>')
 
 
 
-LF = LaunchFileGenerator(3, 'swarm_settings.txt', 'my_launch.launch')
+LF = LaunchFileGenerator(7, 'swarm_settings.txt', 'my_launch.launch')
 print(LF.launch_path)
 
