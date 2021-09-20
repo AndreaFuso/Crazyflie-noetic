@@ -1,0 +1,2 @@
+# Values have to be inserted after a /t (tab)!
+number_of_drones:   16

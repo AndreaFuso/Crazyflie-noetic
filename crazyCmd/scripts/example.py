@@ -34,8 +34,8 @@ if __name__ == '__main__':
 
     CF1 = CrazySim('cf1', pos_sel)
     CF2 = CrazySim('cf2', pos2)
-    CF3 = CrazySim('cf3', pos3)
-    CF4 = CrazySim('cf4', pos4)
+    #CF3 = CrazySim('cf3', pos3)
+    #CF4 = CrazySim('cf4', pos4)
 
     time.sleep(5)
     CF1.motion_commander.takeoff_actn()
