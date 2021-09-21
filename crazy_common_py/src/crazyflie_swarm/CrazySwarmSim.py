@@ -52,8 +52,6 @@ class CrazySwarmSim:
                                                                 self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
 
-
-
     # ==================================================================================================================
     #
     #                                   I N I T I A L  O P E R A T I O N S  M E T H O D S
@@ -70,7 +68,6 @@ class CrazySwarmSim:
             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/takeoff_actn', TakeoffAction)
             self.takeoff_act_clients.append(tmp_action)
             self.takeoff_act_clients[-1].wait_for_server()
-
 
     # ==================================================================================================================
     #

@@ -1,2 +1,36 @@
-# Values have to be inserted after a /t (tab)!
-number_of_drones:   16
+# Values have to be inserted after a space!
+# ======================================================================================================================
+#
+#                                            S P A W N  F O R M A T I O N S
+#
+# ----------------------------------------------------------------------------------------------------------------------
+#                                           ( 1 )  G R I D  F O R M A T I O N
+#
+# The drones are spaced with certain offsets, like in a virtual grid.
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                                   S T R U C T U R E
+# spawn_formation: grid
+#    number_of_cfs: 4
+#    x_offset: 1.0
+#    y_offset: 1.0
+#    spawn_altitude: 0.2
+#
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# where:
+#   number_of_cfs: number of crazyflies we want to spawn;
+#   cfs_x_side: number of crazyflies along x axis;
+#   cfs_y_side: number of crazyflies along y axis;
+#   x_offset: offset [m] along x direction;
+#   y_offset: offset [m] along y direction;
+#   spawn_altitude: initial altitude [m], in order to avoid ground interference (suggested value 0.2);
+#
+# NOTE: the first drone will be spawned in [x, y] = [0.0, 0.0]
+# ----------------------------------------------------------------------------------------------------------------------
+# ======================================================================================================================
+spawn_formation: grid
+    number_of_cfs: 6
+    cfs_x_side: 2
+    cfs_y_side: 3
+    x_offset: 1.0
+    y_offset: 2.0
+    spawn_altitude: 0.2

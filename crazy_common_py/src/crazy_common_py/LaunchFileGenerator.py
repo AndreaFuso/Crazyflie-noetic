@@ -3,32 +3,79 @@ from crazy_common_py.dataTypes import Vector3
 
 
 class LaunchFileGenerator:
-    def __init__(self, side, filename_in, filename_out):
-        self.side = side
+    # ==================================================================================================================
+    #
+    #                                               C O N S T R U C T O R
+    #
+    # This class is used to generate a launch file, in order to spawn all the desired crazyflies in the simulation.
+    # INPUTS:
+    #   TO BE COMPLETED
+    #
+    # ==================================================================================================================
+    def __init__(self, filename_in, filename_out):
+        # Initial positions (list of Vector3):
+        self.initial_positions = []
+
         rospack = rospkg.RosPack()
 
+        # Assembling the path related to where the spawn info file is located:
         self.txt_path = rospack.get_path('crazyCmd') + '/data/input/launch_info/' + filename_in
+
+        # Assembling the path related to where the launch file will be located:
         self.launch_path = rospack.get_path('crazyCmd') + '/launch/' + filename_out
 
-
+        # Opening the launch file in "write mode":
         self.launchfile = open(self.launch_path, 'w')
 
-        self.generateLaunchFile()
+        # Saving input file content:
+        input_file = open(self.txt_path, 'r')
+        self.input_file = input_file.readlines()
+        input_file.close()
 
+        # Generating the initial positions:
+        self.__initial_formation_detector()
+
+        # Generating the correct launch file spawning the whole swarm:
+        self.__generate_launch_file()
+
+        # Closing the launch file:
         self.launchfile.close()
 
-    def generateLaunchFile(self):
-        self.initialPart()
-        self.gazeboScene()
-        self.paceNodes()
-        self.crazyflies()
-        self.finalPart()
+    # ==================================================================================================================
+    #
+    #                                I N I T I A L  O P E R A T I O N S  M E T H O D S
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __ G E N E R A T E _ L A U N C H _  F I L E
+    #
+    # This method collects all the blocks to be written in the launch file.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __generate_launch_file(self):
+        self.__initial_part()
+        self.__gazebo_scene()
+        self.__pace_nodes()
+        self.__crazyflies()
+        self.__final_part()
 
-    def initialPart(self):
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ I N I T I A L _ P A R T
+    #
+    # This method write the header of the file.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __initial_part(self):
         self.launchfile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         self.launchfile.write('<launch>\n')
 
-    def gazeboScene(self):
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ G A Z E B O _ S C E N E
+    #
+    # This method write the block related to Gazebo, launching the background scene.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __gazebo_scene(self):
         self.launchfile.write('\t<!-- Launching the Gazebo world scene -->\n')
         self.launchfile.write('\t<include file="$(find gazebo_ros)/launch/empty_world.launch">\n')
         self.launchfile.write('\t\t<arg name="world_name" value="$(find crazyflie_gazebo)/worlds/crazyflie.world"/>\n')
@@ -36,16 +83,29 @@ class LaunchFileGenerator:
         self.launchfile.write('\t\t<arg name="paused" value="true"/>\n')
         self.launchfile.write('\t</include>\n')
 
-    def paceNodes(self):
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ P A C E _ N O D E S
+    #
+    # This method write the block used to start the two nodes at 100Hz and 500Hz, used by inner controller of simulated
+    # controllers of virtual crazyflies, in order to work at a certain frequency.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __pace_nodes(self):
         self.launchfile.write('\n\t<!-- Starting up nodes that give the pace to the inner controllers -->\n')
         self.launchfile.write('\t<node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>\n')
         self.launchfile.write('\t<node name="node_500Hz" pkg="crazyCmd" type="node_500Hz.py" output="screen"/>\n')
 
-    def crazyflies(self):
-        actual_pos = Vector3(0.0, 0.0, 0.2)
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ C R A Z Y F L I E S
+    #
+    # This method write the block used to spawn a certain amount of virtual crazyflies, by starting the correspondent
+    # spawner node (one per each crazyflie).
+    # ------------------------------------------------------------------------------------------------------------------
+    def __crazyflies(self):
         cf_count = 0
-        for ii in range(0, self.side):
-            for jj in range(0, self.side):
+        '''for ii in range(0, self.cfs_number):
+            for jj in range(0, self.cfs_number):
                 self.launchfile.write('\n\t<group ns = "cf' + str(cf_count + 1) + '">\n')
                 self.launchfile.write('\t\t<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">\n')
                 self.launchfile.write('\t\t\t<rosparam param="name">cf' + str(cf_count + 1) + '</rosparam>\n')
@@ -55,7 +115,16 @@ class LaunchFileGenerator:
                 actual_pos.y = actual_pos.y + 1.0
                 cf_count = cf_count + 1
             actual_pos.y = 0.0
-            actual_pos.x = actual_pos.x + 1.0
+            actual_pos.x = actual_pos.x + 1.0'''
+
+        for position in range(0, self.cfs_number):
+            cf_count += 1
+            self.launchfile.write('\n\t<group ns = "cf' + str(cf_count) + '">\n')
+            self.launchfile.write('\t\t<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">\n')
+            self.launchfile.write('\t\t\t<rosparam param="name">cf' + str(cf_count) + '</rosparam>\n')
+            self.launchfile.write('\t\t\t<rosparam param="initial_position">[' + str(self.initial_positions[position].x) + ', ' + str(self.initial_positions[position].y) + ', ' + str(self.initial_positions[position].z) + ']</rosparam>\n')
+            self.launchfile.write('\t\t</node>\n')
+            self.launchfile.write('\t</group>\n')
 
         self.launchfile.write('\n\t<group ns = "swarm">\n')
         self.launchfile.write('\t\t<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">\n')
@@ -63,13 +132,117 @@ class LaunchFileGenerator:
         self.launchfile.write('\t\t</node>\n')
         self.launchfile.write('\t</group>\n')
 
-
-
-    def finalPart(self):
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ F I N A L _ P A R T
+    #
+    # This method write the final block.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __final_part(self):
         self.launchfile.write('\n</launch>')
 
+    # ==================================================================================================================
+    #
+    #                                S P A W N I N G  F O R M A T I O N  M E T H O D S
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __ I N I T I A L _ F O R M A T I O N _ D E T E C T O R
+    #
+    # This detects the user's choice of initial formation and call the correct method to generate the coordinates.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __initial_formation_detector(self):
+        # Check the initial formation that has been chosen:
+        initial_formation = self.extract_value('spawn_formation', 'str')
+
+        # Call corresponding coordinates generator:
+        if initial_formation == 'grid':
+            self.__grid_spawn()
+        elif initial_formation == 'pyramid':
+            pass
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ G R I D _ S P A W N
+    #
+    # This method generate initial position coordinates in grid case.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __grid_spawn(self):
+        cf_cont = 0
+
+        # Extracting all the parameters:
+        self.cfs_number = self.extract_value('number_of_cfs', 'int')
+        cfs_x_side = self.extract_value('cfs_x_side', 'int')
+        cfs_y_side = self.extract_value('cfs_y_side', 'int')
+        x_offset = self.extract_value('x_offset', 'float')
+        y_offset = self.extract_value('y_offset', 'float')
+        spawn_altitude = self.extract_value('spawn_altitude', 'float')
+
+        # Generating the coordinates:
+        spawn_pos_x = 0.0
+        spawn_pos_y = 0.0
+        spawn_pos_z = spawn_altitude
+        for row in range(0, cfs_x_side):
+            for column in range(0, cfs_y_side):
+                cf_cont += 1
+                if cf_cont > self.cfs_number:
+                    break
+                else:
+                    self.initial_positions.append(Vector3(spawn_pos_x, spawn_pos_y, spawn_pos_z))
+                spawn_pos_y = spawn_pos_y + y_offset
+
+            spawn_pos_y = 0.0
+            spawn_pos_x = spawn_pos_x + x_offset
+
+    # ==================================================================================================================
+    #
+    #                    M E T H O D S  T O  G E T  I N F O S  W I T H I N  T X T  I N P U T  F I L E
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ E X T R A C T _ V A L U E
+    #
+    # This method generate extracts a generic value from the txt, corresponding to a certain keyword.
+    # INPUTS:
+    #   1) keyword -> string containing the keyword of the parameter to be extracted;
+    #   2) value_type -> string containing the type of the stored parameter, supported types:
+    #           - str -> string
+    #           - int -> integer number
+    #           - float -> floating number
+    # ------------------------------------------------------------------------------------------------------------------
+    def extract_value(self, keyword, value_type):
+        # Keyword line:
+        keyword_line = 'NONE'
+
+        # Looking for the keyword:
+        for line in self.input_file:
+            if keyword in line and '#' not in line:
+                keyword_line = line
+
+        # Raising error if not found:
+        if keyword_line == 'NONE':
+            raise Exception('ERROR: keyword "' + keyword + '" is not contained in the input file!')
+
+        # Extracting the string containing the value:
+        separation_pattern = ': '
+        separation_position = keyword_line.find(separation_pattern)
+        string_value = keyword_line[separation_position+len(separation_pattern):-1]
+
+        # Casting the value:
+        if value_type == 'str':
+            return string_value
+        elif value_type == 'int':
+            return int(string_value)
+        elif value_type == 'float':
+            return float(string_value)
+        else:
+            raise Exception('ERROR: unknown data type')
 
 
-LF = LaunchFileGenerator(7, 'swarm_settings.txt', 'my_launch.launch')
-print(LF.launch_path)
+LF = LaunchFileGenerator('swarm_settings.txt', 'my_launch.launch')
+print('Launch file correctly created-updated at: ' + LF.launch_path)
+print(LF.initial_positions[0].x, LF.initial_positions[0].y, LF.initial_positions[0].z)
+
+
 

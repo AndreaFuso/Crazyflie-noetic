@@ -2,6 +2,7 @@
 import rospy
 import roslaunch
 import rospkg
+
 # GAZEBO MODULES
 from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
 

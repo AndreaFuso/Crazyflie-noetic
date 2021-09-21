@@ -501,8 +501,6 @@ class MotionCommanderSim:
             self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
             self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
 
-
-
             rate.sleep()
 
         if success:
@@ -528,6 +526,7 @@ class MotionCommanderSim:
     # ------------------------------------------------------------------------------------------------------------------
     def __velocity_3D_motion_act_client_feedback_cb(self, feedback):
         pass
+
     # ==================================================================================================================
     #
     #                                   T A K E  O F F  &  L A N D I N G  M E T H O D S
@@ -650,7 +649,6 @@ class MotionCommanderSim:
             self.__velocity_3D_motion_act_client.send_goal(desitination_goal,
                                                            feedback_cb=self.__velocity_3D_motion_act_client_feedback_cb)
 
-
     def backward(self, distance, velocity=DEFAULT_BACKWARD_VELOCITY):
         pass
 
@@ -684,8 +682,6 @@ class MotionCommanderSim:
             self.__velocity_3D_motion_act_client.send_goal(desitination_goal,
                                                            feedback_cb=self.__velocity_3D_motion_act_client_feedback_cb)
 
-
-
     def turn_left(self, angle):
         if self.status == CfStatus.FLYING:
             # Getting actual state:
@@ -699,5 +695,3 @@ class MotionCommanderSim:
         else:
             error_msg = "Crazyflie " + self.name + " has received a command, but it's not flying! Please takeoff first!"
             rospy.logerr(error_msg)
-
-
