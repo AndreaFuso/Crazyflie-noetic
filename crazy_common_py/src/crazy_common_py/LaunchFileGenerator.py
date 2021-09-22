@@ -1,6 +1,7 @@
 import rospkg
 from crazy_common_py.dataTypes import Vector3
 
+import math
 
 class LaunchFileGenerator:
     # ==================================================================================================================
@@ -160,7 +161,7 @@ class LaunchFileGenerator:
         if initial_formation == 'grid':
             self.__grid_spawn()
         elif initial_formation == 'pyramid':
-            pass
+            self.__pyramid_spawn()
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                       __ G R I D _ S P A W N
@@ -193,6 +194,64 @@ class LaunchFileGenerator:
 
             spawn_pos_y = 0.0
             spawn_pos_x = spawn_pos_x + x_offset
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                       __ P Y R A M I D _ S P A W N
+    #
+    # This method generate initial position coordinates in pyramid case.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __pyramid_spawn(self):
+        # Extracting all the parameters:
+        levels = self.extract_value('levels', 'int')
+        drone_distance = self.extract_value('drone_distance', 'float')
+        vertical_offset = self.extract_value('vertical_offset', 'float')
+        spawn_altitude = self.extract_value('spawn_altitude', 'float')
+
+        # Calculating the number of drones:
+        cf_per_level = [1]
+        self.initial_positions.append(Vector3(0.0, 0.0, spawn_altitude))
+        for level in range(1, levels + 1):
+            cf_in_level = 2 * (level + 1) + 2 * (level - 1)
+            cf_per_level.append(cf_in_level)
+            # Calculating first cf position (top left one, with x axis pointing down and y pointing right):
+            x_pos = - drone_distance * level * 0.5
+            y_pos = - drone_distance * level * 0.5
+            z_pos = self.initial_positions[-1].z
+            self.initial_positions.append(Vector3(x_pos, y_pos, z_pos))
+            horizontal = True
+            cont = 1
+            side = 1
+            for cf in range(2, cf_in_level + 1):
+                if cont > level:
+                    horizontal = not horizontal
+                    side += 1
+                    cont = 1
+
+                x_pos_old = self.initial_positions[-1].x
+                y_pos_old = self.initial_positions[-1].y
+                z_pos_old = self.initial_positions[-1].z
+
+                if horizontal and side == 1:
+                    x_pos_new = x_pos_old
+                    y_pos_new = y_pos_old + drone_distance
+                    z_pos_new = z_pos_old
+                elif horizontal and side != 1:
+                    x_pos_new = x_pos_old
+                    y_pos_new = y_pos_old - drone_distance
+                    z_pos_new = z_pos_old
+                elif not horizontal and side == 2:
+                    x_pos_new = x_pos_old + drone_distance
+                    y_pos_new = y_pos_old
+                    z_pos_new = z_pos_old
+                elif not horizontal and side != 2:
+                    x_pos_new = x_pos_old - drone_distance
+                    y_pos_new = y_pos_old
+                    z_pos_new = z_pos_old
+
+                self.initial_positions.append(Vector3(x_pos_new, y_pos_new, z_pos_new))
+                cont += 1
+        self.cfs_number = sum(cf_per_level)
 
     # ==================================================================================================================
     #

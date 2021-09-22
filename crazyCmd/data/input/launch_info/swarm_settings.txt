@@ -10,9 +10,11 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #                                                   S T R U C T U R E
 # spawn_formation: grid
-#    number_of_cfs: 4
+#    number_of_cfs: 6
+#    cfs_x_side: 2
+#    cfs_y_side: 3
 #    x_offset: 1.0
-#    y_offset: 1.0
+#    y_offset: 2.0
 #    spawn_altitude: 0.2
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -26,11 +28,29 @@
 #
 # NOTE: the first drone will be spawned in [x, y] = [0.0, 0.0]
 # ----------------------------------------------------------------------------------------------------------------------
+#                                           ( 2 )  P Y R A M I D  F O R M A T I O N
+#
+# The drones are spaced with certain offsets, arranged in a pyramid.
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                                   S T R U C T U R E
+# spawn_formation: pyramid
+#    levels: 3
+#    drone_distance: 1.0
+#    vertical_offset: 0.5
+#    spawn_altitude: 0.2
+#
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# where:
+#   levels: number of levels of the pyramid (minimum 1);
+#   drone_distance: distance [m] between two close drones along the perimeter of each level;
+#   vertical_offset: distance [m] from one level to the other;
+#   spawn_altitude: initial altitude [m], in order to avoid ground interference (suggested value 0.2);
+#
+# NOTE: the first drone will be spawned in [x, y] = [0.0, 0.0]
+# ----------------------------------------------------------------------------------------------------------------------
 # ======================================================================================================================
-spawn_formation: grid
-    number_of_cfs: 6
-    cfs_x_side: 2
-    cfs_y_side: 3
-    x_offset: 1.0
-    y_offset: 2.0
+spawn_formation: pyramid
+    levels: 3
+    drone_distance: 1.0
+    vertical_offset: 0.5
     spawn_altitude: 0.2

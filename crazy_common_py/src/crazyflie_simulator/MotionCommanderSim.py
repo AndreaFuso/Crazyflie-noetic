@@ -111,13 +111,18 @@ class MotionCommanderSim:
         self.__land_act.start()
         self.__land_act_client = actionlib.SimpleActionClient('/' + cfName + '/land_actn', TakeoffAction)
 
-        # 3D movement:
+        # 3D velocity movement:
         self.__velocity_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/velocity_3D_motion',
                                                                      Destination3DAction,
                                                                      self.__velocity_3D_motion_act_callback, False)
         self.__velocity_3D_motion_act.start()
         self.__velocity_3D_motion_act_client = actionlib.SimpleActionClient('/' + cfName + '/velocity_3D_motion',
                                                                             Destination3DAction)
+
+        self.__position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/position_3D_motion',
+                                                                     Destination3DAction,
+                                                                     self.__position_3D_motion_act_callback, False)
+        self.__position_3D_motion_act.start()
         
 
     # ==================================================================================================================
@@ -461,7 +466,6 @@ class MotionCommanderSim:
         time_duration = rospy.Duration.from_sec(goal.time_duration)
         final_rostime = t0 + time_duration
 
-        print('\n\nSTART MOTION\n\n')
         # Setting velocity mode:
         self.flight_controller.mode = MovementMode.VELOCITY
 
@@ -504,7 +508,6 @@ class MotionCommanderSim:
             rate.sleep()
 
         if success:
-            print('\n\nENDED\n\n')
             result.result = True
             # When finished let's set the target velocity to zero:
             actual_state = self.actual_state
@@ -517,6 +520,44 @@ class MotionCommanderSim:
 
             self.flight_controller.mode = MovementMode.POSITION
             self.__velocity_3D_motion_act.set_succeeded(result)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                             __P O S I T I O N _ 3 D _ M O T I O N _ A C T _ C A L L B A C K
+    #
+    # ------------------------------------------------------------------------------------------------------------------
+    def __position_3D_motion_act_callback(self, goal):
+        success = True
+        # Setting up position mode:
+        self.flight_controller.mode = MovementMode.POSITION
+
+        # Output:
+        feedback = Destination3DFeedback()
+        result = Destination3DResult()
+
+        # Check preemption:
+        if self.__position_3D_motion_act.is_preempt_requested():
+            success = False
+            info_msg = 'Destination canceled for ' + self.name
+            rospy.loginfo(info_msg)
+            result.result = False
+            self.__position_3D_motion_act.set_preempted()
+            return
+
+        # Sending commands to reach the desired point:
+        self.position_target.desired_position.x = goal.destination_info.desired_position.x
+        self.position_target.desired_position.y = goal.destination_info.desired_position.y
+        self.position_target.desired_position.z = goal.destination_info.desired_position.z
+
+        self.position_target.desired_yaw = goal.destination_info.desired_yaw
+
+        self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
+        self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
+        self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
+
+        if success:
+            result.result = True
+            self.__position_3D_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
