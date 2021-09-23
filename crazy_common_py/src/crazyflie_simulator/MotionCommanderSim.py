@@ -119,10 +119,10 @@ class MotionCommanderSim:
         self.__velocity_3D_motion_act_client = actionlib.SimpleActionClient('/' + cfName + '/velocity_3D_motion',
                                                                             Destination3DAction)
 
-        self.__position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/position_3D_motion',
-                                                                     Destination3DAction,
-                                                                     self.__position_3D_motion_act_callback, False)
-        self.__position_3D_motion_act.start()
+        self.__relative_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/relative_position_3D_motion',
+                                                                              Destination3DAction,
+                                                                              self.__relative_position_3D_motion_act_callback, False)
+        self.__relative_position_3D_motion_act.start()
         
 
     # ==================================================================================================================
@@ -526,28 +526,40 @@ class MotionCommanderSim:
     #                             __P O S I T I O N _ 3 D _ M O T I O N _ A C T _ C A L L B A C K
     #
     # ------------------------------------------------------------------------------------------------------------------
-    def __position_3D_motion_act_callback(self, goal):
+    def __relative_position_3D_motion_act_callback(self, goal):
         success = True
         # Setting up position mode:
         self.flight_controller.mode = MovementMode.POSITION
+
+        # Getting actual state:
+        actual_state = self.actual_state
+
+        # Computing final destination:
+        delta_x = goal.destination_info.desired_position.x
+        delta_y = goal.destination_info.desired_position.y
+        delta_z = goal.destination_info.desired_position.z
+
+        destination_x = actual_state.position.x + delta_x
+        destination_y = actual_state.position.y + delta_y
+        destination_z = actual_state.position.z + delta_z
 
         # Output:
         feedback = Destination3DFeedback()
         result = Destination3DResult()
 
         # Check preemption:
-        if self.__position_3D_motion_act.is_preempt_requested():
+        if self.__relative_position_3D_motion_act.is_preempt_requested():
             success = False
             info_msg = 'Destination canceled for ' + self.name
             rospy.loginfo(info_msg)
             result.result = False
-            self.__position_3D_motion_act.set_preempted()
+            self.__relative_position_3D_motion_act.set_preempted()
             return
 
         # Sending commands to reach the desired point:
-        self.position_target.desired_position.x = goal.destination_info.desired_position.x
-        self.position_target.desired_position.y = goal.destination_info.desired_position.y
-        self.position_target.desired_position.z = goal.destination_info.desired_position.z
+        self.position_target.desired_position.x = destination_x
+        self.position_target.desired_position.y = destination_y
+        self.position_target.desired_position.z = destination_z
 
         self.position_target.desired_yaw = goal.destination_info.desired_yaw
 
@@ -557,7 +569,7 @@ class MotionCommanderSim:
 
         if success:
             result.result = True
-            self.__position_3D_motion_act.set_succeeded(result)
+            self.__relative_position_3D_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #

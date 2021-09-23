@@ -5,6 +5,7 @@ import actionlib
 
 # Action
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
+from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DResult, Destination3DFeedback
 
 class CrazyPyramidSwarmSim:
     # ==================================================================================================================
@@ -34,6 +35,10 @@ class CrazyPyramidSwarmSim:
         self.takeoff_act_clients = []
         self.__make_takeoff_clients()
 
+        # List of clients for relative destination action per each drone:
+        self.relative_motion_act_clients = []
+        self.__make_relative_motion_clients()
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -54,6 +59,11 @@ class CrazyPyramidSwarmSim:
                                                                 self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
 
+        # Action to perform a relative motion of the pyramid:
+        self.__swarm_traslation_act = actionlib.SimpleActionServer('/pyramid_swarm/traslation_actn', Destination3DAction,
+                                                                   self.__swarm_traslation_act_callback, False)
+        self.__swarm_traslation_act.start()
+
     # ==================================================================================================================
     #
     #                                   I N I T I A L  O P E R A T I O N S  M E T H O D S
@@ -70,6 +80,12 @@ class CrazyPyramidSwarmSim:
             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/takeoff_actn', TakeoffAction)
             self.takeoff_act_clients.append(tmp_action)
             self.takeoff_act_clients[-1].wait_for_server()
+
+    def __make_relative_motion_clients(self):
+        for cf_name in self.cf_names:
+            tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/relative_position_3D_motion', Destination3DAction)
+            self.relative_motion_act_clients.append(tmp_action)
+            self.relative_motion_act_clients[-1].wait_for_server()
 
     # ==================================================================================================================
     #
@@ -110,6 +126,16 @@ class CrazyPyramidSwarmSim:
 
 
         self.__swarm_takeoff_act.set_succeeded(result)
+
+    def __swarm_traslation_act_callback(self, goal):
+        # Output:
+        feedback = Destination3DFeedback()
+        result = Destination3DResult()
+
+        for action in self.relative_motion_act_clients:
+            action.send_goal(goal, feedback_cb=self.__cf_takeoff_feedback_cb)
+        self.__swarm_traslation_act.set_succeeded(result)
+
 
     # ==================================================================================================================
     #
