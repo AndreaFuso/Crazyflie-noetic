@@ -187,8 +187,10 @@
 	</group>
 
 	<group ns = "swarm">
-		<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">
+		<node pkg="crazyCmd" type="pyramid_swarm_node.py" name="pyramid_swarm_node" output="screen">
 			<rosparam param="cfs_number">25</rosparam>
+			<rosparam param="levels">3</rosparam>
+			<rosparam param="vertical_offset">0.5</rosparam>
 		</node>
 	</group>
 

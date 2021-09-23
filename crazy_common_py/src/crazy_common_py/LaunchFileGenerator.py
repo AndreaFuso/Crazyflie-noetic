@@ -2,6 +2,11 @@ import rospkg
 from crazy_common_py.dataTypes import Vector3
 
 import math
+from enum import Enum
+
+class SwarmType(Enum):
+    GRID = 0
+    PYRAMID = 1
 
 class LaunchFileGenerator:
     # ==================================================================================================================
@@ -128,8 +133,14 @@ class LaunchFileGenerator:
             self.launchfile.write('\t</group>\n')
 
         self.launchfile.write('\n\t<group ns = "swarm">\n')
-        self.launchfile.write('\t\t<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">\n')
-        self.launchfile.write('\t\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
+        if self.__type == SwarmType.GRID:
+            self.launchfile.write('\t\t<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">\n')
+            self.launchfile.write('\t\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
+        elif self.__type == SwarmType.PYRAMID:
+            self.launchfile.write('\t\t<node pkg="crazyCmd" type="pyramid_swarm_node.py" name="pyramid_swarm_node" output="screen">\n')
+            self.launchfile.write('\t\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
+            self.launchfile.write('\t\t\t<rosparam param="levels">' + str(self.__pyramid_levels) + '</rosparam>\n')
+            self.launchfile.write('\t\t\t<rosparam param="vertical_offset">' + str(self.__pyramid_vertical_offset) + '</rosparam>\n')
         self.launchfile.write('\t\t</node>\n')
         self.launchfile.write('\t</group>\n')
 
@@ -160,8 +171,10 @@ class LaunchFileGenerator:
         # Call corresponding coordinates generator:
         if initial_formation == 'grid':
             self.__grid_spawn()
+            self.__type = SwarmType.GRID
         elif initial_formation == 'pyramid':
             self.__pyramid_spawn()
+            self.__type = SwarmType.PYRAMID
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                       __ G R I D _ S P A W N
@@ -178,6 +191,7 @@ class LaunchFileGenerator:
         x_offset = self.extract_value('x_offset', 'float')
         y_offset = self.extract_value('y_offset', 'float')
         spawn_altitude = self.extract_value('spawn_altitude', 'float')
+
 
         # Generating the coordinates:
         spawn_pos_x = 0.0
@@ -207,6 +221,10 @@ class LaunchFileGenerator:
         drone_distance = self.extract_value('drone_distance', 'float')
         vertical_offset = self.extract_value('vertical_offset', 'float')
         spawn_altitude = self.extract_value('spawn_altitude', 'float')
+
+        # Saving values to create rosparams:
+        self.__pyramid_levels = levels
+        self.__pyramid_vertical_offset = vertical_offset
 
         # Calculating the number of drones:
         cf_per_level = [1]
