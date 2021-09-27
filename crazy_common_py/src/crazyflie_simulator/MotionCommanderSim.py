@@ -24,6 +24,7 @@ from crazyflie_messages.srv import Takeoff_srv, Takeoff_srvResponse, Takeoff_srv
 # Action
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DResult, Destination3DFeedback
+from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryGoal, VelocityTrajectoryResult, VelocityTrajectoryFeedback
 
 class MotionCommanderSim:
     # ==================================================================================================================
@@ -111,18 +112,31 @@ class MotionCommanderSim:
         self.__land_act.start()
         self.__land_act_client = actionlib.SimpleActionClient('/' + cfName + '/land_actn', TakeoffAction)
 
-        # 3D velocity movement:
+        # 3D velocity movement for a certain time:
         self.__velocity_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/velocity_3D_motion',
                                                                      Destination3DAction,
                                                                      self.__velocity_3D_motion_act_callback, False)
         self.__velocity_3D_motion_act.start()
         self.__velocity_3D_motion_act_client = actionlib.SimpleActionClient('/' + cfName + '/velocity_3D_motion',
                                                                             Destination3DAction)
+        # 3D intant velocity:
+        self.__velocity_trajectory_act = actionlib.SimpleActionServer('/' + cfName + '/velocity_trajectory',
+                                                                             VelocityTrajectoryAction,
+                                                                             self.__velocity_trajectory_act_callback,
+                                                                             False)
+        self.__velocity_trajectory_act.start()
+        # 3D position movement:
 
         self.__relative_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/relative_position_3D_motion',
                                                                               Destination3DAction,
                                                                               self.__relative_position_3D_motion_act_callback, False)
         self.__relative_position_3D_motion_act.start()
+
+        # Absolute 3D position:
+        self.__absolute_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/absolute_position_3D_motion',
+                                                                              Destination3DAction,
+                                                                              self.__absolute_position_3D_motion_act_callback, False)
+        self.__absolute_position_3D_motion_act.start()
         
 
     # ==================================================================================================================
@@ -521,6 +535,60 @@ class MotionCommanderSim:
             self.flight_controller.mode = MovementMode.POSITION
             self.__velocity_3D_motion_act.set_succeeded(result)
 
+    def __velocity_trajectory_act_callback(self, goal):
+
+        success = True
+
+        # Output:
+        feedback = VelocityTrajectoryFeedback()
+        result = VelocityTrajectoryResult()
+
+        # Extracting info:
+        states = goal.states_vector
+        dt = goal.dt
+
+        # Rate definition:
+        rate = rospy.Rate(1 / dt)
+
+
+        # Setting velocity mode:
+        self.flight_controller.mode = MovementMode.VELOCITY
+
+        for state in states:
+            # Sending commands to reach the desired point:
+            self.position_target.desired_position.x = state.desired_position.x
+            self.position_target.desired_position.y = state.desired_position.y
+            self.position_target.desired_position.z = state.desired_position.z
+
+            self.position_target.desired_yaw = state.desired_yaw
+
+            self.position_target.desired_velocity.x = state.desired_velocity.x
+            self.position_target.desired_velocity.y = state.desired_velocity.y
+            self.position_target.desired_velocity.z = state.desired_velocity.z
+
+            rate.sleep()
+
+            # Check preemption:
+            if self.__velocity_trajectory_act.is_preempt_requested():
+                success = False
+                info_msg = 'Destination canceled for ' + self.name
+                rospy.loginfo(info_msg)
+                result.result = False
+                self.__velocity_trajectory_act.set_preempted()
+                break
+        if success:
+            result.result = True
+            # When finished let's set the target velocity to zero:
+            actual_state = self.actual_state
+            self.position_target.desired_velocity.x = 0.0
+            self.position_target.desired_velocity.y = 0.0
+            self.position_target.desired_velocity.z = 0.0
+            self.position_target.desired_position.x = actual_state.position.x
+            self.position_target.desired_position.y = actual_state.position.y
+            self.position_target.desired_position.z = actual_state.position.z
+
+            self.flight_controller.mode = MovementMode.POSITION
+            self.__velocity_trajectory_act.set_succeeded(result)
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                             __P O S I T I O N _ 3 D _ M O T I O N _ A C T _ C A L L B A C K
@@ -571,6 +639,46 @@ class MotionCommanderSim:
             result.result = True
             self.__relative_position_3D_motion_act.set_succeeded(result)
 
+    def __absolute_position_3D_motion_act_callback(self, goal):
+        success = True
+        # Setting up position mode:
+        self.flight_controller.mode = MovementMode.POSITION
+
+        # Getting actual state:
+        actual_state = self.actual_state
+
+        # Computing final destination:
+        destination_x = goal.destination_info.desired_position.x
+        destination_y = goal.destination_info.desired_position.y
+        destination_z = goal.destination_info.desired_position.z
+
+        # Output:
+        feedback = Destination3DFeedback()
+        result = Destination3DResult()
+
+        # Check preemption:
+        if self.__relative_position_3D_motion_act.is_preempt_requested():
+            success = False
+            info_msg = 'Destination canceled for ' + self.name
+            rospy.loginfo(info_msg)
+            result.result = False
+            self.__relative_position_3D_motion_act.set_preempted()
+            return
+
+        # Sending commands to reach the desired point:
+        self.position_target.desired_position.x = destination_x
+        self.position_target.desired_position.y = destination_y
+        self.position_target.desired_position.z = destination_z
+
+        self.position_target.desired_yaw = goal.destination_info.desired_yaw
+
+        self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
+        self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
+        self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
+
+        if success:
+            result.result = True
+            self.__relative_position_3D_motion_act.set_succeeded(result)
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                   __V E L O C I T Y _ 3 D _ M O T I O N _ A C T _ C L I E N T _ F E E D B A C K _ C B

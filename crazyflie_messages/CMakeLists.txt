@@ -75,6 +75,7 @@ add_action_files(
     FILES
     Takeoff.action
     Destination3D.action
+    VelocityTrajectory.action
 )
 
 ## Generate added messages and services with any dependencies listed here

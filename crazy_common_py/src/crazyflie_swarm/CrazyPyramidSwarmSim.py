@@ -2,11 +2,17 @@
 import rospy
 import actionlib
 
+import math
 
 # Action
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DResult, Destination3DFeedback
+from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryGoal, VelocityTrajectoryResult, VelocityTrajectoryFeedback
 
+from std_msgs.msg import Empty
+from crazyflie_messages.msg import Position
+
+from crazy_common_py.common_functions import deg2rad
 class CrazyPyramidSwarmSim:
     # ==================================================================================================================
     #
@@ -63,6 +69,13 @@ class CrazyPyramidSwarmSim:
         self.__swarm_traslation_act = actionlib.SimpleActionServer('/pyramid_swarm/traslation_actn', Destination3DAction,
                                                                    self.__swarm_traslation_act_callback, False)
         self.__swarm_traslation_act.start()
+
+        # Action o perform circular motion:
+        self.__circular_motion_act = actionlib.SimpleActionServer('/pyramid_swarm/circular_motion', Destination3DAction,
+                                                                  self.__circular_motion_act_callback, False)
+        self.__circular_motion_act.start()
+        self.__velocity_trajectory_act_client = actionlib.SimpleActionClient('/cf1' + '/velocity_trajectory',
+                                                                            VelocityTrajectoryAction)
 
     # ==================================================================================================================
     #
@@ -135,6 +148,33 @@ class CrazyPyramidSwarmSim:
         for action in self.relative_motion_act_clients:
             action.send_goal(goal, feedback_cb=self.__cf_takeoff_feedback_cb)
         self.__swarm_traslation_act.set_succeeded(result)
+
+    def __circular_motion_act_callback(self, goal):
+        omega = goal.destination_info.desired_yaw
+        r = 1.0
+        dt = 1 / 100
+        durantion = 10
+        time_istants = int(durantion/dt)
+
+        positions = []
+        t = 0.0
+
+        for ii in range(0, time_istants):
+            tmp_pos = Position()
+            tmp_pos.desired_velocity.x = - r * omega * math.sin(omega * t)
+            tmp_pos.desired_velocity.y = r * omega * math.cos(omega * t)
+            tmp_pos.desired_velocity.z = 0.0
+            tmp_pos.desired_yaw = omega * t + deg2rad(90)
+            positions.append(tmp_pos)
+            t += dt
+
+        trajectory = VelocityTrajectoryGoal()
+        trajectory.states_vector = positions
+        trajectory.dt = dt
+
+        self.__velocity_trajectory_act_client.send_goal(trajectory)
+
+
 
 
     # ==================================================================================================================
