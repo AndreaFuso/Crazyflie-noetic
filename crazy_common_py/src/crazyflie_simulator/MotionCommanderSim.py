@@ -552,7 +552,7 @@ class MotionCommanderSim:
 
 
         # Setting velocity mode:
-        self.flight_controller.mode = MovementMode.VELOCITY
+        self.flight_controller.mode = MovementMode.POSITION
 
         for state in states:
             # Sending commands to reach the desired point:
@@ -565,6 +565,7 @@ class MotionCommanderSim:
             self.position_target.desired_velocity.x = state.desired_velocity.x
             self.position_target.desired_velocity.y = state.desired_velocity.y
             self.position_target.desired_velocity.z = state.desired_velocity.z
+            #print('[' + str(state.desired_velocity.x) + ', ' + str(state.desired_velocity.y) + ', ' + str(state.desired_velocity.z) + '] YAW: ' + str(rad2deg(state.desired_yaw)))
 
             rate.sleep()
 

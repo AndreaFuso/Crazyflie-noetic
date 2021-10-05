@@ -151,9 +151,9 @@ class CrazyPyramidSwarmSim:
 
     def __circular_motion_act_callback(self, goal):
         omega = goal.destination_info.desired_yaw
-        r = 1.0
+        r = 2.0
         dt = 1 / 100
-        durantion = 10
+        durantion = 2 * math.pi / omega
         time_istants = int(durantion/dt)
 
         positions = []
@@ -161,6 +161,11 @@ class CrazyPyramidSwarmSim:
 
         for ii in range(0, time_istants):
             tmp_pos = Position()
+            if omega * t >= 360:
+                t = 0.0
+            tmp_pos.desired_position.x = r * math.cos(omega * t)
+            tmp_pos.desired_position.y = r * math.sin(omega * t)
+            tmp_pos.desired_position.z = 0.5
             tmp_pos.desired_velocity.x = - r * omega * math.sin(omega * t)
             tmp_pos.desired_velocity.y = r * omega * math.cos(omega * t)
             tmp_pos.desired_velocity.z = 0.0

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+
+    <!-- Starting up the example node -->
+    <node name="cf_ros_test_decollo" pkg="cf_prova_volo" type="cf_ros_test_decollo.py" output="screen"/>
+
+</launch>

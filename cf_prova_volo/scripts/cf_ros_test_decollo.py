@@ -27,11 +27,11 @@ if __name__ == '__main__':
 	with SyncCrazyflie(URI) as scf:
 		with MotionCommander(scf) as mc:
 			rospy.loginfo("Taking off...")
-			time.sleep(1)
-			rospy.loginfo("Going up of 20 cm")
-			mc.up(0.2)
-			rospy.loginfo("Going down of 20 cm")
-			mc.down(0.2)
+			time.sleep(2)
+			rospy.loginfo("Going up of 5 cm")
+			mc.up(0.05)
+			rospy.loginfo("Going down of 5 cm")
+			mc.down(0.05)
 			time.sleep(1)
 			rospy.loginfo("Landing...")
 	rospy.spin()
