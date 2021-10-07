@@ -35,8 +35,6 @@ class CrazyDrone:
         # Initial position (Vector3):
         self.__initial_position = initialPosition
 
-        print('\n\nCIAOOO\n\n')
-
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -84,12 +82,10 @@ class CrazyDrone:
     # This method performs all the required exiting operations.
     # ------------------------------------------------------------------------------------------------------------------
     def exit_operations(self):
-        print('\n\nESCO ORA\n\n')
-
         # Land the drone:
         self.__mc.land()
 
-        # Closing communication:
+        # Closing communication with the crazyflie:
         self.__scf.close_link()
 
     # ------------------------------------------------------------------------------------------------------------------
