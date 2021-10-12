@@ -55,26 +55,27 @@ THRUST_BASE = 38180
 thrustScale = 1000.0
 
 # Default technique to solve windup problem in pid:
-DEFAULT_WINDUP_TYPE = WindupType.Exclusion
+DEFAULT_WINDUP_TYPE = WindupType.Clamped # WindupType.Exclusion
 
 # Maximum absolute velocities (used as saturation values for PositionController pid output):
 MAX_VELOCITY_X = 1.0    # [m/s]
 MAX_VELOCITY_Y = 1.0    # [m/s]
-MAX_VELOCITY_Z = 1.0    # [m/s]
+MAX_VELOCITY_Z = 1.0   # [m/s]
 
 # Maximum absolute attitude (used as saturaration values for VelocityController pid output):
-MAX_PITCH = 20  # [deg]
-MAX_ROLL = 20   # [deg]
+MAX_PITCH = 20000  # 20 [deg]
+MAX_ROLL = 20000   # 20 [deg]
 
 # Maximum absolute attitude rate (used as saturaration values for AttitudeController pid output):
-MAX_ROLL_RATE = 40      # [deg/s]
-MAX_PITCH_RATE = 40     # [deg/s]
-MAX_YAW_RATE = 40       # [deg/s]
+# P.S. very high values to avoid clamping
+MAX_ROLL_RATE = 20000    # 40 [deg/s]
+MAX_PITCH_RATE = 20000     # 40 [deg/s]
+MAX_YAW_RATE = 20000       # 40 [deg/s]
 
 # Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
-MAX_ROLL_OUTPUT = 10000 #7000
-MAX_PITCH_OUTPUT = 10000 #7000
-MAX_YAW_OUTPUT = 10000 #7000
+MAX_ROLL_OUTPUT = 4000 #7000 10000
+MAX_PITCH_OUTPUT = 4000 #7000 10000
+MAX_YAW_OUTPUT = 4000 #7000 10000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S
@@ -90,6 +91,7 @@ DEFAULT_LAND_SPEED = 0.5        # [m/s]
 # Forward/backward motion:
 DEFAULT_FORWARD_VELOCITY = 1.0  # [m/s]
 DEFAULT_BACKWARD_VELOCITY = 1.0  # [m/s]
+
 # ----------------------------------------------------------------------------------------------------------------------
 #                                   A C T U A T O R  V E L O C I T Y  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
@@ -160,15 +162,15 @@ PID_YAW_INTEGRATION_LIMIT = 360.0   #360 50.0
 #                                     O T H E R  F I R M W A R E  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
 # Desired Roll Rate VS actual Roll Rate => ROLL OUTPUT
-PID_ROLL_RATE_KP = 80.0    #250 100.0
-PID_ROLL_RATE_KI = 200.0    #500 250.0
-PID_ROLL_RATE_KD = 350.0     #2.5 200.0
+PID_ROLL_RATE_KP = 250.0    #250 80.0
+PID_ROLL_RATE_KI = 500.0    #500 200.0
+PID_ROLL_RATE_KD = 2.5     #2.5 350.0
 PID_ROLL_RATE_INTEGRATION_LIMIT = 33.3     #33.3
 
 # Desired Pitch Rate VS actual Pitch Rate => PITCH OUTPUT
-PID_PITCH_RATE_KP = 80.0   #250 100.0
-PID_PITCH_RATE_KI = 200.0  #500 250.0
-PID_PITCH_RATE_KD = 350.0    #2.5 200.0
+PID_PITCH_RATE_KP = 250.0   #250 80.0
+PID_PITCH_RATE_KI = 500.0  #500 200.0
+PID_PITCH_RATE_KD = 2.5    #2.5 350.0
 PID_PITCH_RATE_INTEGRATION_LIMIT = 33.3 #33.3
 
 # Desired Yaw Rate VS actual Yaw Rate => YAW OUTPUT

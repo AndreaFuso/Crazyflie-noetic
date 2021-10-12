@@ -23,7 +23,7 @@ if __name__ == '__main__':
     CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))'''
 
     # CrazyDrone instance:
-    drone = CrazyDrone('radio://0/80/2M', Vector3(0, 0, 0))
+    drone = CrazyDrone('cfr1', 'radio://0/80/2M/E7E7E7E7E7', Vector3(0, 0, 0))
 
     rospy.spin()
 

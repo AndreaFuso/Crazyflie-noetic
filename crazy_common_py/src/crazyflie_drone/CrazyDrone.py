@@ -1,5 +1,6 @@
 # ROS
 import rospy
+import actionlib
 
 # Generic modules
 import logging
@@ -7,6 +8,9 @@ import time
 
 # Custom modules
 from crazy_common_py.dataTypes import Vector3
+
+# Action messages:
+from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
 
 # Crazyflie API
 import cflib.crtp
@@ -25,10 +29,13 @@ class CrazyDrone:
     #   1) URI -> URI of the Crazyflie;
     #   2) initialPosition -> Vector3 object with the inital position coordinates;
     # ==================================================================================================================
-    def __init__(self, URI, initialPosition):
+    def __init__(self, name, URI, initialPosition):
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Name (used for setting up topics, actions and services):
+        self.cfName = name
+
         # URI of the crazyflie (unique address):
         self.URI = URI
 
@@ -51,11 +58,17 @@ class CrazyDrone:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Takeoff action:
+        self.__takeoff_act = actionlib.SimpleActionServer('/' + name + '/takeoff_actn', TakeoffAction, False)
+        self.__takeoff_act.start()
+
+        # Landing action:
+        self.__land_act = actionlib.SimpleActionServer('/' + name + '/land_actn', TakeoffAction, False)
+        self.__land_act.start()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                        I N I T I A L  O P E R A T I O N S
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # Driver initialization:
         # Drivers initialization:
         cflib.crtp.init_drivers()
 
@@ -67,7 +80,7 @@ class CrazyDrone:
         self.__mc = MotionCommander(self.__scf)
 
         self.__mc.take_off()
-        self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
+        #self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
 
     # ==================================================================================================================
     #
