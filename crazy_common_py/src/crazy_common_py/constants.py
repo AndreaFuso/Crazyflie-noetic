@@ -73,9 +73,9 @@ MAX_PITCH_RATE = 20000     # 40 [deg/s]
 MAX_YAW_RATE = 20000       # 40 [deg/s]
 
 # Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
-MAX_ROLL_OUTPUT = 4000 #7000 10000
-MAX_PITCH_OUTPUT = 4000 #7000 10000
-MAX_YAW_OUTPUT = 4000 #7000 10000
+MAX_ROLL_OUTPUT = 7000 #7000 10000
+MAX_PITCH_OUTPUT = 7000 #7000 10000
+MAX_YAW_OUTPUT = 7000 #7000 10000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S

@@ -59,12 +59,24 @@ class CrazyDrone:
         #                                           A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Takeoff action:
-        self.__takeoff_act = actionlib.SimpleActionServer('/' + name + '/takeoff_actn', TakeoffAction, False)
+        self.__takeoff_act = actionlib.SimpleActionServer('/' + name + '/takeoff_actn', TakeoffAction,
+                                                          self.__takeoff_act_callback, False)
         self.__takeoff_act.start()
 
         # Landing action:
-        self.__land_act = actionlib.SimpleActionServer('/' + name + '/land_actn', TakeoffAction, False)
+        self.__land_act = actionlib.SimpleActionServer('/' + name + '/land_actn', TakeoffAction,
+                                                       self.__land_act_callback, False)
         self.__land_act.start()
+
+        # Relative velocity motion:
+        self.__rel_vel_move_act = actionlib.SimpleActionServer('/' + name + '/rel_vel_move_actn', TakeoffAction,
+                                                               self.__rel_vel_move_act_callback, False)
+        self.__rel_vel_move_act.start()
+
+        # Relative displacement motion;
+        self.__rel_displ_move_act = actionlib.SimpleActionServer('/' + name + '/rel_displ_move_actn', TakeoffAction,
+                                                                 self.__rel_displ_move_act_callback, False)
+        self.__rel_displ_move_act.start()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                        I N I T I A L  O P E R A T I O N S
@@ -81,6 +93,95 @@ class CrazyDrone:
 
         self.__mc.take_off()
         #self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
+
+    # ==================================================================================================================
+    #
+    #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
+    #
+    # ==================================================================================================================
+
+    # ==================================================================================================================
+    #
+    #                                 C A L L B A C K  M E T H O D S  (S E R V I C E S)
+    #
+    # ==================================================================================================================
+
+    # ==================================================================================================================
+    #
+    #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   T A K E O F F _ A C T _ C A L L B A C K
+    #
+    # Callback for takeoff action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __takeoff_act_callback(self, goal):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                T A K E O F F _ A C T _ F E E D B A C K _ C B
+    #
+    # Feedback callback method for takeoff action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __takeoff_act_feedback_cb(self, feedback):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   L A N D _ A C T _ C A L L B A C K
+    #
+    # Callback for land action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __land_act_callback(self, goal):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                L A N D _ A C T _ F E E D B A C K _ C B
+    #
+    # Feedback callback method for land action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __land_act_feedback_cb(self, feedback):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   R E L _ V E L _ M O V E _ A C T _ C A L L B A C K
+    #
+    # Callback for relative velocity motion action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __rel_vel_move_act_callback(self, goal):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                              R E L _ V E L _ M O V E _ A C T _ F E E D B A C K _ C B
+    #
+    # Feedback callback method for relative velocity motion action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __rel_vel_move_act_feedback_cb(self, feedback):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                   R E L _ D I S P L _ M O V E _ A C T _ C A L L B A C K
+    #
+    # Callback for relative displacement motion action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __rel_displ_move_act_callback(self, goal):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                              R E L _ D I S P L _ M O V E _ A C T _ F E E D B A C K _ C B
+    #
+    # Feedback callback method for relative displacement motion action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __rel_displ_move_act_feedback_cb(self, feedback):
+        pass
 
     # ==================================================================================================================
     #

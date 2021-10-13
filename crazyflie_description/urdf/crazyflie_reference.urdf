@@ -387,8 +387,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>10000</update>
-              <updateRate>10000.0</updateRate>
+              <update>500</update>
+              <updateRate>500.0</updateRate>
               <bodyName>crazyflie_prop_M1</bodyName>
               <topicName>lift_M1</topicName>
         </plugin>
@@ -403,8 +403,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-               <update>10000</update>
-              <updateRate>10000.0</updateRate>
+               <update>500</update>
+              <updateRate>500.0</updateRate>
               <bodyName>crazyflie_prop_M2</bodyName>
               <topicName>lift_M2</topicName>
         </plugin>
@@ -419,8 +419,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>10000</update>
-              <updateRate>10000.0</updateRate>
+              <update>500</update>
+              <updateRate>500.0</updateRate>
               <bodyName>crazyflie_prop_M3</bodyName>
               <topicName>lift_M3</topicName>
         </plugin>
@@ -435,8 +435,8 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>10000</update>
-              <updateRate>10000.0</updateRate>
+              <update>500</update>
+              <updateRate>500.0</updateRate>
               <bodyName>crazyflie_prop_M4</bodyName>
               <topicName>lift_M4</topicName>
         </plugin>
