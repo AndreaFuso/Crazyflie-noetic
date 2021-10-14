@@ -12,7 +12,7 @@ from crazy_common_py.common_functions import RotateVector, constrain
 from crazy_common_py.dataTypes import Vector3, rotatingDirection
 from crazy_common_py.constants import *
 from crazy_common_py.default_topics import DEFAULT_FORCE_STATE_TOPIC_M1, DEFAULT_FORCE_STATE_TOPIC_M2, \
-    DEFAULT_FORCE_STATE_TOPIC_M3, DEFAULT_FORCE_STATE_TOPIC_M4
+    DEFAULT_FORCE_STATE_TOPIC_M3, DEFAULT_FORCE_STATE_TOPIC_M4, DEFAULT_CF_STATE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC
 
 # OTHER MODULES
 from enum import Enum
@@ -44,7 +44,8 @@ class MotorSim:
         #                                   S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber to receive informations about the state of the virtual Crazyflie:
-        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/state', CrazyflieState, self.__actual_state_callback)
+        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_CF_STATE_TOPIC,
+                                                 CrazyflieState, self.__actual_state_callback)
         self.actual_state = CrazyflieState()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -274,7 +275,7 @@ class MotorControllerSim:
         #                                   S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber that receives motor commands coming from MotionCommanderSim:
-        self.motor_command_sub = rospy.Subscriber('/' + cfName + '/motor_command', Attitude,
+        self.motor_command_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_MOTOR_CMD_TOPIC, Attitude,
                                                   self.__motor_command_sub_callback)
 
     # ==================================================================================================================

@@ -7,7 +7,7 @@ import tf
 # CUSTOM MODULES
 from crazy_common_py.common_functions import quat2euler, RotateVector
 from crazy_common_py.dataTypes import Vector3
-from crazy_common_py.default_topics import DEFAULT_ODOMETRY_TOPIC
+from crazy_common_py.default_topics import DEFAULT_ODOMETRY_TOPIC, DEFAULT_CF_STATE_TOPIC
 
 # MESSAGES
 from sensor_msgs.msg import Imu
@@ -52,7 +52,7 @@ class FakeStateEstimator:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        self.state_pub = rospy.Publisher('/' + cfName + '/state', CrazyflieState, queue_size=1)
+        self.state_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState, queue_size=1)
         self.__actual_state = CrazyflieState()
         self.__tmp_rotating_speed = Vector3()
 

@@ -32,7 +32,7 @@ geometry_msgs/Vector3 desired_velocity
 float64 desired_yaw
 ```
 this message is used to deliver a reference to the flight controller: to reach a certain position, to move in a certain 
-direction with given velocity components and with a given reference yaw [rad].
+direction with given velocity components and with a given reference yaw [deg].
 ### RollPitchYaw.msg
 ```yaml
 float64 roll

@@ -6,8 +6,14 @@ import actionlib
 from crazy_common_py.dataTypes import Vector3, CfStatus, MovementMode
 from crazyflie_simulator.MotorControllerSim import MotorControllerSim
 from crazyflie_simulator.FlightControllerSimCustom import FlightControllerCustom
-from crazy_common_py.common_functions import rad2deg
+from crazy_common_py.common_functions import rad2deg, deg2rad
 from crazy_common_py.constants import *
+from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_500Hz_PACE_TOPIC, \
+    DEFAULT_MOTOR_CMD_TOPIC, DEFAULT_DESIRED_MOTOR_CMD_TOPIC, DEFAULT_ACTUAL_DESTINATION_TOPIC
+from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_ABS_POS_TOPIC, \
+    DEFAULT_REL_POS_TOPIC
+
+from crazy_common_py.default_topics import DEFAULT_TAKEOFF_SRV_TOPIC, DEFAULT_LAND_SRV_TOPIC
 
 # OTHER MODULES
 import time
@@ -24,7 +30,8 @@ from crazyflie_messages.srv import Takeoff_srv, Takeoff_srvResponse, Takeoff_srv
 # Action
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DResult, Destination3DFeedback
-from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryGoal, VelocityTrajectoryResult, VelocityTrajectoryFeedback
+from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryGoal, VelocityTrajectoryResult, \
+    VelocityTrajectoryFeedback
 
 class MotionCommanderSim:
     # ==================================================================================================================
@@ -55,17 +62,17 @@ class MotionCommanderSim:
         #                                    S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscribers to perform operations at a certain frequency:
-        self.pace_100Hz_sub = rospy.Subscriber('/pace_100Hz', Empty, self.__pace_100Hz_callback)
-        self.pace_500Hz_sub = rospy.Subscriber('/pace_500Hz', Empty, self.__pace_500Hz_callback)
+        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_callback)
+        self.pace_500Hz_sub = rospy.Subscriber('/' + DEFAULT_500Hz_PACE_TOPIC, Empty, self.__pace_500Hz_callback)
 
         # Subscriber to obtain the actual state of the virtual Crazyflie:
-        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/state', CrazyflieState,
+        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
                                                  self.__actual_state_sub_callback)
         self.actual_state = CrazyflieState()
 
         # Subscriber to obtain the desired motor command (final output of all the pids within FlightControllerSim):
-        self.desired_motor_command_sub = rospy.Subscriber('/' + cfName + '/set_desired_motor_command', Attitude,
-                                                          self.__desired_motor_command_callback)
+        self.desired_motor_command_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_DESIRED_MOTOR_CMD_TOPIC,
+                                                          Attitude, self.__desired_motor_command_callback)
         self.desired_motor_command = Attitude()
 
 
@@ -73,7 +80,8 @@ class MotionCommanderSim:
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Publisher to publish the desired destination (to be sent to FlightControllerSim):
-        self.trajectory_pub = rospy.Publisher('/' + cfName + '/set_destination_position', Position, queue_size=1)
+        self.trajectory_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC,
+                                              Position, queue_size=1)
         self.position_target = Position()
 
         # Publisher to publish motor commands directly to the motors:
@@ -81,36 +89,39 @@ class MotionCommanderSim:
         # NOTE: "/set_destination_position" keeps publishing the desired position, and FlightControllerSim keeps
         # calculating the motor commands publishing them on "/set_desired_motion_command"; anyway it's the
         # MotionCommander that decides when to actually send commands to the motors.
-        # TODO: FORSE INUTILE, NON PIU USATO
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.motor_command_pub = rospy.Publisher('/' + cfName + '/motor_command', Attitude, queue_size=1)
+        self.motor_command_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_MOTOR_CMD_TOPIC, Attitude, queue_size=1)
         self.motor_command = Attitude()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Takeoff service (server + client):
-        self.__takeoff_srv = rospy.Service('/' + cfName + '/takeoff_srv', Takeoff_srv, self.__takeoff_srv_callback)
-        self.__takeoff_srv_client = rospy.ServiceProxy('/' + cfName + '/takeoff_srv', Takeoff_srv)
+        self.__takeoff_srv = rospy.Service('/' + cfName + '/' + DEFAULT_TAKEOFF_SRV_TOPIC,
+                                           Takeoff_srv, self.__takeoff_srv_callback)
+        self.__takeoff_srv_client = rospy.ServiceProxy('/' + cfName + '/' + DEFAULT_TAKEOFF_SRV_TOPIC, Takeoff_srv)
 
         # Land service:
-        self.__land_srv = rospy.Service('/' + cfName + '/land_srv', Takeoff_srv, self.__land_srv_callback)
-        self.__land_srv_client = rospy.ServiceProxy('/' + cfName + '/land_srv', Takeoff_srv)
+        self.__land_srv = rospy.Service('/' + cfName + '/' + DEFAULT_LAND_SRV_TOPIC,
+                                        Takeoff_srv, self.__land_srv_callback)
+        self.__land_srv_client = rospy.ServiceProxy('/' + cfName + '/' + DEFAULT_LAND_SRV_TOPIC, Takeoff_srv)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Takeoff action (server + client):
-        self.__takeoff_act = actionlib.SimpleActionServer('/' + cfName + '/takeoff_actn', TakeoffAction,
-                                                          self.__takeoff_act_callback, False)
+        self.__takeoff_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_TAKEOFF_ACT_TOPIC,
+                                                          TakeoffAction, self.__takeoff_act_callback, False)
         self.__takeoff_act.start()
-        self.__takeoff_act_client = actionlib.SimpleActionClient('/' + cfName + '/takeoff_actn', TakeoffAction)
+        self.__takeoff_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_TAKEOFF_ACT_TOPIC,
+                                                                 TakeoffAction)
 
         # Landing action (server + client):
-        self.__land_act = actionlib.SimpleActionServer('/' + cfName + '/land_actn', TakeoffAction,
-                                                       self.__land_act_callback, False)
+        self.__land_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_LAND_ACT_TOPIC,
+                                                       TakeoffAction, self.__land_act_callback, False)
         self.__land_act.start()
-        self.__land_act_client = actionlib.SimpleActionClient('/' + cfName + '/land_actn', TakeoffAction)
+        self.__land_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_LAND_ACT_TOPIC,
+                                                              TakeoffAction)
 
         # 3D velocity movement for a certain time:
         self.__velocity_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/velocity_3D_motion',
@@ -125,17 +136,19 @@ class MotionCommanderSim:
                                                                              self.__velocity_trajectory_act_callback,
                                                                              False)
         self.__velocity_trajectory_act.start()
-        # 3D position movement:
 
-        self.__relative_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/relative_position_3D_motion',
-                                                                              Destination3DAction,
-                                                                              self.__relative_position_3D_motion_act_callback, False)
-        self.__relative_position_3D_motion_act.start()
+        # 3D displacement movement:
+        self.__relative_3D_displacement_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_REL_POS_TOPIC,
+                                                                           Destination3DAction,
+                                                                           self.__relative_3D_displacement_act_callback,
+                                                                           False)
+        self.__relative_3D_displacement_act.start()
 
         # Absolute 3D position:
-        self.__absolute_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/absolute_position_3D_motion',
+        self.__absolute_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_ABS_POS_TOPIC,
                                                                               Destination3DAction,
-                                                                              self.__absolute_position_3D_motion_act_callback, False)
+                                                                              self.__absolute_position_3D_motion_act_callback,
+                                                                              False)
         self.__absolute_position_3D_motion_act.start()
         
 
@@ -590,39 +603,42 @@ class MotionCommanderSim:
 
             self.flight_controller.mode = MovementMode.POSITION
             self.__velocity_trajectory_act.set_succeeded(result)
+
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                             __P O S I T I O N _ 3 D _ M O T I O N _ A C T _ C A L L B A C K
+    #                             __R E L A T I V E _ 3 D _ D I S P L A C E M E N T _ A C T _ C A L L B A C K
     #
     # ------------------------------------------------------------------------------------------------------------------
-    def __relative_position_3D_motion_act_callback(self, goal):
+    def __relative_3D_displacement_act_callback(self, goal):
         success = True
         # Setting up position mode:
         self.flight_controller.mode = MovementMode.POSITION
 
         # Getting actual state:
         actual_state = self.actual_state
+        actual_yaw = actual_state.orientation.yaw   # [rad]
 
         # Computing final destination:
-        delta_x = goal.destination_info.desired_position.x
-        delta_y = goal.destination_info.desired_position.y
-        delta_z = goal.destination_info.desired_position.z
+        delta_x_rel = goal.destination_info.desired_position.x
+        delta_y_rel = goal.destination_info.desired_position.y
+        delta_z_rel = goal.destination_info.desired_position.z
+        delta_yaw_rel = goal.destination_info.desired_yaw   # [deg]
 
-        destination_x = actual_state.position.x + delta_x
-        destination_y = actual_state.position.y + delta_y
-        destination_z = actual_state.position.z + delta_z
+        destination_x = actual_state.position.x + delta_x_rel * math.cos(actual_yaw) - delta_y_rel * math.sin(actual_yaw)
+        destination_y = actual_state.position.y + delta_x_rel * math.sin(actual_yaw) + delta_y_rel * math.cos(actual_yaw)
+        destination_z = actual_state.position.z + delta_z_rel
 
         # Output:
         feedback = Destination3DFeedback()
         result = Destination3DResult()
 
         # Check preemption:
-        if self.__relative_position_3D_motion_act.is_preempt_requested():
+        if self.__relative_3D_displacement_act.is_preempt_requested():
             success = False
             info_msg = 'Destination canceled for ' + self.name
             rospy.loginfo(info_msg)
             result.result = False
-            self.__relative_position_3D_motion_act.set_preempted()
+            self.__relative_3D_displacement_act.set_preempted()
             return
 
         # Sending commands to reach the desired point:
@@ -630,7 +646,7 @@ class MotionCommanderSim:
         self.position_target.desired_position.y = destination_y
         self.position_target.desired_position.z = destination_z
 
-        self.position_target.desired_yaw = goal.destination_info.desired_yaw
+        self.position_target.desired_yaw = rad2deg(actual_yaw) + delta_yaw_rel
 
         self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
         self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
@@ -638,7 +654,7 @@ class MotionCommanderSim:
 
         if success:
             result.result = True
-            self.__relative_position_3D_motion_act.set_succeeded(result)
+            self.__relative_3D_displacement_act.set_succeeded(result)
 
     def __absolute_position_3D_motion_act_callback(self, goal):
         success = True
@@ -658,12 +674,12 @@ class MotionCommanderSim:
         result = Destination3DResult()
 
         # Check preemption:
-        if self.__relative_position_3D_motion_act.is_preempt_requested():
+        if self.__relative_3D_displacement_act.is_preempt_requested():
             success = False
             info_msg = 'Destination canceled for ' + self.name
             rospy.loginfo(info_msg)
             result.result = False
-            self.__relative_position_3D_motion_act.set_preempted()
+            self.__relative_3D_displacement_act.set_preempted()
             return
 
         # Sending commands to reach the desired point:
@@ -679,7 +695,7 @@ class MotionCommanderSim:
 
         if success:
             result.result = True
-            self.__relative_position_3D_motion_act.set_succeeded(result)
+            self.__relative_3D_displacement_act.set_succeeded(result)
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                   __V E L O C I T Y _ 3 D _ M O T I O N _ A C T _ C L I E N T _ F E E D B A C K _ C B

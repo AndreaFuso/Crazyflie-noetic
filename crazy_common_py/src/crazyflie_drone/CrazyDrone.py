@@ -8,6 +8,7 @@ import time
 
 # Custom modules
 from crazy_common_py.dataTypes import Vector3
+from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC
 
 # Action messages:
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
@@ -59,13 +60,13 @@ class CrazyDrone:
         #                                           A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Takeoff action:
-        self.__takeoff_act = actionlib.SimpleActionServer('/' + name + '/takeoff_actn', TakeoffAction,
-                                                          self.__takeoff_act_callback, False)
+        self.__takeoff_act = actionlib.SimpleActionServer('/' + name + '/' + DEFAULT_TAKEOFF_ACT_TOPIC,
+                                                          TakeoffAction, self.__takeoff_act_callback, False)
         self.__takeoff_act.start()
 
         # Landing action:
-        self.__land_act = actionlib.SimpleActionServer('/' + name + '/land_actn', TakeoffAction,
-                                                       self.__land_act_callback, False)
+        self.__land_act = actionlib.SimpleActionServer('/' + name + '/' + DEFAULT_LAND_ACT_TOPIC,
+                                                       TakeoffAction, self.__land_act_callback, False)
         self.__land_act.start()
 
         # Relative velocity motion:
