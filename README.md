@@ -6,17 +6,14 @@ one. Thanks to these packages it is also possible to control a real/simulated sw
  in [Gazebo](http://gazebosim.org/), while all the framework is handled by ROS, exploiting all the advantages coming from
 its architecture: nodes, topics, actions and services. Here it follows a table with tested operating systems:
 
-
 Operating systems    | Version     
 :-----------------: | :---------:
- Ubuntu              | 24.04.2 LTS 
-
+ Ubuntu              | 24.04.2 LTS
 
 the same for ROS and Gazebo:
 
-
 |Software   | Version |
-|: ------- :|: ----- :|
+| :-------: | :-----: |
 | ROS       | Noetic  |
 | Gazebo    | 11      |
 
