@@ -1,7 +1,17 @@
-# Overview
-Crazyflie-noetic collects different ROS packages, which are all aimed to control both a real Crazyflie 2.1 and a 
+# Crazyflie-noetic
+## Description
+Crazyflie-noetic collects different [ROS](https://www.ros.org/) packages, which are all aimed to control both a real Crazyflie 2.1 and a 
 simulated
-one. Thanks to these packages it is also possible to control a real/simulated swarm as well. There are two types of 
+one. Thanks to these packages it is also possible to control a real/simulated swarm as well. The simulation is performed
+ in [Gazebo](http://gazebosim.org/), while all the framework is handled by ROS, exploiting all the advantages coming from
+its architecture: nodes, topics, actions and services. Here it follows a table with tested operating systems: <br/>
+Operating system | Version
+---------------- | -------
+Ubuntu           | 24.04.2 LTS
+
+
+## Packages
+There are two types of 
 packages:
 * **custom packages**;
 * **third party packages**;
@@ -29,3 +39,10 @@ README file.
 WIP
 # Installation instructions
 WIP
+### ROS Noetic
+WIP
+### ROS packages
+WIP
+### Gazebo
+WIP
+### Gazebo plugins
