@@ -1,0 +1,8 @@
+# GOAL SECTION
+bool execute
+---
+# RESULT SECTION
+bool executed
+---
+# FEEDBACK SECTION
+float64 feedback_value

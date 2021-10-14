@@ -53,11 +53,19 @@ DEFAULT_TAKEOFF_ACT_TOPIC = 'takeoff_actn'
 DEFAULT_LAND_ACT_TOPIC = 'land_actn'
 
 # Absolute position target motion:
-DEFAULT_ABS_POS_TOPIC = 'absolute_pos_motion'
+DEFAULT_ABS_POS_TOPIC = 'absolute_pos_motion_actn'
 
 # Relative position displacement:
-DEFAULT_REL_POS_TOPIC = 'relative_pos_motion'
+DEFAULT_REL_POS_TOPIC = 'relative_pos_motion_actn'
 
+# Absolute linear velocity movement:
+DEFAULT_ABS_VEL_TOPIC = 'absolute_vel_motion_actn'
+
+# Relative linear velocity movement:
+DEFAULT_REL_VEL_TOPIC = 'relative_vel_motion_actn'
+
+# Stop action:
+DEFAULT_STOP_TOPIC = 'stop_actn'
 
 # ======================================================================================================================
 #

@@ -116,6 +116,10 @@ class FlightControllerCustom:
             # Calling attitude controller:
             desired_attitude_rate = self.__attitudeController(desired_attitude, actual_state)
 
+            # If it's moving in velocity mode let's overwrite the desired yaw rate:
+            if self.mode == MovementMode.VELOCITY:
+                desired_attitude_rate.z = self.desired_yaw
+
             '''print('DESIRED ATTITUDE RATE: ', desired_attitude_rate.x, '; ', desired_attitude_rate.y, '; ', desired_attitude_rate.z)
             print('ACTUAL ATTITUDE RATE: ', actual_state.rotating_speed.x, '; ', actual_state.rotating_speed.y, '; ', actual_state.rotating_speed.z)'''
 

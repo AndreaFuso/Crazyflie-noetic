@@ -11,7 +11,7 @@ from crazy_common_py.constants import *
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_500Hz_PACE_TOPIC, \
     DEFAULT_MOTOR_CMD_TOPIC, DEFAULT_DESIRED_MOTOR_CMD_TOPIC, DEFAULT_ACTUAL_DESTINATION_TOPIC
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_ABS_POS_TOPIC, \
-    DEFAULT_REL_POS_TOPIC
+    DEFAULT_REL_POS_TOPIC, DEFAULT_ABS_VEL_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_STOP_TOPIC
 
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_SRV_TOPIC, DEFAULT_LAND_SRV_TOPIC
 
@@ -32,6 +32,7 @@ from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, Ta
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DResult, Destination3DFeedback
 from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryGoal, VelocityTrajectoryResult, \
     VelocityTrajectoryFeedback
+from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFeedback
 
 class MotionCommanderSim:
     # ==================================================================================================================
@@ -123,6 +124,7 @@ class MotionCommanderSim:
         self.__land_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_LAND_ACT_TOPIC,
                                                               TakeoffAction)
 
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3D velocity movement for a certain time:
         self.__velocity_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/velocity_3D_motion',
                                                                      Destination3DAction,
@@ -136,20 +138,39 @@ class MotionCommanderSim:
                                                                              self.__velocity_trajectory_act_callback,
                                                                              False)
         self.__velocity_trajectory_act.start()
-
-        # 3D displacement movement:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Relative 3D displacement movement:
         self.__relative_3D_displacement_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_REL_POS_TOPIC,
                                                                            Destination3DAction,
                                                                            self.__relative_3D_displacement_act_callback,
                                                                            False)
         self.__relative_3D_displacement_act.start()
 
-        # Absolute 3D position:
+        # Absolute 3D positioning movement:
         self.__absolute_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_ABS_POS_TOPIC,
                                                                               Destination3DAction,
                                                                               self.__absolute_position_3D_motion_act_callback,
                                                                               False)
         self.__absolute_position_3D_motion_act.start()
+
+        # Relative 3D velocity motion:
+        self.__relative_3D_velocity_motion_act = actionlib.SimpleActionServer('/' + cfName + DEFAULT_REL_VEL_TOPIC,
+                                                                              Destination3DAction,
+                                                                              self.__relative_3D_velocity_motion_act_callback,
+                                                                              False)
+        self.__relative_3D_velocity_motion_act.start()
+
+        # Absolute 3D velocity motion:
+        self.__absolute_3D_velocity_motion_act = actionlib.SimpleActionServer('/' + cfName + DEFAULT_ABS_VEL_TOPIC,
+                                                                              Destination3DAction,
+                                                                              self.__absolute_3D_velocity_motion_act_callback,
+                                                                              False)
+        self.__absolute_3D_velocity_motion_act.start()
+
+        # Stop action:
+        self.__stop_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_STOP_TOPIC, EmptyAction,
+                                                       self.__stop_act_callback, False)
+        self.__stop_act.start()
         
 
     # ==================================================================================================================
@@ -608,6 +629,10 @@ class MotionCommanderSim:
     #
     #                             __R E L A T I V E _ 3 D _ D I S P L A C E M E N T _ A C T _ C A L L B A C K
     #
+    # This action perform a 3D motion relative to local crazyflie's reference system:
+    #   * +x -> forward;
+    #   * +y -> leftward;
+    # with this action there's no control with respect velocity (computed by FlightControllerSim).
     # ------------------------------------------------------------------------------------------------------------------
     def __relative_3D_displacement_act_callback(self, goal):
         success = True
@@ -656,6 +681,13 @@ class MotionCommanderSim:
             result.result = True
             self.__relative_3D_displacement_act.set_succeeded(result)
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                  __A B S O L U T E _ P O S I T I O N _ 3 D _ M O T I O N _ A C T _ C A L L B A C K
+    #
+    # This action perform a 3D motion to move to the absolute 3D destination position; wit this action there's no
+    # control with respect velocity (computed by FlightControllerSim).
+    # ------------------------------------------------------------------------------------------------------------------
     def __absolute_position_3D_motion_act_callback(self, goal):
         success = True
         # Setting up position mode:
@@ -696,6 +728,100 @@ class MotionCommanderSim:
         if success:
             result.result = True
             self.__relative_3D_displacement_act.set_succeeded(result)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                 __A B S O L U T E _ 3 D _ V E L O C I T Y _ M O T I O N _  A C T _ C A L L B A C K
+    #
+    # This action makes crazyflie tracking an absolute velocity for a certain time duration [s]:
+    #   * time_duration = 0  -> endless;
+    #   * time_duration != 0 -> fixed duration;
+    #   * desired_yaw -> desired yaw angular speed [deg/s];
+    # ------------------------------------------------------------------------------------------------------------------
+    def __absolute_3D_velocity_motion_act_callback(self, goal):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                 __R E L A T I V E _ 3 D _ V E L O C I T Y _ M O T I O N _  A C T _ C A L L B A C K
+    #
+    # This action makes crazyflie tracking a relative velocity (relative reference frame) for a certain time
+    # duration [s]:
+    #   * time_duration = 0  -> endless;
+    #   * time_duration != 0 -> fixed duration;
+    #   * desired_yaw -> desired yaw angular speed [deg/s];
+    # ------------------------------------------------------------------------------------------------------------------
+    def __relative_3D_velocity_motion_act_callback(self, goal):
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                          __S T O P _  A C T _ C A L L B A C K
+    #
+    # This action is used to stop the crazyflie:
+    #   * if it's hovering in a certain point, nothing changes;
+    #   * if it's moving, its speed reference is set to 0.0 in all directions; when the reference velocity is reached,
+    #     its actual position is set as reference.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __stop_act_callback(self, goal):
+        print('STOPPING REQUEST RECEIVED')
+        # Output:
+        result = EmptyResult()
+        feedback = EmptyFeedback()
+
+        # Setting mode to VELOCITY:
+        self.flight_controller.mode = MovementMode.VELOCITY
+
+        # Getting actual velocity:
+        actual_state = self.actual_state
+        actual_vx = actual_state.velocity.x
+        actual_vy = actual_state.velocity.y
+        actual_vz = actual_state.velocity.z
+
+        # Computing feedback value:
+        feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2)
+        self.__stop_act.publish_feedback(feedback)
+
+        # Setting reference velocity to 0.0 in all directions:
+        self.position_target.desired_velocity.x = 0.0
+        self.position_target.desired_velocity.y = 0.0
+        self.position_target.desired_velocity.z = 0.0
+
+        while feedback.feedback_value >= 0.05:
+            # Updating actual velocity:
+            actual_state = self.actual_state
+            actual_vx = actual_state.velocity.x
+            actual_vy = actual_state.velocity.y
+            actual_vz = actual_state.velocity.z
+
+            # Updating feedback value:
+            feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2)
+            self.__stop_act.publish_feedback(feedback)
+            print('DELTA VELOCITY: ', feedback.feedback_value)
+
+        # Once the crazyflie is stopped let's set actual position as target position:
+        actual_state = self.actual_state
+        self.position_target.desired_position.x = actual_state.position.x
+        self.position_target.desired_position.y = actual_state.position.y
+        self.position_target.desired_position.z = actual_state.position.z
+
+        # Setting back mode to POSITION:
+        self.flight_controller.mode = MovementMode.POSITION
+
+        print('MODE SET TO POSITION, CF STOPPED')
+        # Set result:
+        result.executed = True
+        self.__stop_act.set_succeeded(result)
+
+
+
+
+
+
+
+
+
+
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                   __V E L O C I T Y _ 3 D _ M O T I O N _ A C T _ C L I E N T _ F E E D B A C K _ C B
