@@ -11,6 +11,8 @@ from crazyflie_simulator.FlightControllerSimFirmwr import MAX_THRUST, INT16_MAX
 from crazy_common_py.common_functions import RotateVector, constrain
 from crazy_common_py.dataTypes import Vector3, rotatingDirection
 from crazy_common_py.constants import *
+from crazy_common_py.default_topics import DEFAULT_FORCE_STATE_TOPIC_M1, DEFAULT_FORCE_STATE_TOPIC_M2, \
+    DEFAULT_FORCE_STATE_TOPIC_M3, DEFAULT_FORCE_STATE_TOPIC_M4
 
 # OTHER MODULES
 from enum import Enum
@@ -54,7 +56,16 @@ class MotorSim:
         self.__velocitySetpoint = Float64()
 
         # Publisher to send the force&torque state to the Gazebo simulation:
-        self.lift_drag_pub = rospy.Publisher('/' + cfName + '/lift_M' + str(motorID), Wrench, queue_size=1)
+        force_state_default_topic_name = ''
+        if motorID == 1:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M1
+        elif motorID == 2:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M2
+        elif motorID == 3:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M3
+        else:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M4
+        self.lift_drag_pub = rospy.Publisher('/' + cfName + '/' + force_state_default_topic_name, Wrench, queue_size=1)
         self.lift_drag_pub_msg = Wrench()
 
 

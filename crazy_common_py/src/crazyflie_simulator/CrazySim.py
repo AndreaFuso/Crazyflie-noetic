@@ -20,7 +20,8 @@ from crazyflie_simulator.MyFlightControllerFirmwr import MyFlightControllerFirmw
 from crazyflie_simulator.FlightControllerSimCustom import FlightControllerCustom
 from crazyflie_simulator.StateEstimatorSim import FakeStateEstimator
 from crazyflie_simulator.MotionCommanderSim import MotionCommanderSim
-
+from crazy_common_py.default_topics import DEFAULT_ODOMETRY_TOPIC, DEFAULT_FORCE_STATE_TOPIC_M1, \
+    DEFAULT_FORCE_STATE_TOPIC_M2, DEFAULT_FORCE_STATE_TOPIC_M3, DEFAULT_FORCE_STATE_TOPIC_M4
 
 # OTHER MODULES
 import os
@@ -210,8 +211,25 @@ class CrazySim:
         tag_p3 = 'PATH_PROP_3'
         tag_p4 = 'PATH_PROP_4'
         tag_ns = 'ROBOT_NAMESPACE'
+        tag_odom = 'ODOMETRY_TOPIC'
         tag_imu_gn = 'IMU_GAUSSIAN_NOISE_VALUE'
         tag_imu_ur = 'IMU_UPDATE_RATE'
+
+        tag_freq_int_1 = 'FORCE_STATE_FREQ_INT_1'
+        tag_freq_float_1 = 'FORCE_STATE_FREQ_FLOAT_1'
+        tag_fs_m1 = 'FORCE_STATE_TOPIC_M1'
+
+        tag_freq_int_2 = 'FORCE_STATE_FREQ_INT_2'
+        tag_freq_float_2 = 'FORCE_STATE_FREQ_FLOAT_2'
+        tag_fs_m2 = 'FORCE_STATE_TOPIC_M2'
+
+        tag_freq_int_3 = 'FORCE_STATE_FREQ_INT_3'
+        tag_freq_float_3 = 'FORCE_STATE_FREQ_FLOAT_3'
+        tag_fs_m3 = 'FORCE_STATE_TOPIC_M3'
+
+        tag_freq_int_4 = 'FORCE_STATE_FREQ_INT_4'
+        tag_freq_float_4 = 'FORCE_STATE_FREQ_FLOAT_4'
+        tag_fs_m4 = 'FORCE_STATE_TOPIC_M4'
 
         initial_pos_bl = urdf_file.find(tag_bl)
         initial_pos_p1 = urdf_file.find(tag_p1)
@@ -219,18 +237,55 @@ class CrazySim:
         initial_pos_p3 = urdf_file.find(tag_p3)
         initial_pos_p4 = urdf_file.find(tag_p4)
         initial_pos_ns = urdf_file.find(tag_ns)
+        initial_pos_odom = urdf_file.find(tag_odom)
         initial_pos_imu_gn = urdf_file.find(tag_imu_gn)
         initial_pos_imu_ur = urdf_file.find(tag_imu_ur)
+
+        initial_pos_freq_int_1 = urdf_file.find(tag_freq_int_1)
+        initial_pos_freq_float_1 = urdf_file.find(tag_freq_float_1)
+        initial_pos_fs_m1 = urdf_file.find(tag_fs_m1)
+
+        initial_pos_freq_int_2 = urdf_file.find(tag_freq_int_2)
+        initial_pos_freq_float_2 = urdf_file.find(tag_freq_float_2)
+        initial_pos_fs_m2 = urdf_file.find(tag_fs_m2)
+
+        initial_pos_freq_int_3 = urdf_file.find(tag_freq_int_3)
+        initial_pos_freq_float_3 = urdf_file.find(tag_freq_float_3)
+        initial_pos_fs_m3 = urdf_file.find(tag_fs_m3)
+
+        initial_pos_freq_int_4 = urdf_file.find(tag_freq_int_4)
+        initial_pos_freq_float_4 = urdf_file.find(tag_freq_float_4)
+        initial_pos_fs_m4 = urdf_file.find(tag_fs_m4)
 
         custom_urdf_file = urdf_file[:initial_pos_bl]
         custom_urdf_file = custom_urdf_file + basic_link_mesh_path + urdf_file[initial_pos_bl + len(tag_bl):initial_pos_p1]
         custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p1 + len(tag_p1):initial_pos_p2]
         custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p2 + len(tag_p2):initial_pos_p3]
         custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p3 + len(tag_p3):initial_pos_p4]
-        custom_urdf_file = custom_urdf_file + cw_propeller_mesh_path + urdf_file[initial_pos_p4 + len(tag_p4):initial_pos_ns]
-        custom_urdf_file = custom_urdf_file + self.name + urdf_file[initial_pos_ns + len(tag_ns):initial_pos_imu_gn]
+        custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p4 + len(tag_p4):initial_pos_ns]
+
+        custom_urdf_file = custom_urdf_file + self.name + urdf_file[initial_pos_ns + len(tag_ns):initial_pos_odom]
+
+        custom_urdf_file = custom_urdf_file + DEFAULT_ODOMETRY_TOPIC + urdf_file[initial_pos_odom + len(tag_odom):initial_pos_imu_gn]
+
         custom_urdf_file = custom_urdf_file + str(self.IMU.gaussian_noise) + urdf_file[initial_pos_imu_gn + len(tag_imu_gn):initial_pos_imu_ur]
-        custom_urdf_file = custom_urdf_file + str(self.IMU.update_rate) + urdf_file[initial_pos_imu_ur + len(tag_imu_ur):]
+        custom_urdf_file = custom_urdf_file + str(self.IMU.update_rate) + urdf_file[initial_pos_imu_ur + len(tag_imu_ur):initial_pos_freq_int_1]
+
+        custom_urdf_file = custom_urdf_file + str(int(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_int_1 + len(tag_freq_int_1):initial_pos_freq_float_1]
+        custom_urdf_file = custom_urdf_file + str(float(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_float_1 + len(tag_freq_float_1):initial_pos_fs_m1]
+        custom_urdf_file = custom_urdf_file + DEFAULT_FORCE_STATE_TOPIC_M1 + urdf_file[initial_pos_fs_m1 + len(tag_fs_m1):initial_pos_freq_int_2]
+
+        custom_urdf_file = custom_urdf_file + str(int(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_int_2 + len(tag_freq_int_2):initial_pos_freq_float_2]
+        custom_urdf_file = custom_urdf_file + str(float(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_float_2 + len(tag_freq_float_2):initial_pos_fs_m2]
+        custom_urdf_file = custom_urdf_file + DEFAULT_FORCE_STATE_TOPIC_M2 + urdf_file[initial_pos_fs_m2 + len(tag_fs_m2):initial_pos_freq_int_3]
+
+        custom_urdf_file = custom_urdf_file + str(int(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_int_3 + len(tag_freq_int_3):initial_pos_freq_float_3]
+        custom_urdf_file = custom_urdf_file + str(float(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_float_3 + len(tag_freq_float_3):initial_pos_fs_m3]
+        custom_urdf_file = custom_urdf_file + DEFAULT_FORCE_STATE_TOPIC_M3 + urdf_file[initial_pos_fs_m3 + len(tag_fs_m3):initial_pos_freq_int_4]
+
+        custom_urdf_file = custom_urdf_file + str(int(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_int_4 + len(tag_freq_int_4):initial_pos_freq_float_4]
+        custom_urdf_file = custom_urdf_file + str(float(FORCE_STATE_FREQ_UPDATE)) + urdf_file[initial_pos_freq_float_4 + len(tag_freq_float_4):initial_pos_fs_m4]
+        custom_urdf_file = custom_urdf_file + DEFAULT_FORCE_STATE_TOPIC_M4 + urdf_file[initial_pos_fs_m4 + len(tag_fs_m4):]
 
         return custom_urdf_file
 

@@ -259,7 +259,7 @@
             <alwaysOn>true</alwaysOn>
             <updateRate>500.0</updateRate>
             <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
-            <topicName>odom_absolute</topicName>
+            <topicName>ODOMETRY_TOPIC</topicName>
             <gaussianNoise>0.0</gaussianNoise>
             <frameName>world</frameName> <!-- world -->
             <xyzOffsets>0 0 0</xyzOffsets>
@@ -387,10 +387,10 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>500</update>
-              <updateRate>500.0</updateRate>
+              <update>FORCE_STATE_FREQ_INT_1</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_1</updateRate>
               <bodyName>crazyflie_prop_M1</bodyName>
-              <topicName>lift_M1</topicName>
+              <topicName>FORCE_STATE_TOPIC_M1</topicName>
         </plugin>
     </gazebo>
 
@@ -403,10 +403,10 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-               <update>500</update>
-              <updateRate>500.0</updateRate>
+               <update>FORCE_STATE_FREQ_INT_2</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_2</updateRate>
               <bodyName>crazyflie_prop_M2</bodyName>
-              <topicName>lift_M2</topicName>
+              <topicName>FORCE_STATE_TOPIC_M2</topicName>
         </plugin>
     </gazebo>
 
@@ -419,10 +419,10 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>500</update>
-              <updateRate>500.0</updateRate>
+              <update>FORCE_STATE_FREQ_INT_3</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_3</updateRate>
               <bodyName>crazyflie_prop_M3</bodyName>
-              <topicName>lift_M3</topicName>
+              <topicName>FORCE_STATE_TOPIC_M3</topicName>
         </plugin>
     </gazebo>
 
@@ -435,10 +435,10 @@
     <gazebo>
         <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
               <alwaysOn>true</alwaysOn>
-              <update>500</update>
-              <updateRate>500.0</updateRate>
+              <update>FORCE_STATE_FREQ_INT_4</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_4</updateRate>
               <bodyName>crazyflie_prop_M4</bodyName>
-              <topicName>lift_M4</topicName>
+              <topicName>FORCE_STATE_TOPIC_M4</topicName>
         </plugin>
     </gazebo>
 </robot>

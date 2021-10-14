@@ -7,6 +7,7 @@ import tf
 # CUSTOM MODULES
 from crazy_common_py.common_functions import quat2euler, RotateVector
 from crazy_common_py.dataTypes import Vector3
+from crazy_common_py.default_topics import DEFAULT_ODOMETRY_TOPIC
 
 # MESSAGES
 from sensor_msgs.msg import Imu
@@ -43,7 +44,8 @@ class FakeStateEstimator:
         #                                       S U B S C R I B E R S  S E T U P
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #gazebo_imu_sub = rospy.Subscriber('/' + cfName + '/imu', Imu, self.__gazebo_imu_sub_callback)
-        self.gazebo_odom_sub = rospy.Subscriber('/' + cfName + '/odom_absolute', Odometry, self.__gazebo_odom_sub_callback)
+        self.gazebo_odom_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_ODOMETRY_TOPIC,
+                                                Odometry, self.__gazebo_odom_sub_callback)
 
         #self.gazebo_odom_REL_sub = rospy.Subscriber('/' + cfName + '/odom_relative', Odometry,
         #                                        self.__gazebo_odom_sub_REL_callback)
