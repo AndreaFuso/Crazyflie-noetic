@@ -4,7 +4,10 @@ Crazyflie-noetic collects different [ROS](https://www.ros.org/) packages, which 
 simulated
 one. Thanks to these packages it is also possible to control a real/simulated swarm as well. The simulation is performed
  in [Gazebo](http://gazebosim.org/), while all the framework is handled by ROS, exploiting all the advantages coming from
-its architecture: nodes, topics, actions and services. Here it follows a table with tested operating systems:
+its architecture: nodes, topics, actions and services. </br> 
+Since ROS Noetic is used, it's possible to exploit 
+[Bitcraze's Python API](https://github.com/bitcraze/crazyflie-lib-python), in particular **cflib**. </br>
+Here it follows a table with tested operating systems:
 
 Operating systems    | Version     
 :-----------------: | :---------:
