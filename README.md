@@ -4,10 +4,15 @@ Crazyflie-noetic collects different [ROS](https://www.ros.org/) packages, which 
 simulated
 one. Thanks to these packages it is also possible to control a real/simulated swarm as well. The simulation is performed
  in [Gazebo](http://gazebosim.org/), while all the framework is handled by ROS, exploiting all the advantages coming from
-its architecture: nodes, topics, actions and services. Here it follows a table with tested operating systems: <br/>
+its architecture: nodes, topics, actions and services. Here it follows a table with tested operating systems:
+
+<center>
+
 Operating system | Version
 ---------------- | -------
 Ubuntu           | 24.04.2 LTS
+
+</center>
 
 
 ## Packages
