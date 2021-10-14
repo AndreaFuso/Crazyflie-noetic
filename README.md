@@ -8,7 +8,7 @@ its architecture: nodes, topics, actions and services. Here it follows a table w
 
 
 Operating systems    | Version     
-: ----------------- :|: --------- :
+:-----------------: | :---------:
  Ubuntu              | 24.04.2 LTS 
 
 
