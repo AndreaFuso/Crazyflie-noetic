@@ -10,6 +10,12 @@ This script contains all constants definitions, for example:
 * default values: takeoff height, velocity during takeoff, exc.;
 * all <img src="https://render.githubusercontent.com/render/math?math=k_p,k_i,k_d"> values for PIDs in flight controller;
 
+### default_topics.py
+This script collects all default names used for every topic, action and service, in order to have all of them in place,
+so that:
+* easier to change their name if desired;
+* small chances to "copy" wrong name when defining a topic/action/service;
+
 ### controllers.py
 This script contains different classes definitions related to different types of controllers, like:
 * PidController;
@@ -82,7 +88,7 @@ Class property's name | Type | Topic | Type of message | Operation
 :---: | :---: | :---: | :---: | :---: 
 __takeoff_act | action | /CF_NAME/takeoff_actn/goal | TakeoffAction | performs takeoff
 __land_act | action | /CF_NAME/land_actn/goal | TakeoffAction | performs landing
-__relative_position_3D_motion_act | action | /CF_NAME/relative_position_3D_motion/goal | Destination3DAction | performs a relative motion
+__relative_3D_displacement_act | action | /CF_NAME/relative_pos_motion_actn/goal | Destination3DAction | performs a relative motion
 
 ### MotorControllerSim.py
 This script contains the definition of *MotorSim* and *MotorControllerSim* classes:

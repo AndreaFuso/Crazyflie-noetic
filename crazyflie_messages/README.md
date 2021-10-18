@@ -81,6 +81,19 @@ bool result
 float64 remaining_time
 ```
 
+### Empty.action
+```yaml
+# GOAL SECTION
+bool execute
+---
+# RESULT SECTION
+bool executed
+---
+# FEEDBACK SECTION
+float64 feedback_value
+```
+
+
 ---
 ## Service messages
 ### CustomTrajectoryPointYaw_srv.srv
