@@ -53,7 +53,7 @@ def simple_log_async(scf, logconf):
     logconf.data_received_cb.add_callback(log_stab_callback)
     logconf.start()
     time.sleep(simulationTime)
-    logconf.stop()
+    logconf.stopActions()
 
 if __name__ == '__main__':
     # Driver initialization:

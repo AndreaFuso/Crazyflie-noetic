@@ -59,6 +59,9 @@ class MotionCommanderSim:
         # Instance of flight controller:
         self.flight_controller = FlightControllerCustom(cfName)
 
+        # Property to understand if movement actions have to be interrupted:
+        self.stopActions = False
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                    S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -124,21 +127,6 @@ class MotionCommanderSim:
         self.__land_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_LAND_ACT_TOPIC,
                                                               TakeoffAction)
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 3D velocity movement for a certain time:
-        self.__velocity_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/velocity_3D_motion',
-                                                                     Destination3DAction,
-                                                                     self.__velocity_3D_motion_act_callback, False)
-        self.__velocity_3D_motion_act.start()
-        self.__velocity_3D_motion_act_client = actionlib.SimpleActionClient('/' + cfName + '/velocity_3D_motion',
-                                                                            Destination3DAction)
-        # 3D intant velocity:
-        self.__velocity_trajectory_act = actionlib.SimpleActionServer('/' + cfName + '/velocity_trajectory',
-                                                                             VelocityTrajectoryAction,
-                                                                             self.__velocity_trajectory_act_callback,
-                                                                             False)
-        self.__velocity_trajectory_act.start()
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Relative 3D displacement movement:
         self.__relative_3D_displacement_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_REL_POS_TOPIC,
                                                                            Destination3DAction,
@@ -167,7 +155,7 @@ class MotionCommanderSim:
                                                                               False)
         self.__absolute_3D_velocity_motion_act.start()
 
-        # Stop action (also with client):
+        # Stop action (with related client):
         self.__stop_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_STOP_TOPIC, EmptyAction,
                                                        self.__stop_act_callback, False)
         self.__stop_act.start()
@@ -253,6 +241,8 @@ class MotionCommanderSim:
     #
     #                                    __T A K E O F F _ S R V _ C A L L B A C K
     #
+    # This service is used to perform a vertical takeoff, its goal has one parameter:
+    #   * takeoff_height -> target takeoff height [m] to be reached to switch crazyflie state from LAND to FLYING;
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_srv_callback(self, request):
         # Setting up new status:
@@ -299,6 +289,8 @@ class MotionCommanderSim:
     #
     #                                    __L A N D _ S R V _ C A L L B A C K
     #
+    # This service is used to perform a vertical landing, its goal has one parameter:
+    #   * takeoff_height -> height [m] at which the crazyflie has to move before turning off motors;
     # ------------------------------------------------------------------------------------------------------------------
     def __land_srv_callback(self, request):
         # Getting takeoff height:
@@ -352,6 +344,8 @@ class MotionCommanderSim:
     #
     #                                    __T A K E O F F _ A C T _ C A L L B A C K
     #
+    # This action is used to perform a vertical takeoff, its goal has one parameter:
+    #   * takeoff_height -> target takeoff height [m] to be reached to switch crazyflie state from LAND to FLYING;
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_act_callback(self, goal):
         # Setting up new status:
@@ -416,19 +410,10 @@ class MotionCommanderSim:
 
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                           __T A K E O F F _ A C T _ C L I E N T _ F E E D B A C K _ C B
-    #
-    # Callback function for the feedback of takeoff action client.
-    # ------------------------------------------------------------------------------------------------------------------
-    def __takeoff_act_client_feedback_cb(self, feedback):
-        message = self.name + ' is taking off; actual absolute distance from target height: ' + str(feedback.absolute_distance)
-        rospy.logdebug(message)
-
-
-    # ------------------------------------------------------------------------------------------------------------------
-    #
     #                                    __L A N D _ A C T _ C A L L B A C K
     #
+    # This action is used to perform a vertical landing, its goal has one parameter:
+    #   * takeoff_height -> height [m] at which the crazyflie has to move before turning off motors;
     # ------------------------------------------------------------------------------------------------------------------
     def __land_act_callback(self, goal):
         # Rate definition:
@@ -485,156 +470,6 @@ class MotionCommanderSim:
             self.status = CfStatus.LANDED
             self.motors_controller.canSend = False
             self.__land_act.set_succeeded(result)
-
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                               __L A N D _ A C T _ C L I E N T _ F E E D B A C K _ C B
-    #
-    # Callback function for the feedback of landing action client.
-    # ------------------------------------------------------------------------------------------------------------------
-    def __land_act_client_feedback_cb(self, feedback):
-        message = self.name + ' is landing; actual absolute distance from target height: ' + str(feedback.absolute_distance)
-        rospy.logdebug(message)
-
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                               __S T O P _ A C T _ C L I E N T _ F E E D B A C K _ C B
-    #
-    # Callback function for the feedback of stop action client.
-    # ------------------------------------------------------------------------------------------------------------------
-    def __stop_act_client_feedback_cb(self, feedback):
-        message = 'Actual delta velocity for crazyflie ' + self.name + ' = ' + str(feedback.feedback_value) + ' [m/s]'
-        rospy.logdebug(message)
-
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                             __V E L O C I T Y _ 3 D _ M O T I O N _ A C T _ C A L L B A C K
-    #
-    # ------------------------------------------------------------------------------------------------------------------
-    def __velocity_3D_motion_act_callback(self, goal):
-        # Rate definition:
-        rate = rospy.Rate(100.0)
-        success = True
-
-        # Output:
-        feedback = Destination3DFeedback()
-        result = Destination3DResult()
-
-        # getting initial time and time duration:
-        t0 = rospy.get_rostime()
-        time_duration = rospy.Duration.from_sec(goal.time_duration)
-        final_rostime = t0 + time_duration
-
-        # Setting velocity mode:
-        self.flight_controller.mode = MovementMode.VELOCITY
-
-        while True:
-            # Getting current time:
-            actual_time = rospy.get_rostime()
-
-            # Remaining time:
-            remaining_time = (final_rostime - actual_time).to_sec()
-
-            # Publishing absolute distance as feedback:
-            feedback.remaining_time = remaining_time
-            self.__velocity_3D_motion_act.publish_feedback(feedback)
-
-            # Verify if the Crazyflie has reached the takeoff height:
-            if remaining_time <= 0:
-                success = True
-                break
-
-            # Check preemption:
-            if self.__velocity_3D_motion_act.is_preempt_requested():
-                success = False
-                info_msg = 'Destination canceled for ' + self.name
-                rospy.loginfo(info_msg)
-                result.result = False
-                self.__velocity_3D_motion_act.set_preempted()
-                break
-
-            # Sending commands to reach the desired point:
-            self.position_target.desired_position.x = goal.destination_info.desired_position.x
-            self.position_target.desired_position.y = goal.destination_info.desired_position.y
-            self.position_target.desired_position.z = goal.destination_info.desired_position.z
-
-            self.position_target.desired_yaw = goal.destination_info.desired_yaw
-
-            self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
-            self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
-            self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
-
-            rate.sleep()
-
-        if success:
-            result.result = True
-            # When finished let's set the target velocity to zero:
-            actual_state = self.actual_state
-            self.position_target.desired_velocity.x = 0.0
-            self.position_target.desired_velocity.y = 0.0
-            self.position_target.desired_velocity.z = 0.0
-            self.position_target.desired_position.x = actual_state.position.x
-            self.position_target.desired_position.y = actual_state.position.y
-            self.position_target.desired_position.z = actual_state.position.z
-
-            self.flight_controller.mode = MovementMode.POSITION
-            self.__velocity_3D_motion_act.set_succeeded(result)
-
-    def __velocity_trajectory_act_callback(self, goal):
-
-        success = True
-
-        # Output:
-        feedback = VelocityTrajectoryFeedback()
-        result = VelocityTrajectoryResult()
-
-        # Extracting info:
-        states = goal.states_vector
-        dt = goal.dt
-
-        # Rate definition:
-        rate = rospy.Rate(1 / dt)
-
-
-        # Setting velocity mode:
-        self.flight_controller.mode = MovementMode.POSITION
-
-        for state in states:
-            # Sending commands to reach the desired point:
-            self.position_target.desired_position.x = state.desired_position.x
-            self.position_target.desired_position.y = state.desired_position.y
-            self.position_target.desired_position.z = state.desired_position.z
-
-            self.position_target.desired_yaw = state.desired_yaw
-
-            self.position_target.desired_velocity.x = state.desired_velocity.x
-            self.position_target.desired_velocity.y = state.desired_velocity.y
-            self.position_target.desired_velocity.z = state.desired_velocity.z
-            #print('[' + str(state.desired_velocity.x) + ', ' + str(state.desired_velocity.y) + ', ' + str(state.desired_velocity.z) + '] YAW: ' + str(rad2deg(state.desired_yaw)))
-
-            rate.sleep()
-
-            # Check preemption:
-            if self.__velocity_trajectory_act.is_preempt_requested():
-                success = False
-                info_msg = 'Destination canceled for ' + self.name
-                rospy.loginfo(info_msg)
-                result.result = False
-                self.__velocity_trajectory_act.set_preempted()
-                break
-        if success:
-            result.result = True
-            # When finished let's set the target velocity to zero:
-            actual_state = self.actual_state
-            self.position_target.desired_velocity.x = 0.0
-            self.position_target.desired_velocity.y = 0.0
-            self.position_target.desired_velocity.z = 0.0
-            self.position_target.desired_position.x = actual_state.position.x
-            self.position_target.desired_position.y = actual_state.position.y
-            self.position_target.desired_position.z = actual_state.position.z
-
-            self.flight_controller.mode = MovementMode.POSITION
-            self.__velocity_trajectory_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -752,39 +587,27 @@ class MotionCommanderSim:
     def __absolute_3D_velocity_motion_act_callback(self, goal):
         success = True
 
-        # Output:
+        # Output & feedback:
         feedback = Destination3DFeedback()
         result = Destination3DResult()
 
+        # Defining update rate in changing desired velocity:
+        rate = rospy.Rate(100)
+
         # Understanding if it's endless action or fixed time duration:
         time_duration = goal.time_duration
-        if time_duration == 0.0:
-            # ENDLESS MOTION
-            # Setting velocity mode:
-            self.flight_controller.mode = MovementMode.VELOCITY
 
-            # Sending commands to reach the desired point:
-            self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
-            self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
-            self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
+        # Getting initial time and time duration (used for fixed time duration request):
+        t0 = rospy.get_rostime()
+        ros_time_duration = rospy.Duration.from_sec(goal.time_duration)
+        final_rostime = t0 + ros_time_duration
 
-        else:
-            # FIXED DURATION
-            # getting initial time and time duration:
-            t0 = rospy.get_rostime()
-            ros_time_duration = rospy.Duration.from_sec(goal.time_duration)
-            final_rostime = t0 + ros_time_duration
+        # Setting velocity mode:
+        self.flight_controller.mode = MovementMode.VELOCITY
 
-            # Setting velocity mode:
-            self.flight_controller.mode = MovementMode.VELOCITY
-
-            # Sending commands to reach the desired point:
-            self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
-            self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
-            self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
-
-            # Wait until time_duration has elapsed:
-            while True:
+        while True:
+            # In case of fixed time duration check if desired time has elapsed:
+            if time_duration != 0:
                 # Getting current time:
                 actual_time = rospy.get_rostime()
 
@@ -793,24 +616,32 @@ class MotionCommanderSim:
 
                 # Publishing absolute distance as feedback:
                 feedback.remaining_time = remaining_time
-                self.__absolute_3D_velocity_motion_act.publish_feedback(feedback)
+                self.__relative_3D_velocity_motion_act.publish_feedback(feedback)
 
                 # If time duration has elapsed exit the cycle:
                 if remaining_time <= 0:
                     success = True
                     break
 
-                # Check for preemption:
-                if self.__absolute_3D_velocity_motion_act.is_preempt_requested():
-                    success = False
-                    info_msg = 'Absolute velocity motion canceled for ' + self.name
-                    rospy.loginfo(info_msg)
-                    result.result = False
-                    self.__absolute_3D_velocity_motion_act.set_preempted()
+            # Sending commands to follow the desired velocity and yaw attitude rate:
+            self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
+            self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
+            self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
+            self.position_target.desired_yaw = goal.destination_info.desired_yaw
 
-            # Calling stop action:
-            stop_goal = EmptyGoal()
-            self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
+            # Check for preemption:
+            if self.__relative_3D_velocity_motion_act.is_preempt_requested() or self.stopActions:
+                success = False
+                info_msg = 'Absolute velocity motion canceled for ' + self.name
+                rospy.loginfo(info_msg)
+                result.result = False
+                self.__absolute_3D_velocity_motion_act.set_preempted()
+                break
+            rate.sleep()
+
+        # Calling stop action:
+        stop_goal = EmptyGoal()
+        self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
 
         # Send the result:
         if success:
@@ -818,9 +649,7 @@ class MotionCommanderSim:
         else:
             result.result = False
 
-        self.__absolute_3D_velocity_motion_act.set_succeeded(result)
-
-
+        self.__relative_3D_velocity_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -833,7 +662,85 @@ class MotionCommanderSim:
     #   * desired_yaw -> desired yaw angular speed [deg/s];
     # ------------------------------------------------------------------------------------------------------------------
     def __relative_3D_velocity_motion_act_callback(self, goal):
-        pass
+        success = True
+
+        # Output & feedback:
+        feedback = Destination3DFeedback()
+        result = Destination3DResult()
+
+        # Defining update rate in changing desired velocity:
+        rate = rospy.Rate(100)
+
+        # Understanding if it's endless action or fixed time duration:
+        time_duration = goal.time_duration
+
+        # Getting initial time and time duration (used for fixed time duration request):
+        t0 = rospy.get_rostime()
+        ros_time_duration = rospy.Duration.from_sec(goal.time_duration)
+        final_rostime = t0 + ros_time_duration
+
+        # Setting velocity mode:
+        self.flight_controller.mode = MovementMode.VELOCITY
+
+        while True:
+            # In case of fixed time duration check if desired time has elapsed:
+            if time_duration != 0:
+                # Getting current time:
+                actual_time = rospy.get_rostime()
+
+                # Remaining time:
+                remaining_time = (final_rostime - actual_time).to_sec()
+
+                # Publishing absolute distance as feedback:
+                feedback.remaining_time = remaining_time
+                self.__relative_3D_velocity_motion_act.publish_feedback(feedback)
+
+                # If time duration has elapsed exit the cycle:
+                if remaining_time <= 0:
+                    success = True
+                    break
+
+            # Getting actual state:
+            actual_state = self.actual_state
+
+            # Getting relative velocity components:
+            vx_rel = goal.destination_info.desired_velocity.x
+            vy_rel = goal.destination_info.desired_velocity.y
+            vz_rel = goal.destination_info.desired_velocity.z
+            actual_yaw = actual_state.orientation.yaw
+
+            # Compute absolute velocity components:
+            vx_abs = vx_rel * math.cos(actual_yaw) - vy_rel * math.sin(actual_yaw)
+            vy_abs = vx_rel * math.sin(actual_yaw) + vy_rel * math.cos(actual_yaw)
+            vz_abs = vz_rel
+
+            # Sending commands to follow the desired velocity and yaw attitude rate:
+            self.position_target.desired_velocity.x = vx_abs
+            self.position_target.desired_velocity.y = vy_abs
+            self.position_target.desired_velocity.z = vz_abs
+            self.position_target.desired_yaw = goal.destination_info.desired_yaw
+
+            # Check for preemption:
+            if self.__relative_3D_velocity_motion_act.is_preempt_requested() or self.stopActions:
+                success = False
+                info_msg = 'Relative velocity motion canceled for ' + self.name
+                rospy.loginfo(info_msg)
+                result.result = False
+                self.__absolute_3D_velocity_motion_act.set_preempted()
+                break
+            rate.sleep()
+
+        # Calling stop action:
+        stop_goal = EmptyGoal()
+        self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
+
+        # Send the result:
+        if success:
+            result.result = True
+        else:
+            result.result = False
+
+        self.__relative_3D_velocity_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -842,11 +749,15 @@ class MotionCommanderSim:
     # This action is used to stop the crazyflie:
     #   * if it's hovering in a certain point, nothing changes;
     #   * if it's moving, its speed reference is set to 0.0 in all directions; when the reference velocity is reached,
-    #     its actual position is set as reference.
+    #     its actual position is set as reference => switch to POSITION mode.
     # ------------------------------------------------------------------------------------------------------------------
     def __stop_act_callback(self, goal):
         deb_msg = 'Crazyflie ' + self.name + ' has received a STOP request!'
         rospy.logdebug(deb_msg)
+
+        self.stopActions = True
+
+
         # Output:
         result = EmptyResult()
         feedback = EmptyFeedback()
@@ -859,32 +770,45 @@ class MotionCommanderSim:
         actual_vx = actual_state.velocity.x
         actual_vy = actual_state.velocity.y
         actual_vz = actual_state.velocity.z
+        actual_yaw_rate = rad2deg(actual_state.rotating_speed.z)
 
         # Computing feedback value:
-        feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2)
+        feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2 + actual_yaw_rate ** 2)
         self.__stop_act.publish_feedback(feedback)
 
         # Setting reference velocity to 0.0 in all directions:
         self.position_target.desired_velocity.x = 0.0
         self.position_target.desired_velocity.y = 0.0
         self.position_target.desired_velocity.z = 0.0
+        self.position_target.desired_yaw = 0.0
 
+        rate = rospy.Rate(100)
         while feedback.feedback_value >= 0.05:
             # Updating actual velocity:
             actual_state = self.actual_state
             actual_vx = actual_state.velocity.x
             actual_vy = actual_state.velocity.y
             actual_vz = actual_state.velocity.z
+            actual_yaw_rate = rad2deg(actual_state.rotating_speed.z)
 
             # Updating feedback value:
-            feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2)
+            feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2 + actual_yaw_rate ** 2)
             self.__stop_act.publish_feedback(feedback)
+
+            # Setting reference velocity to 0.0 in all directions:
+            self.position_target.desired_velocity.x = 0.0
+            self.position_target.desired_velocity.y = 0.0
+            self.position_target.desired_velocity.z = 0.0
+            self.position_target.desired_yaw = 0.0
+
+            rate.sleep()
 
         # Once the crazyflie is stopped let's set actual position as target position:
         actual_state = self.actual_state
         self.position_target.desired_position.x = actual_state.position.x
         self.position_target.desired_position.y = actual_state.position.y
         self.position_target.desired_position.z = actual_state.position.z
+        self.position_target.desired_yaw = rad2deg(actual_state.orientation.yaw)
 
         # Setting back mode to POSITION:
         self.flight_controller.mode = MovementMode.POSITION
@@ -892,24 +816,56 @@ class MotionCommanderSim:
         # Set result:
         result.executed = True
         self.__stop_act.set_succeeded(result)
+        self.stopActions = False
 
-
-
-
-
-
-
-
-
+    # ==================================================================================================================
+    #
+    #                            F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __S T O P _ A C T _ C L I E N T _ F E E D B A C K _ C B
+    #
+    # Callback function for the feedback of stop action client.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __stop_act_client_feedback_cb(self, feedback):
+        message = 'Actual delta velocity for crazyflie ' + self.name + ' = ' + str(
+            feedback.feedback_value) + ' [m/s]'
+        rospy.logdebug(message)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                   __V E L O C I T Y _ 3 D _ M O T I O N _ A C T _ C L I E N T _ F E E D B A C K _ C B
+    #                           __T A K E O F F _ A C T _ C L I E N T _ F E E D B A C K _ C B
     #
-    # Callback function for the feedback of 3D velocity motion action client.
+    # Callback function for the feedback of takeoff action client.
     # ------------------------------------------------------------------------------------------------------------------
-    def __velocity_3D_motion_act_client_feedback_cb(self, feedback):
-        pass
+    def __takeoff_act_client_feedback_cb(self, feedback):
+        message = self.name + ' is taking off; actual absolute distance from target height: ' + str(
+            feedback.absolute_distance)
+        rospy.logdebug(message)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __L A N D _ A C T _ C L I E N T _ F E E D B A C K _ C B
+    #
+    # Callback function for the feedback of landing action client.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __land_act_client_feedback_cb(self, feedback):
+        message = self.name + ' is landing; actual absolute distance from target height: ' + str(
+            feedback.absolute_distance)
+        rospy.logdebug(message)
+
+
+
+
+
+
+
+
+
+
+
 
     # ==================================================================================================================
     #
