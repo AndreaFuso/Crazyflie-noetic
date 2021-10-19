@@ -68,3 +68,15 @@ class MovementMode(Enum):
 class rotatingDirection(Enum):
     CW = 1
     CCW = -1
+
+# Spotter types:
+class SpotterType(Enum):
+    SPHERICAL = 0
+    BOX = 1
+
+# Spherical spotter:
+class SphericalSpotter:
+    def __init__(self, radius):
+        self.type = SpotterType.SPHERICAL
+        self.radius = radius
+    
