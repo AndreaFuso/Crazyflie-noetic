@@ -23,6 +23,9 @@ This script contains different classes definitions related to different types of
 ### dataTypes.py
 This script contains different data types definitions.
 
+### default_rosparameters.py
+This script collects all default names of available rosparameters.
+
 ### LaunchFileGenerator.py
 This script contains the definition of class *LaunchFileGenerator* which is used to interpreter a txt file (located at 
 ../crazyCmd/data/input/launc_info/*.txt), giving instructions about the simulation one wants to set up; then the class 

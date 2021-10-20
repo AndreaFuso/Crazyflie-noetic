@@ -92,3 +92,13 @@ def standardNameList(number_of_cfs):
     for number in range(1, number_of_cfs + 1):
         cf_names.append('cf' + str(number))
     return  cf_names
+
+def extractCfNumber(name):
+    digit_pos = [name.find('1'), name.find('2'), name.find('3'), name.find('4'), name.find('5'), name.find('6'),
+                 name.find('7'), name.find('8'), name.find('9')]
+    for ii in range(0, len(digit_pos)):
+        if digit_pos[ii] == -1:
+            digit_pos[ii] = 100
+
+    first_digit_pos = min(digit_pos)
+    return int(name[first_digit_pos:])

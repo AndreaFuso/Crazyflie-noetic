@@ -33,6 +33,9 @@ class FakeStateEstimator:
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Crazyflie name:
+        self.cfName = cfName
+
         # Setting default values for rotation:
         self.prevRoll = 0.0
         self.prevPitch = 0.0
@@ -70,7 +73,7 @@ class FakeStateEstimator:
         # ---------------------------------------------------------------------------------------------------------------
         #                                       I N I T I A L  O P E R A T I O N S
         # ---------------------------------------------------------------------------------------------------------------
-        pass
+
 
     '''def __gazebo_imu_sub_callback(self, msg):
         actual_state = CrazyflieState()
@@ -116,6 +119,9 @@ class FakeStateEstimator:
         self.state_pubREL.publish(actual_state)'''
 
     def __gazebo_odom_sub_callback(self, msg):
+        # Setting the name:
+        self.__actual_state.name = self.cfName
+
         # Setting the position:
         self.__actual_state.position.x = msg.pose.pose.position.x
         self.__actual_state.position.y = msg.pose.pose.position.y
