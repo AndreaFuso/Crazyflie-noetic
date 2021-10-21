@@ -5,7 +5,7 @@ import rospy
 import tf
 
 # CUSTOM MODULES
-from crazy_common_py.common_functions import quat2euler, RotateVector
+from crazy_common_py.common_functions import quat2euler, RotateVector, rad2deg
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.default_topics import DEFAULT_ODOMETRY_TOPIC, DEFAULT_CF_STATE_TOPIC
 
@@ -39,6 +39,7 @@ class FakeStateEstimator:
         # Setting default values for rotation:
         self.prevRoll = 0.0
         self.prevPitch = 0.0
+        self.prevYaw = 0.0
 
         # Check variable to understand if the values have been correctly initialized:
         self.prev_values_init = False
@@ -147,9 +148,32 @@ class FakeStateEstimator:
             dt = 1 / 500
             self.__actual_state.rotating_speed.x = (roll - self.prevRoll) / dt
             self.__actual_state.rotating_speed.y = (pitch - self.prevPitch) / dt
-            self.__actual_state.rotating_speed.z = msg.twist.twist.angular.z
+            #self.__actual_state.rotating_speed.z = msg.twist.twist.angular.z
+            self.__actual_state.rotating_speed.z = (yaw - self.prevYaw) / dt
+
+
+
             self.prevRoll = roll
             self.prevPitch = pitch
+            self.prevYaw = yaw
+            '''abs_rr1 = self.__actual_state.rotating_speed.x + math.sin(roll) * math.tan(pitch) * self.__actual_state.rotating_speed.y + math.cos(roll) * math.tan(pitch) * self.__actual_state.rotating_speed.z
+            abs_pr1 = math.cos(roll) * self.__actual_state.rotating_speed.y - math.sin(roll) * self.__actual_state.rotating_speed.z
+            abs_yr1 = (math.sin(roll) / math.cos(pitch)) * self.__actual_state.rotating_speed.y + (math.cos(roll) / math.cos(pitch)) * self.__actual_state.rotating_speed.z
+
+            abs_rr2 = msg.twist.twist.angular.x + math.sin(roll) * math.tan(pitch) * msg.twist.twist.angular.y + math.cos(roll) * math.tan(pitch) * msg.twist.twist.angular.z
+            abs_pr2 = math.cos(roll) * msg.twist.twist.angular.y - math.sin(roll) * msg.twist.twist.angular.z
+            abs_yr2 = (math.sin(roll) / math.cos(pitch)) * msg.twist.twist.angular.y + (math.cos(roll) / math.cos(pitch)) * msg.twist.twist.angular.z
+
+            print('\nAngular pos: [', rad2deg(roll), ', ', rad2deg(pitch), ', ', rad2deg(yaw), ']')
+            print('Estimated: [', rad2deg(self.__actual_state.rotating_speed.x), ';', rad2deg(self.__actual_state.rotating_speed.y), ';', rad2deg(self.__actual_state.rotating_speed.z), ']')
+            print('Gazebo: [', rad2deg(msg.twist.twist.angular.x), ';', rad2deg(msg.twist.twist.angular.y), ';', rad2deg(msg.twist.twist.angular.z), ']')
+            print('Calculated1: [', rad2deg(abs_rr1), ';', rad2deg(abs_pr1), ';', rad2deg(abs_yr1), ']')
+            print('Calculated2: [', rad2deg(abs_rr2), ';', rad2deg(abs_pr2), ';', rad2deg(abs_yr2), ']\n')
+
+            self.__actual_state.rotating_speed.x = abs_rr2
+            self.__actual_state.rotating_speed.y = abs_pr2
+            self.__actual_state.rotating_speed.z = abs_yr2'''
+
         else:
             self.__actual_state.rotating_speed.x = 0.0
             self.__actual_state.rotating_speed.y = 0.0
