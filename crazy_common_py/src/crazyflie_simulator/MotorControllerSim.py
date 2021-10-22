@@ -299,10 +299,10 @@ class MotorControllerSim:
             thrust = msg.desired_thrust
 
             # Calculating the thrust for each motor:
-            thrust_M1 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
-            thrust_M2 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
-            thrust_M3 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)
-            thrust_M4 = constrain(thrust + roll - pitch + yaw, 0, MAX_THRUST)
+            thrust_M1 = constrain(thrust - roll - pitch - yaw, MIN_THRUST, MAX_THRUST)
+            thrust_M2 = constrain(thrust - roll + pitch + yaw, MIN_THRUST, MAX_THRUST)
+            thrust_M3 = constrain(thrust + roll + pitch - yaw, MIN_THRUST, MAX_THRUST)
+            thrust_M4 = constrain(thrust + roll - pitch + yaw, MIN_THRUST, MAX_THRUST)
 
             # Sending the thrust command:
             self.M1.sendInputCommand(thrust_M1)

@@ -60,8 +60,8 @@ A1_LIFT_TORQUE = 0.005964552
 INT16_MAX = 32767
 
 # Motor command limits:
-MAX_THRUST = 65535
-MIN_THRUST = 20000
+MAX_THRUST = 65535  # 65535
+MIN_THRUST = 20000  # 20000
 THRUST_BASE = 38180
 thrustScale = 1000.0
 
@@ -71,22 +71,22 @@ DEFAULT_WINDUP_TYPE = WindupType.Clamped # WindupType.Exclusion
 # Maximum absolute velocities (used as saturation values for PositionController pid output):
 MAX_VELOCITY_X = 1.0    # [m/s]
 MAX_VELOCITY_Y = 1.0    # [m/s]
-MAX_VELOCITY_Z = 1.0   # [m/s]
+MAX_VELOCITY_Z = 1.0    # [m/s]
 
 # Maximum absolute attitude (used as saturaration values for VelocityController pid output):
-MAX_PITCH = 20000  # 20 [deg]
-MAX_ROLL = 20000   # 20 [deg]
+MAX_PITCH = 20  # 20 [deg]
+MAX_ROLL = 20   # 20 [deg]
 
 # Maximum absolute attitude rate (used as saturaration values for AttitudeController pid output):
 # P.S. very high values to avoid clamping
-MAX_ROLL_RATE = 20000    # 40 [deg/s]
-MAX_PITCH_RATE = 20000     # 40 [deg/s]
-MAX_YAW_RATE = 20000       # 40 [deg/s]
+MAX_ROLL_RATE = 180      # 180 [deg/s]
+MAX_PITCH_RATE = 180     # 180 [deg/s]
+MAX_YAW_RATE = 180       # 180 [deg/s]
 
 # Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
-MAX_ROLL_OUTPUT = 7000 #7000 10000
-MAX_PITCH_OUTPUT = 7000 #7000 10000
-MAX_YAW_OUTPUT = 7000 #7000 10000
+MAX_ROLL_OUTPUT = 7000 #7000
+MAX_PITCH_OUTPUT = 7000 #7000
+MAX_YAW_OUTPUT = 7000 #7000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S
