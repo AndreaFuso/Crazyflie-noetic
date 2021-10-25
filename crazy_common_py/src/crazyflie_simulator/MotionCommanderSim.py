@@ -11,12 +11,12 @@ from crazy_common_py.constants import *
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_500Hz_PACE_TOPIC, \
     DEFAULT_MOTOR_CMD_TOPIC, DEFAULT_DESIRED_MOTOR_CMD_TOPIC, DEFAULT_ACTUAL_DESTINATION_TOPIC
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_ABS_POS_TOPIC, \
-    DEFAULT_REL_POS_TOPIC, DEFAULT_ABS_VEL_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_STOP_TOPIC, DEFAULT_GET_STATE_TOPIC
+    DEFAULT_REL_POS_TOPIC, DEFAULT_ABS_VEL_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_STOP_TOPIC, DEFAULT_FLOCK_TOPIC
 
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_SRV_TOPIC, DEFAULT_LAND_SRV_TOPIC
 
 from crazyflie_manager.NeighborSpotter import NeighborSpotter
-from crazy_common_py.dataTypes import SphericalSpotter
+from crazy_common_py.dataTypes import SphericalSpotter, Role
 
 # OTHER MODULES
 import time
@@ -65,6 +65,15 @@ class MotionCommanderSim:
 
         # Property to understand if movement actions have to be interrupted:
         self.stopActions = False
+
+        # Spotter:
+        if cfName != DEFAULT_LEADER:
+            self.role = Role.FOLLOWER
+            spotting_radius = 1.0
+            spherical_spotter = SphericalSpotter(spotting_radius)
+            self.spotter = NeighborSpotter(cfName, spherical_spotter)
+        else:
+            self.role = Role.LEADER
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                    S U B S C R I B E R S  S E T U P
@@ -164,11 +173,10 @@ class MotionCommanderSim:
         self.__stop_act.start()
         self.__stop_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_STOP_TOPIC, EmptyAction)
 
-        # Spotter:
-        if cfName == 'cf1':
-            spotting_radius = 1.0
-            spherical_spotter = SphericalSpotter(spotting_radius)
-            self.spotter = NeighborSpotter(cfName, spherical_spotter)
+        # Leader - follower action:
+        self.__flock_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_FLOCK_TOPIC, EmptyAction,
+                                                        self.__flock_act_callback, False)
+        self.__flock_act.start()
 
     # ==================================================================================================================
     #
@@ -828,6 +836,57 @@ class MotionCommanderSim:
         self.__stop_act.set_succeeded(result)
         self.stopActions = False
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                        __F L O C K _ A C T _ C A L L B A C K
+    #
+    # This action perform a flocking action: if the considered crazyflie is a FOLLOWER it follows the rules defined
+    # by the flock, while if it is a LEADER its target position is not changed. The Spotter calculate the desired
+    # velocity and saves it in a public property, this action takes the desired velocity and sends it to the
+    # FlightControllerSim (for further details see: crazyflie_manager/NeighborSpotter.py in crazy_common_py pkg).
+    # ------------------------------------------------------------------------------------------------------------------
+    def __flock_act_callback(self, msg):
+        # Check crazyflie role:
+        if self.role == Role.LEADER:
+            warn_msg = self.name + ' has been requested to follow the flock, but it\'s a LEADER!'
+            rospy.logwarn(warn_msg)
+        # Activate the spotter;
+        self.spotter.isActivated = True
+
+        # Setting up the rate (100Hz):
+        rate = rospy.Rate(100)
+
+        # Setting mode to VELOCITY:
+        self.flight_controller.mode = MovementMode.VELOCITY
+
+        while True:
+            # Setting the desired velocity equal to the one coming from the spotter:
+            self.position_target.desired_velocity.x = self.spotter.desired_velocity.x
+            self.position_target.desired_velocity.y = self.spotter.desired_velocity.y
+            self.position_target.desired_velocity.z = self.spotter.desired_velocity.z
+
+            # Check preemption:
+            if self.__flock_act.is_preempt_requested() or self.stopActions:
+                info_msg = self.name + ' flocking interrupted!'
+                rospy.loginfo(info_msg)
+                break
+
+            rate.sleep()
+
+        # Stopping spotter:
+        self.spotter.isActivated = False
+
+        # Calling stop action:
+        stop_goal = EmptyGoal()
+        self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
+
+
+        # Result:
+        result = EmptyResult()
+        result.executed = True
+
+        self.__flock_act.set_succeeded(result)
+
 
     # ==================================================================================================================
     #
@@ -866,6 +925,12 @@ class MotionCommanderSim:
         message = self.name + ' is landing; actual absolute distance from target height: ' + str(
             feedback.absolute_distance)
         rospy.logdebug(message)
+
+
+
+
+
+
 
 
 

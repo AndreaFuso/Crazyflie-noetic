@@ -8,11 +8,16 @@ import math
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DResult, Destination3DFeedback
 from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryGoal, VelocityTrajectoryResult, VelocityTrajectoryFeedback
+from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFeedback
 
 from std_msgs.msg import Empty
 from crazyflie_messages.msg import Position
 
 from crazy_common_py.common_functions import deg2rad
+
+from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC
+from crazy_common_py.constants import DEFAULT_LEADER
+
 class CrazyPyramidSwarmSim:
     # ==================================================================================================================
     #
@@ -40,6 +45,10 @@ class CrazyPyramidSwarmSim:
         # List of clients for takeoff action per each drone:
         self.takeoff_act_clients = []
         self.__make_takeoff_clients()
+
+        # List of clients for flocking action:
+        self.flocking_act_clients = []
+        self.__make_flocking_clients()
 
         # List of clients for relative destination action per each drone:
         #self.relative_motion_act_clients = []
@@ -77,6 +86,10 @@ class CrazyPyramidSwarmSim:
         
         self.__velocity_trajectory_act_client = actionlib.SimpleActionClient('/cf1' + '/velocity_trajectory', VelocityTrajectoryAction)'''
 
+        self.__swarm_flocking_act = actionlib.SimpleActionServer('/pyramid_swarm/flocking_actn', EmptyAction,
+                                                                 self.__swarm_flocking_act_callback, False)
+        self.__swarm_flocking_act.start()
+
     # ==================================================================================================================
     #
     #                                   I N I T I A L  O P E R A T I O N S  M E T H O D S
@@ -93,6 +106,13 @@ class CrazyPyramidSwarmSim:
             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/takeoff_actn', TakeoffAction)
             self.takeoff_act_clients.append(tmp_action)
             self.takeoff_act_clients[-1].wait_for_server()
+
+    def __make_flocking_clients(self):
+        for cf_name in self.cf_names:
+            if cf_name != DEFAULT_LEADER:
+                tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/' + DEFAULT_FLOCK_TOPIC, EmptyAction)
+                self.flocking_act_clients.append(tmp_action)
+                self.flocking_act_clients[-1].wait_for_server()
 
     '''def __make_relative_motion_clients(self):
         for cf_name in self.cf_names:
@@ -179,7 +199,19 @@ class CrazyPyramidSwarmSim:
 
         self.__velocity_trajectory_act_client.send_goal(trajectory)
 
+    def __swarm_flocking_act_callback(self, goal):
+        # Defining the goal:
+        flock_goal = EmptyGoal()
 
+        # Sending the goal to all followers clients:
+        for ii in range(0, len(self.flocking_act_clients)):
+            self.flocking_act_clients[ii].send_goal(flock_goal)
+
+        # Sending result:
+        result = EmptyResult()
+        result.executed = True
+
+        self.__swarm_flocking_act.set_succeeded(result)
 
 
     # ==================================================================================================================

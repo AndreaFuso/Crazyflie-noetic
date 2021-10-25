@@ -96,3 +96,11 @@ class SphericalSpotter:
     def getRadius(self):
         return self.__radius
 
+    #Method to get spotter type;
+    def getType(self):
+        return self.__type
+
+
+class Role(Enum):
+    FOLLOWER = 0
+    LEADER = 1
