@@ -91,7 +91,7 @@ def standardNameList(number_of_cfs):
     cf_names = []
     for number in range(1, number_of_cfs + 1):
         cf_names.append('cf' + str(number))
-    return  cf_names
+    return cf_names
 
 def extractCfNumber(name):
     digit_pos = [name.find('1'), name.find('2'), name.find('3'), name.find('4'), name.find('5'), name.find('6'),

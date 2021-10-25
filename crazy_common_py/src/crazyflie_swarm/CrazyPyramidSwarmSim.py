@@ -42,8 +42,8 @@ class CrazyPyramidSwarmSim:
         self.__make_takeoff_clients()
 
         # List of clients for relative destination action per each drone:
-        self.relative_motion_act_clients = []
-        self.__make_relative_motion_clients()
+        #self.relative_motion_act_clients = []
+        #self.__make_relative_motion_clients()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -66,7 +66,7 @@ class CrazyPyramidSwarmSim:
         self.__swarm_takeoff_act.start()
 
         # Action to perform a relative motion of the pyramid:
-        self.__swarm_traslation_act = actionlib.SimpleActionServer('/pyramid_swarm/traslation_actn', Destination3DAction,
+        '''self.__swarm_traslation_act = actionlib.SimpleActionServer('/pyramid_swarm/traslation_actn', Destination3DAction,
                                                                    self.__swarm_traslation_act_callback, False)
         self.__swarm_traslation_act.start()
 
@@ -74,8 +74,8 @@ class CrazyPyramidSwarmSim:
         self.__circular_motion_act = actionlib.SimpleActionServer('/pyramid_swarm/circular_motion', Destination3DAction,
                                                                   self.__circular_motion_act_callback, False)
         self.__circular_motion_act.start()
-        self.__velocity_trajectory_act_client = actionlib.SimpleActionClient('/cf1' + '/velocity_trajectory',
-                                                                            VelocityTrajectoryAction)
+        
+        self.__velocity_trajectory_act_client = actionlib.SimpleActionClient('/cf1' + '/velocity_trajectory', VelocityTrajectoryAction)'''
 
     # ==================================================================================================================
     #
@@ -94,11 +94,11 @@ class CrazyPyramidSwarmSim:
             self.takeoff_act_clients.append(tmp_action)
             self.takeoff_act_clients[-1].wait_for_server()
 
-    def __make_relative_motion_clients(self):
+    '''def __make_relative_motion_clients(self):
         for cf_name in self.cf_names:
             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/relative_position_3D_motion', Destination3DAction)
             self.relative_motion_act_clients.append(tmp_action)
-            self.relative_motion_act_clients[-1].wait_for_server()
+            self.relative_motion_act_clients[-1].wait_for_server()'''
 
     # ==================================================================================================================
     #

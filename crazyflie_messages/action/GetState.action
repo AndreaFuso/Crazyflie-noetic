@@ -1,0 +1,8 @@
+# GOAL SECTION
+bool execute
+---
+# RESULT SECTION
+crazyflie_messages/CrazyflieState actual_state
+---
+# FEEDBACK SECTION
+float64 feedback_value

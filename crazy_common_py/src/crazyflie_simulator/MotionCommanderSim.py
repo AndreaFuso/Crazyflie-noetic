@@ -11,9 +11,12 @@ from crazy_common_py.constants import *
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_500Hz_PACE_TOPIC, \
     DEFAULT_MOTOR_CMD_TOPIC, DEFAULT_DESIRED_MOTOR_CMD_TOPIC, DEFAULT_ACTUAL_DESTINATION_TOPIC
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_ABS_POS_TOPIC, \
-    DEFAULT_REL_POS_TOPIC, DEFAULT_ABS_VEL_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_STOP_TOPIC
+    DEFAULT_REL_POS_TOPIC, DEFAULT_ABS_VEL_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_STOP_TOPIC, DEFAULT_GET_STATE_TOPIC
 
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_SRV_TOPIC, DEFAULT_LAND_SRV_TOPIC
+
+from crazyflie_manager.NeighborSpotter import NeighborSpotter
+from crazy_common_py.dataTypes import SphericalSpotter
 
 # OTHER MODULES
 import time
@@ -33,6 +36,7 @@ from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Desti
 from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryGoal, VelocityTrajectoryResult, \
     VelocityTrajectoryFeedback
 from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFeedback
+from crazyflie_messages.msg import GetStateAction, GetStateGoal, GetStateFeedback, GetStateResult
 
 class MotionCommanderSim:
     # ==================================================================================================================
@@ -159,7 +163,12 @@ class MotionCommanderSim:
                                                        self.__stop_act_callback, False)
         self.__stop_act.start()
         self.__stop_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_STOP_TOPIC, EmptyAction)
-        
+
+        # Spotter:
+        if cfName == 'cf1':
+            spotting_radius = 1.0
+            spherical_spotter = SphericalSpotter(spotting_radius)
+            self.spotter = NeighborSpotter(cfName, spherical_spotter)
 
     # ==================================================================================================================
     #
@@ -215,6 +224,8 @@ class MotionCommanderSim:
     # This callback updates the internal variable reffering to actual state of the Crazyflie.
     # ------------------------------------------------------------------------------------------------------------------
     def __actual_state_sub_callback(self, msg):
+        self.actual_state.name = msg.name
+
         self.actual_state.position.x = msg.position.x
         self.actual_state.position.y = msg.position.y
         self.actual_state.position.z = msg.position.z
@@ -816,6 +827,7 @@ class MotionCommanderSim:
         result.executed = True
         self.__stop_act.set_succeeded(result)
         self.stopActions = False
+
 
     # ==================================================================================================================
     #

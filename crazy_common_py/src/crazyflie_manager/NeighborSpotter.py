@@ -3,13 +3,15 @@ import rospy
 import actionlib
 # CUSTOM MODULES
 from crazy_common_py.default_rosparameters import DEFAULT_ROSPARAM_NUMBER_OF_CFS
-from crazy_common_py.constants import DEFAULT_NAME
-from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
+from crazy_common_py.constants import DEFAULT_NAME, DEFAULT_RADIUS_SS
+from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_GET_STATE_TOPIC
 
 from crazyflie_messages.msg import CrazyflieState
+from crazyflie_messages.msg import GetStateAction, GetStateResult, GetStateGoal
+
 from std_msgs.msg import Empty
 
-from crazy_common_py.common_functions import extractCfNumber
+from crazy_common_py.common_functions import extractCfNumber, standardNameList
 from crazy_common_py.dataTypes import Vector3, SphericalSpotter
 
 class NeighborSpotter:
@@ -22,7 +24,7 @@ class NeighborSpotter:
     # INPUTS:
     #   1) cfName -> name of the crazyflie in the simulation;
     # ==================================================================================================================
-    def __init__(self, cfName, spotter_type=SphericalSpotter()):
+    def __init__(self, cfName, spotter_type=SphericalSpotter(DEFAULT_RADIUS_SS)):
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -42,7 +44,7 @@ class NeighborSpotter:
         self.__states = []
 
         # Position in list state of reference crazyflie:
-        self.__this_state_pos = extractCfNumber(cfName) - 1
+        self.__this_state_pos = int(extractCfNumber(cfName)) - 1
 
         # Spotter:
         self.spotter = spotter_type
@@ -50,14 +52,6 @@ class NeighborSpotter:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                    S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # Subscribers to get all swarm states:
-        for ii in range(0, self.__number_of_cfs):
-            tmp_sub = rospy.Subscriber('/' + DEFAULT_NAME + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
-                                       self.__state_sub_callback)
-            self.__state_subscribers.append(tmp_sub)
-            # Initialize also
-            self.__states.append(CrazyflieState())
-
         # Subscriber to pace 100Hz:
         self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
 
@@ -72,6 +66,22 @@ class NeighborSpotter:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                        A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Actions to get all swarm states:
+        self.__make_state_subs()
+
+    def __make_state_subs(self):
+        cont = 1
+        for ii in range(0, self.__number_of_cfs):
+            tmp_sub = rospy.Subscriber('/' + DEFAULT_NAME + str(cont) +  '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
+                                       self.__state_sub_callback)
+            self.__state_subscribers.append(tmp_sub)
+            # Initialize also
+            self.__states.append(CrazyflieState())
+            cont += 1
+
+            # Subscriber to pace 100Hz:
+        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
+
 
     # ==================================================================================================================
     #
@@ -91,27 +101,35 @@ class NeighborSpotter:
         # Updating its state:
         self.__states[cf_number - 1] = msg
 
+
     def __pace_100Hz_sub_callback(self, msg):
-        # Saving all actual states:
-        actual_states = self.__states[:]
+        # Getting actual states:
+        states = self.__states[:]
 
         # Identify crazyflie reference state:
-        cf_ref_state = actual_states[self.__this_state_pos]
+        cf_ref_state = states[self.__this_state_pos]
 
-        # Cleaning the list:
+        # Cleaning the neighbors list:
         self.actual_neighbors = []
 
         # Cycle to understand the neighbors:
-        for state in actual_states:
+        for state in states:
             if state.name != self.name:
                 if self.spotter.isContained(Vector3(cf_ref_state.position.x, cf_ref_state.position.y,
                                                     cf_ref_state.position.z),
                                             Vector3(state.position.x, state.position.y, state.position.z)):
                     self.actual_neighbors.append(state)
 
+        names = []
+
+        for neighbor in self.actual_neighbors:
+            names.append(neighbor.name)
+
+        print(names)
+
         #TODO: (1) calcolare grandezze relative; ,
         #TODO: (2) pubblicare informazioni (utile creare nuovo messaggio tipo Neighbor.msg, che comprende tutte le informazioni del vicino e pubblicare il tutto con un tipo ArrayNeighbors.msg)
-        #TODO:      serve publicarle? Alla fine non conviene buttarle fuori con un metodo (fuori potrei mettere la classe BoidLocalManager)
+        #TODO:      serve publicarle? Alla fine non conviene buttarle fuori con un metodo (fuori potrei mettere la classe BoidLocalManager) y
 
     # ==================================================================================================================
     #
@@ -130,3 +148,5 @@ class NeighborSpotter:
     #                            F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)
     #
     # ==================================================================================================================
+    def __void_fb(self, feedback):
+        pass

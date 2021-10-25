@@ -77,6 +77,7 @@ add_action_files(
     Destination3D.action
     VelocityTrajectory.action
     Empty.action
+    GetState.action
 )
 
 ## Generate added messages and services with any dependencies listed here

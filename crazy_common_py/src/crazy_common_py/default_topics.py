@@ -67,6 +67,9 @@ DEFAULT_REL_VEL_TOPIC = 'relative_vel_motion_actn'
 # Stop action:
 DEFAULT_STOP_TOPIC = 'stop_actn'
 
+# Get state action:
+DEFAULT_GET_STATE_TOPIC = 'get_state_actn'
+
 # ======================================================================================================================
 #
 #                                           S E R V I C E S  T O P I C S
