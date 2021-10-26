@@ -222,7 +222,7 @@ DEFAULT_TAKEOFF_HEIGHT = 0.2
 #                                                      S P O T T E R
 # ----------------------------------------------------------------------------------------------------------------------
 # Default radius spherical spotter:
-DEFAULT_RADIUS_SS = 1.0
-DEFAULT_SAFETY_RADIUS_SS = 0.3
+DEFAULT_RADIUS_SS = 4.0
+DEFAULT_SAFETY_RADIUS_SS = 0.2
 DEFAULT_LEADER = 'cf1'
 

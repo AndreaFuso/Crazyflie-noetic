@@ -5,7 +5,7 @@ import math
 # CUSTOM MODULES
 from crazy_common_py.default_rosparameters import DEFAULT_ROSPARAM_NUMBER_OF_CFS
 from crazy_common_py.constants import DEFAULT_NAME, DEFAULT_RADIUS_SS, MAX_VELOCITY_X, MAX_VELOCITY_Y, MAX_VELOCITY_Z, \
-    DEFAULT_SAFETY_RADIUS_SS
+    DEFAULT_SAFETY_RADIUS_SS, DEFAULT_LEADER
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
 
 from crazyflie_messages.msg import CrazyflieState
@@ -203,7 +203,7 @@ class NeighborSpotter:
     # This method is use to comp[ute desired velocity.
     # ------------------------------------------------------------------------------------------------------------------
     def __compute_desired_velocity(self, states, cf_ref_state, safety_radius=DEFAULT_SAFETY_RADIUS_SS,
-                                   w_a=1.6, w_c=1.6, w_s=0.6):
+                                   w_a=1.0, w_c=1.0, w_s=0.15, w_nl=1.0, w_l=4.0):
         # Number of crazyflies within horizion:
         number_of_cfs = len(self.__actual_neighbors)
 
@@ -229,16 +229,39 @@ class NeighborSpotter:
             x_diff_y = 0
             x_diff_z = 0
 
+            # x_tilde_m components initialization:
+            x_tilde_m_x = 0
+            x_tilde_m_y = 0
+            x_tilde_m_z = 0
+
+            # Variable to remember if the leader is present:
+            leader_present = False
+
+            # w_m weight used in calculating x_tilde_m:
+            w_m = w_nl
+
             for ii in range(0, number_of_cfs):
+                # Understand if it's the leader;
+                if self.__actual_neighbors[ii].name == DEFAULT_LEADER:
+                    leader_present = True
+                    w_m = w_l
+                else:
+                    w_m = w_nl
+
                 # Updating v_a components:
                 va_x += self.__actual_neighbors[ii].velocity.x
                 va_y += self.__actual_neighbors[ii].velocity.y
                 va_z += self.__actual_neighbors[ii].velocity.z
 
                 # Updating x_m to save some computational effort:
-                xm_x += self.__actual_neighbors[ii].position.x
-                xm_y += self.__actual_neighbors[ii].position.y
-                xm_z += self.__actual_neighbors[ii].position.z
+                #xm_x += self.__actual_neighbors[ii].position.x
+                #xm_y += self.__actual_neighbors[ii].position.y
+                #xm_z += self.__actual_neighbors[ii].position.z
+
+                # Updating x_tilde_m components:
+                x_tilde_m_x += w_m * self.__actual_neighbors[ii].position.x
+                x_tilde_m_y += w_m * self.__actual_neighbors[ii].position.y
+                x_tilde_m_z += w_m * self.__actual_neighbors[ii].position.z
 
                 # Calculating vector difference (xi - xj, being i this crazyflie):
                 x_diff_x_tmp = cf_ref_state.position.x - self.__actual_neighbors[ii].position.x
@@ -249,9 +272,17 @@ class NeighborSpotter:
                 x_diff_norm = math.sqrt(x_diff_x_tmp ** 2 + x_diff_y_tmp ** 2 + x_diff_z_tmp ** 2)
 
                 # Updating diff components:
-                x_diff_x += (1 / (x_diff_norm - safety_radius)) * (x_diff_x_tmp / x_diff_norm)
+                '''x_diff_x += (1 / (x_diff_norm - safety_radius)) * (x_diff_x_tmp / x_diff_norm)
                 x_diff_y += (1 / (x_diff_norm - safety_radius)) * (x_diff_y_tmp / x_diff_norm)
-                x_diff_z += (1 / (x_diff_norm - safety_radius)) * (x_diff_z_tmp / x_diff_norm)
+                x_diff_z += (1 / (x_diff_norm - safety_radius)) * (x_diff_z_tmp / x_diff_norm)'''
+
+                '''x_diff_x += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_x_tmp
+                x_diff_y += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_y_tmp
+                x_diff_z += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_z_tmp'''
+
+                x_diff_x += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_x_tmp
+                x_diff_y += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_y_tmp
+                x_diff_z += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_z_tmp
 
             # ALIGNMENT COMPONENT
             # Calculating velocity alignment components:
@@ -266,19 +297,37 @@ class NeighborSpotter:
             va_z = w_a * va_mean_norm * va_z_mean
 
             # Getting x_m components:
-            xm_x = xm_x / number_of_cfs
-            xm_y = xm_y / number_of_cfs
-            xm_z = xm_z / number_of_cfs
+            #xm_x = xm_x / number_of_cfs
+            #xm_y = xm_y / number_of_cfs
+            #xm_z = xm_z / number_of_cfs
+
+            # Getting x_tilde_m components:
+            beta = number_of_cfs
+            if leader_present:
+                beta = w_nl * (number_of_cfs - 1) + w_l
+            x_tilde_m_x = x_tilde_m_x / beta
+            x_tilde_m_y = x_tilde_m_y / beta
+            x_tilde_m_z = x_tilde_m_z / beta
 
             # COHESION COMPONENT
             # Calculating the norm of difference xm - xi (being i this crazyflie):
             xm_xi_norm = math.sqrt((xm_x - cf_ref_state.position.x) ** 2 + (xm_y - cf_ref_state.position.y) ** 2 +
                                    (xm_z - cf_ref_state.position.z) ** 2)
 
+            # Calculating the norm of difference x_tilde_m - xi (being i this crazyflie):
+            xm_tilde_xi_norm = math.sqrt((x_tilde_m_x - cf_ref_state.position.x) ** 2 +
+                                         (x_tilde_m_y - cf_ref_state.position.y) ** 2 +
+                                         (x_tilde_m_z - cf_ref_state.position.z) ** 2)
+
             # Calculating velocity cohesion components:
-            vc_x = w_c * xm_xi_norm * (xm_x - cf_ref_state.position.x)
-            vc_y = w_c * xm_xi_norm * (xm_y - cf_ref_state.position.y)
-            vc_z = w_c * xm_xi_norm * (xm_z - cf_ref_state.position.z)
+            #vc_x = w_c * xm_xi_norm * (xm_x - cf_ref_state.position.x)
+            #vc_y = w_c * xm_xi_norm * (xm_y - cf_ref_state.position.y)
+            #vc_z = w_c * xm_xi_norm * (xm_z - cf_ref_state.position.z)
+
+            # Calculating velocity cohesion components:
+            vc_x = w_c * xm_tilde_xi_norm * (x_tilde_m_x - cf_ref_state.position.x)
+            vc_y = w_c * xm_tilde_xi_norm * (x_tilde_m_y - cf_ref_state.position.y)
+            vc_z = w_c * xm_tilde_xi_norm * (x_tilde_m_z - cf_ref_state.position.z)
 
             # SEPARATION COMPONENT
             vs_x = w_s * x_diff_x
