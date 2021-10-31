@@ -8,7 +8,7 @@ from crazy_common_py.constants import DEFAULT_NAME, DEFAULT_RADIUS_SS, MAX_VELOC
     DEFAULT_SAFETY_RADIUS_SS, DEFAULT_LEADER
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
 
-from crazyflie_messages.msg import CrazyflieState
+from crazyflie_messages.msg import CrazyflieState, SwarmStates
 from crazyflie_messages.msg import GetStateAction, GetStateResult, GetStateGoal
 
 from std_msgs.msg import Empty
@@ -62,6 +62,7 @@ class NeighborSpotter:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber to pace 100Hz:
         self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
+        self.states_sub = rospy.Subscriber('/pyramid_swarm/states', SwarmStates, self.__states_sub_callback)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
@@ -85,6 +86,10 @@ class NeighborSpotter:
     #                                I N I T I A L  O P E R A T I O N S  M E T H O D S
     #
     # ==================================================================================================================
+    def __states_sub_callback(self, msg):
+        self.__states = []
+        for ii in range(0, self.__number_of_cfs):
+            self.__states.append(msg.states[ii])
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                  __M A K E _ S T A T E _ S U B S
@@ -94,12 +99,13 @@ class NeighborSpotter:
     def __make_state_subs(self):
         cont = 1
         for ii in range(0, self.__number_of_cfs):
-            tmp_sub = rospy.Subscriber('/' + DEFAULT_NAME + str(cont) + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
+            '''tmp_sub = rospy.Subscriber('/' + DEFAULT_NAME + str(cont) + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
                                        self.__state_sub_callback)
             self.__state_subscribers.append(tmp_sub)
             # Initialize also
             self.__states.append(CrazyflieState())
-            cont += 1
+            cont += 1'''
+            self.__states.append(CrazyflieState())
 
     # ==================================================================================================================
     #

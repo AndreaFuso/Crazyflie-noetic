@@ -11,11 +11,11 @@ from crazyflie_messages.msg import VelocityTrajectoryAction, VelocityTrajectoryG
 from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFeedback
 
 from std_msgs.msg import Empty
-from crazyflie_messages.msg import Position
+from crazyflie_messages.msg import Position, CrazyflieState, SwarmStates
 
-from crazy_common_py.common_functions import deg2rad
+from crazy_common_py.common_functions import deg2rad, extractCfNumber
 
-from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC
+from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
 from crazy_common_py.constants import DEFAULT_LEADER
 
 class CrazyPyramidSwarmSim:
@@ -50,6 +50,11 @@ class CrazyPyramidSwarmSim:
         self.flocking_act_clients = []
         self.__make_flocking_clients()
 
+        # List of state subscribers:
+        self.state_subs = []
+        self.states = []
+        self.__make_state_subs()
+
         # List of clients for relative destination action per each drone:
         #self.relative_motion_act_clients = []
         #self.__make_relative_motion_clients()
@@ -57,10 +62,13 @@ class CrazyPyramidSwarmSim:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+        # Subscriber to pace 100Hz:
+        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # States publisher:
+        self.states_pub = rospy.Publisher('/pyramid_swarm/states', SwarmStates, queue_size=1)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
@@ -120,11 +128,30 @@ class CrazyPyramidSwarmSim:
             self.relative_motion_act_clients.append(tmp_action)
             self.relative_motion_act_clients[-1].wait_for_server()'''
 
+    def __make_state_subs(self):
+        for cf_name in self.cf_names:
+            tmp_sub = rospy.Subscriber('/' + cf_name + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState, self.__state_cb)
+            self.state_subs.append(tmp_sub)
+            self.states.append(CrazyflieState())
+
     # ==================================================================================================================
     #
     #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
     #
     # ==================================================================================================================
+    def __pace_100Hz_sub_callback(self, msg):
+        # Initializing states message:
+        states = SwarmStates()
+        states.states = self.states
+        self.states_pub.publish(states)
+
+    def __state_cb(self, msg):
+        # Getting id:
+        ID = extractCfNumber(msg.name)
+
+        # Update state vector:
+        self.states[ID - 1] = msg
+
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                             __S W A R M _ T A K E O F F _ A C T _ C A L L B A C K
@@ -203,6 +230,7 @@ class CrazyPyramidSwarmSim:
         # Defining the goal:
         flock_goal = EmptyGoal()
 
+        name = []
         # Sending the goal to all followers clients:
         for ii in range(0, len(self.flocking_act_clients)):
             self.flocking_act_clients[ii].send_goal(flock_goal)

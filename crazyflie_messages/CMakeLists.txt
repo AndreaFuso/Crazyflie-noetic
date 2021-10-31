@@ -58,6 +58,7 @@ add_message_files(
     Position.msg
     Attitude.msg
     KeyboardKeys.msg
+    SwarmStates.msg
 )
 
 ## Generate services in the 'srv' folder
