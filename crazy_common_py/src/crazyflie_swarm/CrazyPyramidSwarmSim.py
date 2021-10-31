@@ -136,15 +136,29 @@ class CrazyPyramidSwarmSim:
 
     # ==================================================================================================================
     #
-    #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
     #
     # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                  __P A C E _ 1 0 0 H Z _ S U B _ C A L L B A C K
+    #
+    # This callback is called whenever an Empty message is published by pace_100Hz_node; it is used to develop the main
+    # routine.
+    # ------------------------------------------------------------------------------------------------------------------
     def __pace_100Hz_sub_callback(self, msg):
         # Initializing states message:
         states = SwarmStates()
         states.states = self.states
         self.states_pub.publish(states)
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                                       __S T A T E _ C B
+    #
+    # This callback is called whenever a CrazyflieState message is published by one crazyflie; this state is put in
+    # correct position within states list.
+    # ------------------------------------------------------------------------------------------------------------------
     def __state_cb(self, msg):
         # Getting id:
         ID = extractCfNumber(msg.name)
@@ -152,6 +166,11 @@ class CrazyPyramidSwarmSim:
         # Update state vector:
         self.states[ID - 1] = msg
 
+    # ==================================================================================================================
+    #
+    #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #
+    # ==================================================================================================================
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                             __S W A R M _ T A K E O F F _ A C T _ C A L L B A C K

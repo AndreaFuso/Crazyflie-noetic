@@ -45,6 +45,9 @@ class NeighborSpotter:
         # List of all states:
         self.__states = []
 
+        # Initializing states list:
+        self.__states_init()
+
         # Position in list state of reference crazyflie:
         self.__this_state_pos = int(extractCfNumber(cfName)) - 1
 
@@ -75,28 +78,19 @@ class NeighborSpotter:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                        A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # Actions to get all swarm states:
-        self.__make_state_subs()
-
-        # Subscriber to pace 100Hz:
-        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
 
     # ==================================================================================================================
     #
     #                                I N I T I A L  O P E R A T I O N S  M E T H O D S
     #
     # ==================================================================================================================
-    def __states_sub_callback(self, msg):
-        self.__states = []
-        for ii in range(0, self.__number_of_cfs):
-            self.__states.append(msg.states[ii])
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                                  __M A K E _ S T A T E _ S U B S
+    #                                           __S T A T E S _ I N I T
     #
-    # This method is used to initialize the list containing all state subscribers (one for each drone in the swarm).
+    # This method is used to initialize the list containing all states.
     # ------------------------------------------------------------------------------------------------------------------
-    def __make_state_subs(self):
+    def __states_init(self):
         cont = 1
         for ii in range(0, self.__number_of_cfs):
             '''tmp_sub = rospy.Subscriber('/' + DEFAULT_NAME + str(cont) + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
@@ -112,19 +106,6 @@ class NeighborSpotter:
     #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
     #
     # ==================================================================================================================
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                                  __S T A T E _ S U B _ C A L L B A C K
-    #
-    # This callback is called whenever a state is published.
-    # ------------------------------------------------------------------------------------------------------------------
-    def __state_sub_callback(self, msg):
-        # Getting crazyflie number:
-        cf_number = extractCfNumber(msg.name)
-
-        # Updating its state:
-        self.__states[cf_number - 1] = msg
-
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                  __P A C E _ 1 0 0 H Z _ S U B _ C A L L B A C K
@@ -150,9 +131,16 @@ class NeighborSpotter:
             #       - v_s = separation component;
             self.desired_velocity = self.__compute_desired_velocity(states, cf_ref_state, DEFAULT_SAFETY_RADIUS_SS)
 
-        #TODO: (1) calcolare grandezze relative; ,
-        #TODO: (2) pubblicare informazioni (utile creare nuovo messaggio tipo Neighbor.msg, che comprende tutte le informazioni del vicino e pubblicare il tutto con un tipo ArrayNeighbors.msg)
-        #TODO:      serve publicarle? Alla fine non conviene buttarle fuori con un metodo (fuori potrei mettere la classe BoidLocalManager) y
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                  __S T A T E S _ S U B _ C A L L B A C K
+    #
+    # This callback is called whenever an SwarmStates message is published by the swarm node.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __states_sub_callback(self, msg):
+        self.__states = []
+        for ii in range(0, self.__number_of_cfs):
+            self.__states.append(msg.states[ii])
 
     # ==================================================================================================================
     #
