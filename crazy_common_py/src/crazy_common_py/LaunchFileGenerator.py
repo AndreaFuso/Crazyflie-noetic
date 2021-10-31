@@ -100,6 +100,7 @@ class LaunchFileGenerator:
         self.launchfile.write('\n\t<!-- Starting up nodes that give the pace to the inner controllers -->\n')
         self.launchfile.write('\t<node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>\n')
         self.launchfile.write('\t<node name="node_500Hz" pkg="crazyCmd" type="node_500Hz.py" output="screen"/>\n')
+        self.launchfile.write('\t<node name="node_1000Hz" pkg="crazyCmd" type="node_1000Hz.py" output="screen"/>\n')
 
     # ------------------------------------------------------------------------------------------------------------------
     #

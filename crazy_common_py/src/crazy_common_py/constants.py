@@ -20,7 +20,8 @@ IMU_UPDATE_RATE_DEFAULT = 1000   # [Hz]
 #                                           F O R C E  S T A T E
 # ----------------------------------------------------------------------------------------------------------------------
 # Updating frequency:
-FORCE_STATE_FREQ_UPDATE = 600   # [Hz]
+FORCE_STATE_FREQ_UPDATE = 500   # [Hz]
+
 # ----------------------------------------------------------------------------------------------------------------------
 #                                           P H Y S I C A L  C O N S T A N T S
 # ----------------------------------------------------------------------------------------------------------------------
@@ -75,18 +76,18 @@ MAX_VELOCITY_Z = 1.0    # [m/s]
 
 # Maximum absolute attitude (used as saturaration values for VelocityController pid output):
 MAX_PITCH = 20  # 20 [deg]
-MAX_ROLL = 20   # 20 [deg]
+MAX_ROLL = 20  # 20 [deg]
 
 # Maximum absolute attitude rate (used as saturaration values for AttitudeController pid output):
 # P.S. very high values to avoid clamping
 MAX_ROLL_RATE = 180      # 180 [deg/s]
 MAX_PITCH_RATE = 180     # 180 [deg/s]
-MAX_YAW_RATE = 180       # 180 [deg/s]
+MAX_YAW_RATE = 180     # 180 [deg/s]
 
 # Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
-MAX_ROLL_OUTPUT = 7000 #7000
-MAX_PITCH_OUTPUT = 7000 #7000
-MAX_YAW_OUTPUT = 7000 #7000
+MAX_ROLL_OUTPUT = 3000 #7000
+MAX_PITCH_OUTPUT = 3000 #7000
+MAX_YAW_OUTPUT = 3000 #7000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S
@@ -106,9 +107,9 @@ DEFAULT_BACKWARD_VELOCITY = 1.0  # [m/s]
 # ----------------------------------------------------------------------------------------------------------------------
 #                                   A C T U A T O R  V E L O C I T Y  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
-ACTUATOR_VELOCITY_CONTROLLER_KP = 1.0
-ACTUATOR_VELOCITY_CONTROLLER_KI = 1.0
-ACTUATOR_VELOCITY_CONTROLLER_KD = 0.0
+ACTUATOR_VELOCITY_CONTROLLER_KP = 10.0   # 1.0
+ACTUATOR_VELOCITY_CONTROLLER_KI = 10.0   # 1.0
+ACTUATOR_VELOCITY_CONTROLLER_KD = 100.0   # 0.0
 ACTUATOR_VELOCITY_CONTROLLER_I_CLAMP = 100.0
 
 # ----------------------------------------------------------------------------------------------------------------------
