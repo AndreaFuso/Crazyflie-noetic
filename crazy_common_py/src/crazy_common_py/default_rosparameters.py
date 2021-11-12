@@ -34,4 +34,5 @@
 #                                                 G E N E R I C  S W A R M
 # ----------------------------------------------------------------------------------------------------------------------
 # Number of crazyflie in the swarm:
-DEFAULT_ROSPARAM_NUMBER_OF_CFS = '/swarm/pyramid_swarm_node/cfs_number'
+#DEFAULT_ROSPARAM_NUMBER_OF_CFS = '/swarm/pyramid_swarm_node/cfs_number'
+DEFAULT_ROSPARAM_NUMBER_OF_CFS = '/swarm/cfs_number'

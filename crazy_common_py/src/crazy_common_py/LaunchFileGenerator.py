@@ -134,6 +134,7 @@ class LaunchFileGenerator:
             self.launchfile.write('\t</group>\n')
 
         self.launchfile.write('\n\t<group ns = "swarm">\n')
+        self.launchfile.write('\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
         if self.__type == SwarmType.GRID:
             self.launchfile.write('\t\t<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">\n')
             self.launchfile.write('\t\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
