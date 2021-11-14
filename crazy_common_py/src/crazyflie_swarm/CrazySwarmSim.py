@@ -5,7 +5,13 @@ import actionlib
 
 # Action
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
+from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFeedback
+from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
+from crazy_common_py.constants import DEFAULT_LEADER
+from std_msgs.msg import Empty
+from crazyflie_messages.msg import Position, CrazyflieState, SwarmStates
 
+from crazy_common_py.common_functions import deg2rad, extractCfNumber
 from crazy_common_py.constants import *
 
 class CrazySwarmSim:
@@ -32,6 +38,15 @@ class CrazySwarmSim:
         self.takeoff_act_clients = []
         self.__make_takeoff_clients()
 
+        # List of clients for flocking action:
+        self.flocking_act_clients = []
+        self.__make_flocking_clients()
+
+        # List of state subscribers:
+        self.state_subs = []
+        self.states = []
+        self.__make_state_subs()
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -52,6 +67,10 @@ class CrazySwarmSim:
                                                                 self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
 
+        self.__swarm_flocking_act = actionlib.SimpleActionServer('/swarm/flocking_actn', EmptyAction,
+                                                                 self.__swarm_flocking_act_callback, False)
+        self.__swarm_flocking_act.start()
+
     # ==================================================================================================================
     #
     #                                   I N I T I A L  O P E R A T I O N S  M E T H O D S
@@ -69,6 +88,37 @@ class CrazySwarmSim:
             self.takeoff_act_clients.append(tmp_action)
             self.takeoff_act_clients[-1].wait_for_server()
 
+    def __make_flocking_clients(self):
+        for cf_name in self.cf_names:
+            if cf_name != DEFAULT_LEADER:
+                tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/' + DEFAULT_FLOCK_TOPIC, EmptyAction)
+                self.flocking_act_clients.append(tmp_action)
+                self.flocking_act_clients[-1].wait_for_server()
+
+    def __make_state_subs(self):
+        for cf_name in self.cf_names:
+            tmp_sub = rospy.Subscriber('/' + cf_name + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState, self.__state_cb)
+            self.state_subs.append(tmp_sub)
+            self.states.append(CrazyflieState())
+
+    # ==================================================================================================================
+    #
+    #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                                       __S T A T E _ C B
+    #
+    # This callback is called whenever a CrazyflieState message is published by one crazyflie; this state is put in
+    # correct position within states list.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __state_cb(self, msg):
+        # Getting id:
+        ID = extractCfNumber(msg.name)
+
+        # Update state vector:
+        self.states[ID - 1] = msg
     # ==================================================================================================================
     #
     #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
@@ -95,6 +145,20 @@ class CrazySwarmSim:
 
         self.__swarm_takeoff_act.set_succeeded(result)
 
+    def __swarm_flocking_act_callback(self, goal):
+        # Defining the goal:
+        flock_goal = EmptyGoal()
+
+        name = []
+        # Sending the goal to all followers clients:
+        for ii in range(0, len(self.flocking_act_clients)):
+            self.flocking_act_clients[ii].send_goal(flock_goal)
+
+        # Sending result:
+        result = EmptyResult()
+        result.executed = True
+
+        self.__swarm_flocking_act.set_succeeded(result)
     # ==================================================================================================================
     #
     #                          F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)

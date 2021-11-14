@@ -197,7 +197,7 @@ class NeighborSpotter:
     # This method is use to comp[ute desired velocity.
     # ------------------------------------------------------------------------------------------------------------------
     def __compute_desired_velocity(self, states, cf_ref_state, safety_radius=DEFAULT_SAFETY_RADIUS_SS,
-                                   w_a=1.0, w_c=1.0, w_s=0.15, w_nl=1.0, w_l=4.0):
+                                   w_a=1.0, w_c=1.0, w_s=0.25, w_nl=1.0, w_l=4.0):
         # Number of crazyflies within horizion:
         number_of_cfs = len(self.__actual_neighbors)
 
@@ -274,9 +274,10 @@ class NeighborSpotter:
                 x_diff_y += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_y_tmp
                 x_diff_z += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_z_tmp'''
 
-                x_diff_x += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_x_tmp
-                x_diff_y += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_y_tmp
-                x_diff_z += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_z_tmp
+                #if x_diff_norm != 0:
+                x_diff_x += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_x_tmp
+                x_diff_y += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_y_tmp
+                x_diff_z += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_z_tmp
 
             # ALIGNMENT COMPONENT
             # Calculating velocity alignment components:
@@ -324,9 +325,9 @@ class NeighborSpotter:
             vc_z = w_c * xm_tilde_xi_norm * (x_tilde_m_z - cf_ref_state.position.z)
 
             # SEPARATION COMPONENT
-            vs_x = w_s * x_diff_x
-            vs_y = w_s * x_diff_y
-            vs_z = w_s * x_diff_z
+            vs_x = w_s * x_diff_x / number_of_cfs
+            vs_y = w_s * x_diff_y / number_of_cfs
+            vs_z = w_s * x_diff_z / number_of_cfs
 
             # DESIRED VELOCITY
             v_des_x = constrain(va_x + vc_x + vs_x, - MAX_VELOCITY_X, MAX_VELOCITY_X)
