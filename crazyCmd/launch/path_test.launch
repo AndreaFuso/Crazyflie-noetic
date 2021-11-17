@@ -15,17 +15,11 @@
 	<group ns = "cf1">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf1</rosparam>
-			<rosparam param="initial_position">[0.0, 0.0, 0.0]</rosparam>
+			<rosparam param="initial_position">[0.0, 0.0, 0.1]</rosparam>
 		</node>
 	</group>
 
-	<group ns = "swarm">
-		<rosparam param="cfs_number">1</rosparam>
-		<node pkg="crazyCmd" type="pyramid_swarm_node.py" name="pyramid_swarm_node" output="screen">
-			<rosparam param="cfs_number">1</rosparam>
-			<rosparam param="levels">0</rosparam>
-			<rosparam param="vertical_offset">0.5</rosparam>
-		</node>
-	</group>
 
+    <!-- Starting up the node that perform all the operations for the path test task -->
+    <node name="path_test_node" pkg="crazyCmd" type="path_test_node.py" output="screen"/>
 </launch>

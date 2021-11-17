@@ -63,7 +63,7 @@ INT16_MAX = 32767
 # Motor command limits:
 MAX_THRUST = 65535  # 65535
 MIN_THRUST = 20000  # 20000
-THRUST_BASE = 38180
+THRUST_BASE = 38180 # 36000
 thrustScale = 1000.0
 
 # Default technique to solve windup problem in pid:
@@ -85,9 +85,9 @@ MAX_PITCH_RATE = 180     # 180 [deg/s]
 MAX_YAW_RATE = 180     # 180 [deg/s]
 
 # Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
-MAX_ROLL_OUTPUT = 3000 #7000
-MAX_PITCH_OUTPUT = 3000 #7000
-MAX_YAW_OUTPUT = 3000 #7000
+MAX_ROLL_OUTPUT = 2000 #7000
+MAX_PITCH_OUTPUT = 2000 #7000
+MAX_YAW_OUTPUT = 2000 #7000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S

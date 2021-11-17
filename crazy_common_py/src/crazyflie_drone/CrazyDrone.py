@@ -8,13 +8,18 @@ import time
 
 # Custom modules
 from crazy_common_py.dataTypes import Vector3
-from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC
-
+from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_REL_VEL_TOPIC, \
+    DEFAULT_REL_POS_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
+from crazy_common_py.common_functions import deg2rad
 # Action messages:
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
+from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DFeedback
+from crazyflie_messages.msg import CrazyflieState
+from std_msgs.msg import Empty
 
 # Crazyflie API
 import cflib.crtp
+from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
@@ -43,15 +48,25 @@ class CrazyDrone:
         # Initial position (Vector3):
         self.__initial_position = initialPosition
 
+        # Logger:
+        self.__attitude_logger = LogConfig(name='attitude_conf', period_in_ms=10)
+        self.__attitude_logger.add_variable('stabilizer.roll', 'float')
+        self.__attitude_logger.add_variable('stabilizer.pitch', 'float')
+        self.__attitude_logger.add_variable('stabilizer.yaw', 'float')
+
+        # State:
+        self.__state = CrazyflieState()
+
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+        self.__pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_cb)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Publisher used to publish real Crazyflie state:
-
+        self.__state_pub = rospy.Publisher('/' + self.cfName + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
+                                           queue_size=1)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -70,12 +85,14 @@ class CrazyDrone:
         self.__land_act.start()
 
         # Relative velocity motion:
-        self.__rel_vel_move_act = actionlib.SimpleActionServer('/' + name + '/rel_vel_move_actn', TakeoffAction,
+        self.__rel_vel_move_act = actionlib.SimpleActionServer('/' + name + '/' + DEFAULT_REL_VEL_TOPIC,
+                                                               Destination3DAction,
                                                                self.__rel_vel_move_act_callback, False)
         self.__rel_vel_move_act.start()
 
         # Relative displacement motion;
-        self.__rel_displ_move_act = actionlib.SimpleActionServer('/' + name + '/rel_displ_move_actn', TakeoffAction,
+        self.__rel_displ_move_act = actionlib.SimpleActionServer('/' + name + '/' + DEFAULT_REL_POS_TOPIC,
+                                                                 Destination3DAction,
                                                                  self.__rel_displ_move_act_callback, False)
         self.__rel_displ_move_act.start()
 
@@ -92,7 +109,12 @@ class CrazyDrone:
         # Instantiation of MotionCommander:
         self.__mc = MotionCommander(self.__scf)
 
-        self.__mc.take_off()
+        # Logger:
+        self.__logger = SyncLogger(self.__scf, self.__attitude_logger)
+        self.__logger.connect()
+
+
+        #self.__mc.take_off()
         #self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
 
     # ==================================================================================================================
@@ -100,6 +122,20 @@ class CrazyDrone:
     #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
     #
     # ==================================================================================================================
+    def __pace_100Hz_cb(self,msg):
+        if self.__logger.is_connected():
+            # Getting data from logger
+            data = self.__logger.next()
+
+            # Formulating state:
+            self.__state.orientation.roll = deg2rad(data[1]['stabilizer.roll'])
+            self.__state.orientation.pitch = deg2rad(- data[1]['stabilizer.pitch'])
+            self.__state.orientation.yaw = deg2rad(data[1]['stabilizer.yaw'])
+    
+            # Publishing the state:
+            self.__state_pub.publish(self.__state)
+            #print(data)
+            #print('ROLL: ', data[1]['stabilizer.roll'], '; PITCH: ', data[1]['stabilizer.pitch'], '; YAW: ', data[1]['stabilizer.yaw'])
 
     # ==================================================================================================================
     #
@@ -119,7 +155,7 @@ class CrazyDrone:
     # Callback for takeoff action.
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_act_callback(self, goal):
-        pass
+        self.__mc.take_off()
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -137,7 +173,7 @@ class CrazyDrone:
     # Callback for land action.
     # ------------------------------------------------------------------------------------------------------------------
     def __land_act_callback(self, goal):
-        pass
+        self.__mc.land()
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -155,7 +191,51 @@ class CrazyDrone:
     # Callback for relative velocity motion action.
     # ------------------------------------------------------------------------------------------------------------------
     def __rel_vel_move_act_callback(self, goal):
-        pass
+
+        success = False
+
+        # Getting request parameters;
+        vx_des = goal.destination_info.desired_velocity.x
+        vy_des = goal.destination_info.desired_velocity.y
+        vz_des = goal.destination_info.desired_velocity.z
+        yaw_rate_des = - goal.destination_info.desired_yaw
+
+        time_duration = goal.time_duration
+
+        if time_duration <= 0:
+            time_duration = 1.0
+
+        # Getting initial time and time duration (used for fixed time duration request):
+        t0 = rospy.get_rostime()
+        ros_time_duration = rospy.Duration.from_sec(time_duration)
+        final_rostime = t0 + ros_time_duration
+
+        feedback = Destination3DFeedback()
+
+        # Starting the motion:
+        self.__mc.start_linear_motion(vx_des, vy_des, vz_des, yaw_rate_des)
+
+        # Wait time duration:
+        while True:
+            # Getting current time:
+            actual_time = rospy.get_rostime()
+
+            # Remaining time:
+            remaining_time = (final_rostime - actual_time).to_sec()
+
+            # Publishing absolute distance as feedback:
+            feedback.remaining_time = remaining_time
+            self.__rel_vel_move_act.publish_feedback(feedback)
+
+            # If time duration has elapsed exit the cycle:
+            if remaining_time <= 0:
+                success = True
+                break
+
+        # Once time duration elapsed let's stop the crazyflie:
+        self.__mc.stop()
+
+
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -199,6 +279,9 @@ class CrazyDrone:
     def exit_operations(self):
         # Land the drone:
         self.__mc.land()
+
+        # Stop logger:
+        self.__logger.disconnect()
 
         # Closing communication with the crazyflie:
         self.__scf.close_link()

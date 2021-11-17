@@ -570,12 +570,12 @@ class MotionCommanderSim:
         result = Destination3DResult()
 
         # Check preemption:
-        if self.__relative_3D_displacement_act.is_preempt_requested():
+        if self.__absolute_position_3D_motion_act.is_preempt_requested():
             success = False
             info_msg = 'Destination canceled for ' + self.name
             rospy.loginfo(info_msg)
             result.result = False
-            self.__relative_3D_displacement_act.set_preempted()
+            self.__absolute_position_3D_motion_act.set_preempted()
             return
 
         # Sending commands to reach the desired point:
@@ -591,7 +591,7 @@ class MotionCommanderSim:
 
         if success:
             result.result = True
-            self.__relative_3D_displacement_act.set_succeeded(result)
+            self.__absolute_position_3D_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -634,7 +634,7 @@ class MotionCommanderSim:
 
                 # Publishing absolute distance as feedback:
                 feedback.remaining_time = remaining_time
-                self.__relative_3D_velocity_motion_act.publish_feedback(feedback)
+                self.__absolute_3D_velocity_motion_act.publish_feedback(feedback)
 
                 # If time duration has elapsed exit the cycle:
                 if remaining_time <= 0:
@@ -648,7 +648,7 @@ class MotionCommanderSim:
             self.position_target.desired_yaw = goal.destination_info.desired_yaw
 
             # Check for preemption:
-            if self.__relative_3D_velocity_motion_act.is_preempt_requested() or self.stopActions:
+            if self.__absolute_3D_velocity_motion_act.is_preempt_requested() or self.stopActions:
                 success = False
                 info_msg = 'Absolute velocity motion canceled for ' + self.name
                 rospy.loginfo(info_msg)
@@ -667,7 +667,7 @@ class MotionCommanderSim:
         else:
             result.result = False
 
-        self.__relative_3D_velocity_motion_act.set_succeeded(result)
+        self.__absolute_3D_velocity_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -750,14 +750,15 @@ class MotionCommanderSim:
 
         # Calling stop action:
         stop_goal = EmptyGoal()
-        self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
+        self.__stop_act_client.send_goal(stop_goal)
+        self.__stop_act_client.wait_for_result()
 
         # Send the result:
         if success:
             result.result = True
         else:
             result.result = False
-
+        print('\n\nFINE MOVIMENTO\n\n')
         self.__relative_3D_velocity_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -809,9 +810,14 @@ class MotionCommanderSim:
             actual_vz = actual_state.velocity.z
             actual_yaw_rate = rad2deg(actual_state.rotating_speed.z)
 
-            # Updating feedback value:
-            feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2 + actual_yaw_rate ** 2)
-            self.__stop_act.publish_feedback(feedback)
+            # Bigger threshold for yaw rate:
+            if (math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2) <= 0.05) and (actual_yaw_rate <= 0.05):
+                feedback.feedback_value = 0.0
+                self.__stop_act.publish_feedback(feedback)
+            else:
+                # Updating feedback value:
+                feedback.feedback_value = math.sqrt(actual_vx ** 2 + actual_vy ** 2 + actual_vz ** 2 + actual_yaw_rate ** 2)
+                self.__stop_act.publish_feedback(feedback)
 
             # Setting reference velocity to 0.0 in all directions:
             self.position_target.desired_velocity.x = 0.0
@@ -833,6 +839,7 @@ class MotionCommanderSim:
 
         # Set result:
         result.executed = True
+        print('\n\nFERMATO\n\n')
         self.__stop_act.set_succeeded(result)
         self.stopActions = False
 
