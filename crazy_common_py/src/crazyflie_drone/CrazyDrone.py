@@ -9,12 +9,12 @@ import time
 # Custom modules
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_REL_VEL_TOPIC, \
-    DEFAULT_REL_POS_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
+    DEFAULT_REL_POS_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC
 from crazy_common_py.common_functions import deg2rad
 # Action messages:
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
-from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DFeedback
-from crazyflie_messages.msg import CrazyflieState
+from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DFeedback, Destination3DResult
+from crazyflie_messages.msg import CrazyflieState, Attitude
 from std_msgs.msg import Empty
 
 # Crazyflie API
@@ -39,6 +39,9 @@ class CrazyDrone:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Variable to understand when initial operations are ended (otherwise problem with 100Hz subscriber):
+        self.__initialOperationsEnded = False
+
         # Name (used for setting up topics, actions and services):
         self.cfName = name
 
@@ -48,14 +51,39 @@ class CrazyDrone:
         # Initial position (Vector3):
         self.__initial_position = initialPosition
 
-        # Logger:
-        self.__attitude_logger = LogConfig(name='attitude_conf', period_in_ms=10)
-        self.__attitude_logger.add_variable('stabilizer.roll', 'float')
-        self.__attitude_logger.add_variable('stabilizer.pitch', 'float')
-        self.__attitude_logger.add_variable('stabilizer.yaw', 'float')
+        '''
+            Logger can contain maximum 26 bytes:
+                - LOG_FLOAT -> float => 4 bytes
+        '''
+        # Attitude logger configuration (3 floats => 12/26 bytes):
+        self.__attitude_logger_config = LogConfig(name='attitude_conf', period_in_ms=10)
+        self.__attitude_logger_config.add_variable('stabilizer.roll', 'float')
+        self.__attitude_logger_config.add_variable('stabilizer.pitch', 'float')
+        self.__attitude_logger_config.add_variable('stabilizer.yaw', 'float')
+
+        # State logger configuration (6 floats => 24/26 bytes):
+        self.__state_logger_config = LogConfig(name='state_conf', period_in_ms=10)
+        self.__state_logger_config.add_variable('stateEstimate.x', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.y', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.z', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.vx', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.vy', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.vz', 'float')
+
+        # Reference state logger configuration:
+
+        # Controller output logger configuration (4 floats => 16/26 bytes):
+        self.__controller_output_config = LogConfig(name='controller_output_conf', period_in_ms=10)
+        self.__controller_output_config.add_variable('controller.cmd_thrust')
+        self.__controller_output_config.add_variable('controller.cmd_roll')
+        self.__controller_output_config.add_variable('controller.cmd_pitch')
+        self.__controller_output_config.add_variable('controller.cmd_yaw')
 
         # State:
         self.__state = CrazyflieState()
+
+        # Controller output:
+        self.__controller_output = Attitude()
 
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -67,6 +95,11 @@ class CrazyDrone:
         # Publisher used to publish real Crazyflie state:
         self.__state_pub = rospy.Publisher('/' + self.cfName + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
                                            queue_size=1)
+
+        # Publisher to publish motor command for real crazyflie:
+        self.__motor_command_pub = rospy.Publisher('/' + self.cfName + '/' + DEFAULT_MOTOR_CMD_TOPIC, Attitude,
+                                                   queue_size=1)
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -109,11 +142,19 @@ class CrazyDrone:
         # Instantiation of MotionCommander:
         self.__mc = MotionCommander(self.__scf)
 
-        # Logger:
-        self.__logger = SyncLogger(self.__scf, self.__attitude_logger)
-        self.__logger.connect()
+        # Attitude logger:
+        self.__attitude_logger = SyncLogger(self.__scf, self.__attitude_logger_config)
+        self.__attitude_logger.connect()
 
+        # State logger:
+        self.__state_logger = SyncLogger(self.__scf, self.__state_logger_config)
+        self.__state_logger.connect()
 
+        # Controller output logger:
+        self.__controller_output_logger = SyncLogger(self.__scf, self.__controller_output_config)
+        self.__controller_output_logger.connect()
+
+        self.__initialOperationsEnded = True
         #self.__mc.take_off()
         #self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
 
@@ -122,18 +163,38 @@ class CrazyDrone:
     #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
     #
     # ==================================================================================================================
-    def __pace_100Hz_cb(self,msg):
-        if self.__logger.is_connected():
-            # Getting data from logger
-            data = self.__logger.next()
+    def __pace_100Hz_cb(self, msg):
+        if self.__initialOperationsEnded:
+            # Getting data from loggers:
+            attitude_data = self.__attitude_logger.next()
+            state_data = self.__state_logger.next()
+            controller_output_data = self.__controller_output_logger.next()
 
-            # Formulating state:
-            self.__state.orientation.roll = deg2rad(data[1]['stabilizer.roll'])
-            self.__state.orientation.pitch = deg2rad(- data[1]['stabilizer.pitch'])
-            self.__state.orientation.yaw = deg2rad(data[1]['stabilizer.yaw'])
+            # Extracting attitude:
+            self.__state.orientation.roll = deg2rad(attitude_data[1]['stabilizer.roll'])
+            self.__state.orientation.pitch = deg2rad(- attitude_data[1]['stabilizer.pitch'])
+            self.__state.orientation.yaw = deg2rad(attitude_data[1]['stabilizer.yaw'])
+
+            # Extracting state:
+            self.__state.position.x = state_data[1]['stateEstimate.x']
+            self.__state.position.y = state_data[1]['stateEstimate.y']
+            self.__state.position.z = state_data[1]['stateEstimate.z']
+            self.__state.velocity.x = state_data[1]['stateEstimate.vx']
+            self.__state.velocity.y = state_data[1]['stateEstimate.vy']
+            self.__state.velocity.z = state_data[1]['stateEstimate.vz']
+
+            # Extracting controller output:
+            self.__controller_output.desired_attitude.roll = controller_output_data[1]['controller.cmd_roll']
+            self.__controller_output.desired_attitude.pitch = controller_output_data[1]['controller.cmd_pitch']
+            self.__controller_output.desired_attitude.yaw = controller_output_data[1]['controller.cmd_yaw']
+            self.__controller_output.desired_thrust = controller_output_data[1]['controller.cmd_thrust']
     
             # Publishing the state:
             self.__state_pub.publish(self.__state)
+
+            # Publishing the motor command:
+            self.__motor_command_pub.publish(self.__controller_output)
+
             #print(data)
             #print('ROLL: ', data[1]['stabilizer.roll'], '; PITCH: ', data[1]['stabilizer.pitch'], '; YAW: ', data[1]['stabilizer.yaw'])
 
@@ -235,6 +296,12 @@ class CrazyDrone:
         # Once time duration elapsed let's stop the crazyflie:
         self.__mc.stop()
 
+        # Result:
+        response = Destination3DResult()
+        response.result = success
+        self.__rel_vel_move_act.set_succeeded(response)
+
+
 
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -281,7 +348,7 @@ class CrazyDrone:
         self.__mc.land()
 
         # Stop logger:
-        self.__logger.disconnect()
+        self.__attitude_logger.disconnect()
 
         # Closing communication with the crazyflie:
         self.__scf.close_link()

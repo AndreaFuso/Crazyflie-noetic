@@ -736,7 +736,7 @@ class MotionCommanderSim:
             self.position_target.desired_velocity.x = vx_abs
             self.position_target.desired_velocity.y = vy_abs
             self.position_target.desired_velocity.z = vz_abs
-            self.position_target.desired_yaw = goal.destination_info.desired_yaw
+            self.position_target.desired_yaw_rate = goal.destination_info.desired_yaw_rate
 
             # Check for preemption:
             if self.__relative_3D_velocity_motion_act.is_preempt_requested() or self.stopActions:
@@ -799,7 +799,7 @@ class MotionCommanderSim:
         self.position_target.desired_velocity.x = 0.0
         self.position_target.desired_velocity.y = 0.0
         self.position_target.desired_velocity.z = 0.0
-        self.position_target.desired_yaw = 0.0
+        self.position_target.desired_yaw_rate = 0.0
 
         rate = rospy.Rate(100)
         while feedback.feedback_value >= 0.05:
@@ -823,7 +823,7 @@ class MotionCommanderSim:
             self.position_target.desired_velocity.x = 0.0
             self.position_target.desired_velocity.y = 0.0
             self.position_target.desired_velocity.z = 0.0
-            self.position_target.desired_yaw = 0.0
+            self.position_target.desired_yaw_rate = 0.0
 
             rate.sleep()
 

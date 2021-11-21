@@ -81,7 +81,6 @@ class PidController:
             if beforeClamping != afterClamping and sameSign(beforeClamping, self.error):
                 self.integral = 0
 
-
         # Updating previous error value:
         self.prevError = self.error
 

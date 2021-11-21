@@ -111,7 +111,7 @@ for topic, msg, t in bag_sim_ref.read_messages(topics=['/cf1/actual_state_target
     vy_sim_ref.append(msg.desired_velocity.y)
     vz_sim_ref.append(msg.desired_velocity.z)
 
-    yaw_rate_sim_ref.append(msg.desired_yaw)
+    yaw_rate_sim_ref.append(msg.desired_yaw_rate)
 
 bag_sim_ref.close()
 
@@ -186,9 +186,11 @@ legend(loc="upper right")
 xlim(0, 17.5)'''
 
 figure(4)
-time_state_sim = linspace(0.0, 30.9, num=len(roll_sim))
-time_motor_sim = linspace(0.0, 30.9, num=len(roll_cmd_sim))
-time_motor_sim_ref = linspace(0.0, 21.2, num=len(vx_sim_ref))
+time_state_sim = linspace(0.0, 31.3, num=len(roll_sim))
+time_motor_sim = linspace(0.0, 31.3, num=len(roll_cmd_sim))
+t0 = time_motor_sim[len(roll_cmd_sim)-len(vx_sim_ref)]
+t0 = 8.5
+time_motor_sim_ref = linspace(0.0 + t0, 21.0 + t0, num=len(vx_sim_ref))
 
 subplot(811)
 plot(time_motor_sim, roll_cmd_sim)

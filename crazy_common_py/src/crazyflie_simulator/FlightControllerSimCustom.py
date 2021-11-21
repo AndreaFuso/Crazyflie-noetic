@@ -116,9 +116,10 @@ class FlightControllerCustom:
             # Calling attitude controller:
             desired_attitude_rate = self.__attitudeController(desired_attitude, actual_state)
 
+
             # If it's moving in velocity mode let's overwrite the desired yaw rate:
             if self.mode == MovementMode.VELOCITY:
-                desired_attitude_rate.z = self.desired_yaw
+                desired_attitude_rate.z = self.desired_yaw_rate
 
             '''print('DESIRED ATTITUDE RATE: ', desired_attitude_rate.x, '; ', desired_attitude_rate.y, '; ', desired_attitude_rate.z)
             print('ACTUAL ATTITUDE RATE: ', actual_state.rotating_speed.x, '; ', actual_state.rotating_speed.y, '; ', actual_state.rotating_speed.z)'''
@@ -187,6 +188,7 @@ class FlightControllerCustom:
 
         self.desired_position = desired_position
         self.desired_yaw = msg.desired_yaw
+        self.desired_yaw_rate = msg.desired_yaw_rate
 
         # Check if there's a new desired position:
         if not isSameVector(self.previous_desired_position, desired_position) or self.previous_desired_yaw != self.desired_yaw:
@@ -214,7 +216,7 @@ class FlightControllerCustom:
             self.OK = True
             self.OK500 = False
 
-            print('Requested new destination for ', self.cfName, ': [', self.desired_position.x, '; ', self.desired_position.y, '; ', self.desired_position.z, '] YAW:', self.desired_yaw, '[deg]')
+            #print('Requested new destination for ', self.cfName, ': [', self.desired_position.x, '; ', self.desired_position.y, '; ', self.desired_position.z, '] YAW:', self.desired_yaw, '[deg]')
 
         # Calculating desired velocity (if in position control) or setting the desired one:
         if self.mode == MovementMode.POSITION:

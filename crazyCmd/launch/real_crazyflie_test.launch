@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-
+    <node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>
     <!-- Starting up the example node -->
     <node name="crazyflie_real_node" pkg="crazyCmd" type="crazyflie_real_node.py" output="screen"/>
 

@@ -57,7 +57,7 @@ def ref_cb(msg):
     ref_state.desired_velocity.y = - vx * math.sin(state.orientation.yaw) + vy * math.cos(state.orientation.yaw)
     ref_state.desired_velocity.z = vz
 
-    ref_state.desired_yaw = msg.desired_yaw
+    ref_state.desired_yaw_rate = msg.desired_yaw_rate
 
     if not state_bag_closed and isStarted:
         ref_bag.write('/cf1/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, ref_state)
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     # Turn left:
     turn_goal = Destination3DGoal()
-    turn_goal.destination_info.desired_yaw = yaw_rate
+    turn_goal.destination_info.desired_yaw_rate = yaw_rate
     turn_goal.time_duration = 90.0 / yaw_rate
     rel_vel_client.send_goal(turn_goal)
     rel_vel_client.wait_for_result()
@@ -168,7 +168,7 @@ if __name__ == '__main__':
 
     # Turn left:
     turn_goal = Destination3DGoal()
-    turn_goal.destination_info.desired_yaw = yaw_rate
+    turn_goal.destination_info.desired_yaw_rate = yaw_rate
     turn_goal.time_duration = 90.0 / yaw_rate
     rel_vel_client.send_goal(turn_goal)
     rel_vel_client.wait_for_result()
@@ -186,7 +186,7 @@ if __name__ == '__main__':
 
     # Turn left:
     turn_goal = Destination3DGoal()
-    turn_goal.destination_info.desired_yaw = yaw_rate
+    turn_goal.destination_info.desired_yaw_rate = yaw_rate
     turn_goal.time_duration = 90.0 / yaw_rate
     rel_vel_client.send_goal(turn_goal)
     rel_vel_client.wait_for_result()

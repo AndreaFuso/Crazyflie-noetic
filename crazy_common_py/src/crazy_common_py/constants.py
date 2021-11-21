@@ -20,7 +20,7 @@ IMU_UPDATE_RATE_DEFAULT = 1000   # [Hz]
 #                                           F O R C E  S T A T E
 # ----------------------------------------------------------------------------------------------------------------------
 # Updating frequency:
-FORCE_STATE_FREQ_UPDATE = 500   # [Hz]
+FORCE_STATE_FREQ_UPDATE = 100   # [Hz]
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                                           P H Y S I C A L  C O N S T A N T S
@@ -63,7 +63,7 @@ INT16_MAX = 32767
 # Motor command limits:
 MAX_THRUST = 65535  # 65535
 MIN_THRUST = 20000  # 20000
-THRUST_BASE = 38180 # 36000
+THRUST_BASE = 38180 # 36300
 thrustScale = 1000.0
 
 # Default technique to solve windup problem in pid:
@@ -174,14 +174,14 @@ PID_YAW_INTEGRATION_LIMIT = 360.0   #360 50.0
 #                                     O T H E R  F I R M W A R E  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
 # Desired Roll Rate VS actual Roll Rate => ROLL OUTPUT
-PID_ROLL_RATE_KP = 250.0    #250 80.0
-PID_ROLL_RATE_KI = 500.0    #500 200.0
-PID_ROLL_RATE_KD = 2.5     #2.5 350.0
+PID_ROLL_RATE_KP = 120.0    #250 80.0
+PID_ROLL_RATE_KI = 16.7    #500 200.0
+PID_ROLL_RATE_KD = 2.5    #2.5 350.0
 PID_ROLL_RATE_INTEGRATION_LIMIT = 33.3     #33.3
 
 # Desired Pitch Rate VS actual Pitch Rate => PITCH OUTPUT
-PID_PITCH_RATE_KP = 250.0   #250 80.0
-PID_PITCH_RATE_KI = 500.0  #500 200.0
+PID_PITCH_RATE_KP = 120.0   #250 80.0
+PID_PITCH_RATE_KI = 16.7  #500 200.0
 PID_PITCH_RATE_KD = 2.5    #2.5 350.0
 PID_PITCH_RATE_INTEGRATION_LIMIT = 33.3 #33.3
 
