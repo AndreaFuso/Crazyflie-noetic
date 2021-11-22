@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+	<!-- Launching the default launch file for the swarm -->
+	<include file="$(find crazyCmd)/launch/my_launch.launch"/>
+
+	<!-- Starting up the task node -->
+	<node name="swarm_test_node" pkg="crazyCmd" type="swarm_test_node.py" output="screen"/>
+
+</launch>

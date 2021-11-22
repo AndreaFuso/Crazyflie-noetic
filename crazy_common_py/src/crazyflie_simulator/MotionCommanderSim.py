@@ -100,6 +100,11 @@ class MotionCommanderSim:
                                               Position, queue_size=1)
         self.position_target = Position()
 
+        #TODO: aggiungere subscriber per traiettoria pubblicata dall'esterno, un'azione blocca la pubblicazione di
+        # position_target e la sostituisce con quella letta dallo subscriber: questo funzionamento rimane in piedi
+        # finche' l'azione di traiettoria non termina per tempo o per stop action; a quel punto si ritorna a
+        # pubblicare position_target
+
         # Publisher to publish motor commands directly to the motors:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # NOTE: "/set_destination_position" keeps publishing the desired position, and FlightControllerSim keeps

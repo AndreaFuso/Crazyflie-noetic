@@ -12,7 +12,7 @@ rospack = rospkg.RosPack()
 #                                                   S E T T I N G S
 # ======================================================================================================================
 
-show_all_real = False
+show_all_real = True
 show_all_sim = False
 show_all_comparison = True
 
@@ -33,9 +33,9 @@ else:
     'real_state_R_D_04_02_04_02_V_02_02_02_02_RA_90_RR_72_N1.bag'
     'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1'
 '''
-real_state_bag_name = 'real_state_S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1.bag'
-real_motor_bag_name = 'real_motor_S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1.bag'
-real_ref_bag_name = 'real_ref_S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1.bag'
+real_state_bag_name = 'real_state_SP_D_04_04_V_04_02_RA_90_RR_72_N1.bag'
+real_motor_bag_name = 'real_motor_SP_D_04_04_V_04_02_RA_90_RR_72_N1.bag'
+real_ref_bag_name = 'real_ref_SP_D_04_04_V_04_02_RA_90_RR_72_N1.bag'
 
 # Simulation figures:
 if show_all_sim:
@@ -50,9 +50,9 @@ else:
     show_sim_motor_command = False
 
 # Simulation bas:
-sim_state_bag_name = 'sim_state_S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1.bag'
-sim_motor_bag_name = 'sim_motor_S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1.bag'
-sim_ref_bag_name = 'sim_ref_S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1.bag'
+sim_state_bag_name = 'sim_state_SP_D_04_04_V_04_02_RA_90_RR_72_N1.bag'
+sim_motor_bag_name = 'sim_motor_SP_D_04_04_V_04_02_RA_90_RR_72_N1.bag'
+sim_ref_bag_name = 'sim_ref_SP_D_04_04_V_04_02_RA_90_RR_72_N1.bag'
 
 # Comparison figures:
 if show_all_comparison:
@@ -206,14 +206,15 @@ sim_time_motor = linspace(0.0, sim_motor_secs, len(sim_roll_cmd))
 for ii in range(0, len(sim_time_state)):
     sim_time_state[ii] = sim_time_state[ii] + time_final_takeoff - 0.8
 
-sim_time_state_list = list(sim_time_state)
+'''sim_time_state_list = list(sim_time_state)
 pos = [n for n, i in enumerate(sim_time_state_list) if i > 20.0][0]
 
 delta_time = 1.0
 sim_fake_time_state = sim_time_state_list[0:pos+1]
 delta_fake_list = list(linspace(sim_time_state_list[pos], sim_time_state_list[pos] + delta_time,
                                 int(delta_time / (sim_time_state_list[1]-sim_time_state_list[0])) ))
-
+print((sim_time_state_list[1]-sim_time_state_list[0]))
+print(int(delta_time / (sim_time_state_list[1]-sim_time_state_list[0])))
 sim_fake_time_state = sim_fake_time_state + delta_fake_list
 sim_fake_time_tail = []
 for ii in range(0, len(sim_time_state_list[pos+2:])):
@@ -222,9 +223,6 @@ sim_fake_time_state = sim_fake_time_state + sim_fake_time_tail
 
 sim_z_list = list(sim_z)
 sim_fake_z = sim_z_list[0:pos+1]
-'''delta_fake_z_list = list(full((1, len(delta_fake_list)), 10))
-for ii in range(0, len(delta_fake_z_list)):
-    delta_fake_z_list[ii] = 0.3'''
 height = sim_z_list[pos]
 delta_fake_z_list = [height for x in range(0, len(delta_fake_list))]
 sim_fake_z = sim_fake_z + delta_fake_z_list
@@ -232,6 +230,8 @@ sim_fake_z_tail = []
 
 sim_fake_z = sim_fake_z + sim_z_list[pos+2:]
 
+print(len(sim_z), len(delta_fake_list), len(delta_fake_z_list))
+print(len(sim_time_state), len(sim_fake_time_state), len(sim_fake_z))'''
 
 # Simulate position figure:
 if show_sim_position:
@@ -700,9 +700,9 @@ if show_comp_position:
     # Z position:
     subplot(313)
     plot(real_time_state, real_z, label='Real')
-    #plot(sim_time_state, sim_z, label='Sim')
+    plot(sim_time_state, sim_z, label='Sim')
 
-    plot(sim_fake_time_state, sim_fake_z, label='Sim')
+    #plot(sim_fake_time_state, sim_fake_z, label='Sim')
     plot(real_time_state, real_ref_z, label='Theor')
     ylabel('Z [m]')
     xlabel('Time [s]')
@@ -785,41 +785,32 @@ if show_comp_motor_command:
     figure(fig_cont)
     # Roll command value:
     subplot(411)
-    plot(sim_time_motor, sim_roll_cmd, label='Sim')
     plot(real_time_motor, real_roll_cmd, label='Real')
-
+    plot(sim_time_motor, sim_roll_cmd, label='Sim')
     ylabel('R [u]')
     xlim(0, 25)
     title('Motor commands comparison')
-    legend(loc="upper right")
 
     # Pitch command value:
     subplot(412)
-    plot(sim_time_motor, sim_pitch_cmd, label='Sim')
     plot(real_time_motor, real_pitch_cmd, label='Real')
-
+    plot(sim_time_motor, sim_pitch_cmd, label='Sim')
     ylabel('P [u]')
     xlim(0, 25)
-    legend(loc="upper right")
 
     # Yaw command value:
     subplot(413)
-    plot(sim_time_motor, sim_yaw_cmd, label='Sim')
     plot(real_time_motor, real_yaw_cmd, label='Real')
-
+    plot(sim_time_motor, sim_yaw_cmd, label='Sim')
     ylabel('Y [u]')
     xlim(0, 25)
-    legend(loc="upper right")
 
     # Thrust command value:
     subplot(414)
+    plot(real_time_motor, real_thrust_cmd)
     plot(sim_time_motor, sim_thrust_cmd, label='Sim')
-    plot(real_time_motor, real_thrust_cmd, label='Real')
-
     ylabel('T [u]')
     xlabel('Time [s]')
     xlim(0, 25)
     legend(loc="upper right")
-
-print(len(real_roll), len(sim_roll))
 show()

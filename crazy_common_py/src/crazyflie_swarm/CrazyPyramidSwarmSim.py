@@ -3,6 +3,7 @@ import rospy
 import actionlib
 
 import math
+from math import atan2
 
 # Action
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
@@ -13,9 +14,10 @@ from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFee
 from std_msgs.msg import Empty
 from crazyflie_messages.msg import Position, CrazyflieState, SwarmStates
 
-from crazy_common_py.common_functions import deg2rad, extractCfNumber
+from crazy_common_py.common_functions import deg2rad, rad2deg, extractCfNumber
 
-from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
+from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, \
+    DEFAULT_STOP_TOPIC, DEFAULT_REL_VEL_TOPIC
 from crazy_common_py.constants import DEFAULT_LEADER
 
 class CrazyPyramidSwarmSim:
@@ -49,6 +51,14 @@ class CrazyPyramidSwarmSim:
         # List of clients for flocking action:
         self.flocking_act_clients = []
         self.__make_flocking_clients()
+
+        # List of clients for stop action:
+        self.stop_clients = []
+        self.__make_stop_clients()
+
+        # List of relative velocity motion clients:
+        self.rel_vel_clients = []
+        self.__make_rel_vel_clients()
 
         # List of state subscribers:
         self.state_subs = []
@@ -98,6 +108,17 @@ class CrazyPyramidSwarmSim:
                                                                  self.__swarm_flocking_act_callback, False)
         self.__swarm_flocking_act.start()
 
+        # Stop action:
+        self.__swarm_stop_act = actionlib.SimpleActionServer('/pyramid_swarm/' + DEFAULT_STOP_TOPIC, EmptyAction,
+                                                             self.__swarm_stop_act_callback, False)
+        self.__swarm_stop_act.start()
+
+        # Relative velocity action:
+        self.__swarm_rel_vel_act = actionlib.SimpleActionServer('/pyramid_swarm/' + DEFAULT_REL_VEL_TOPIC,
+                                                                Destination3DAction,
+                                                                self.__swarm_rel_vel_act_callback, False)
+        self.__swarm_rel_vel_act.start()
+
     # ==================================================================================================================
     #
     #                                   I N I T I A L  O P E R A T I O N S  M E T H O D S
@@ -127,6 +148,18 @@ class CrazyPyramidSwarmSim:
             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/relative_position_3D_motion', Destination3DAction)
             self.relative_motion_act_clients.append(tmp_action)
             self.relative_motion_act_clients[-1].wait_for_server()'''
+
+    def __make_stop_clients(self):
+        for cf_name in self.cf_names:
+            tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/' + DEFAULT_STOP_TOPIC, EmptyAction)
+            self.stop_clients.append(tmp_action)
+            self.stop_clients[-1].wait_for_server()
+
+    def __make_rel_vel_clients(self):
+        for cf_name in self.cf_names:
+            tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/' + DEFAULT_REL_VEL_TOPIC, Destination3DAction)
+            self.rel_vel_clients.append(tmp_action)
+            self.rel_vel_clients[-1].wait_for_server()
 
     def __make_state_subs(self):
         for cf_name in self.cf_names:
@@ -261,6 +294,64 @@ class CrazyPyramidSwarmSim:
         self.__swarm_flocking_act.set_succeeded(result)
 
 
+    def  __swarm_stop_act_callback(self, goal):
+        result = EmptyResult()
+        for stop_action in self.stop_clients:
+            stop_action.send_goal(goal)
+        result.executed = True
+        self.__swarm_stop_act.set_succeeded(result)
+
+    def __swarm_rel_vel_act_callback(self, goal):
+        result = Destination3DResult()
+        # Extracting data:
+        desired_position = goal.destination_info
+        duration = goal.time_duration
+
+        desired_yaw_rate = desired_position.desired_yaw_rate
+
+        # CASE 1: no rotational speed
+        if desired_yaw_rate == 0:
+            # Simply a rigid body translation:
+            for rel_vel_action in self.rel_vel_clients:
+                rel_vel_action.send_goal(goal)
+        elif desired_yaw_rate != 0 and (desired_position.desired_velocity.x == 0 and desired_position.desired_velocity.y == 0 and desired_position.desired_velocity.z == 0):
+            # CASE 2: yaw rate != 0 but velocity = 0:
+            # Determining position of rotational axis (Hp: it passes from the vertex):
+            actual_states = self.states
+            vertex_state = actual_states[0]
+
+            vertex_destination_goal = Destination3DGoal()
+            vertex_destination_goal.destination_info.desired_yaw_rate = desired_yaw_rate
+            vertex_destination_goal.time_duration = duration
+            destination_goals = [vertex_destination_goal]
+
+            tmp_destination_goal = Destination3DGoal()
+            tmp_destination_goal.time_duration = duration
+            tmp_destination_goal.destination_info.desired_yaw_rate = desired_yaw_rate
+
+            for ii in range(1, len(actual_states)):
+                axis_distance = math.sqrt( (actual_states[ii].position.x) ** 2 + (actual_states[ii].position.y) ** 2 )
+                psi_0 = atan2(actual_states[ii].position.y, actual_states[ii].position.x)
+                tmp_destination_goal.destination_info.desired_velocity.x = - deg2rad(desired_yaw_rate) * axis_distance * math.sin(psi_0)
+                tmp_destination_goal.destination_info.desired_velocity.y = deg2rad(desired_yaw_rate) * axis_distance * math.cos(psi_0)
+                #tmp_destination_goal.time_duration = math.fabs(psi_0/deg2rad(desired_yaw_rate))
+                destination_goals.append(tmp_destination_goal)
+                '''print(actual_states[ii].name, 'X: ', actual_states[ii].position.x, 'Y: ', actual_states[ii].position.y, 'PSI_0: ',
+                      atan2(actual_states[ii].position.y, actual_states[ii].position.x))'''
+
+            for ii in range(0, len(self.rel_vel_clients)):
+                self.rel_vel_clients[ii].send_goal(destination_goals[ii])
+
+
+        else:
+            # CASE 3: rotation around origin:
+            # Simply a rigid body translation:
+            for rel_vel_action in self.rel_vel_clients:
+                rel_vel_action.send_goal(goal)
+
+
+        result.result = True
+        self.__swarm_rel_vel_act.set_succeeded(result)
     # ==================================================================================================================
     #
     #                          F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)

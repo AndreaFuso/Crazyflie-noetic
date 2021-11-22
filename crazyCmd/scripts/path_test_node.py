@@ -17,6 +17,9 @@ from crazyflie_messages.msg import TakeoffAction, TakeoffGoal
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal
 from enum import Enum
 
+class PathType(Enum):
+    SQUARE = 0
+    SPRINT = 1
 
 # Functions:
 state = CrazyflieState()
@@ -30,19 +33,30 @@ bags_closed = False
 # ----------------------------------------------------------------------------------------------------------------------
 # Real (True) or simulated (False) crazyflie:
 isReal = False
-
+type = PathType.SPRINT
 
 # Path info:
-yaw_rate = 360.0 / 5
-turning_angle = 90.0
-side1 = 0.2
-side2 = 0.2
-side3 = 0.2
-side4 = 0.2
-velocity1 = 0.2
-velocity2 = 0.2
-velocity3 = 0.2
-velocity4 = 0.2
+if type == PathType.SQUARE:
+    yaw_rate = 360.0 / 5
+    turning_angle = 90.0
+    side1 = 0.2
+    side2 = 0.2
+    side3 = 0.2
+    side4 = 0.2
+    velocity1 = 0.2
+    velocity2 = 0.2
+    velocity3 = 0.2
+    velocity4 = 0.2
+
+elif type == PathType.SPRINT:
+    forward_length = 0.4
+    backward_length = 0.4
+
+    forward_velocity = 0.4
+    backward_velocity = 0.2
+
+    yaw_rate = 360.0 / 5
+    turning_angle = 180.0
 
 # Rosbag name:
 '''
@@ -55,8 +69,12 @@ velocity4 = 0.2
         'R_D_04_02_04_02_V_02_02_02_02_RA_90_RR_72_N1'
         
         'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1'
+    Sprint: 
 '''
-experiment_name = 'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1'
+if type == PathType.SQUARE:
+    experiment_name = 'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1'
+elif type == PathType.SPRINT:
+    experiment_name = 'SP_D_04_04_V_04_02_RA_90_RR_72_N1'
 # ======================================================================================================================
 
 
@@ -195,84 +213,129 @@ if __name__ == '__main__':
     rospy.sleep(10.0)
     isStarted = True
 
-    # Takeoff:
-    takeoff_goal = TakeoffGoal()
-    takeoff_goal.takeoff_height = 0.3
-    takeoff_client.send_goal(takeoff_goal)
-    takeoff_client.wait_for_result()
-    print('TAKEOFF COMPLETE')
-    rospy.sleep(1.0)
+    if type == PathType.SQUARE:
+        # Takeoff:
+        takeoff_goal = TakeoffGoal()
+        takeoff_goal.takeoff_height = 0.3
+        takeoff_client.send_goal(takeoff_goal)
+        takeoff_client.wait_for_result()
+        print('TAKEOFF COMPLETE')
+        rospy.sleep(1.0)
 
-    # Side 1:
-    side1_goal = Destination3DGoal()
-    side1_goal.destination_info.desired_velocity.x = velocity1
-    side1_goal.time_duration = side1 / velocity1
-    rel_vel_client.send_goal(side1_goal)
-    rel_vel_client.wait_for_result()
-    print('FIRST SIDE COMPLETE')
-    rospy.sleep(1.0)
+        # Side 1:
+        side1_goal = Destination3DGoal()
+        side1_goal.destination_info.desired_velocity.x = velocity1
+        side1_goal.time_duration = side1 / velocity1
+        rel_vel_client.send_goal(side1_goal)
+        rel_vel_client.wait_for_result()
+        print('FIRST SIDE COMPLETE')
+        rospy.sleep(1.0)
 
-    # Turn left:
-    turn_goal = Destination3DGoal()
-    turn_goal.destination_info.desired_yaw_rate = yaw_rate
-    turn_goal.time_duration = turning_angle / yaw_rate
-    rel_vel_client.send_goal(turn_goal)
-    rel_vel_client.wait_for_result()
-    print('TURN +90 DEG COMPLETE')
-    rospy.sleep(1.0)
+        # Turn left:
+        turn_goal = Destination3DGoal()
+        turn_goal.destination_info.desired_yaw_rate = yaw_rate
+        turn_goal.time_duration = turning_angle / yaw_rate
+        rel_vel_client.send_goal(turn_goal)
+        rel_vel_client.wait_for_result()
+        print('TURN +90 DEG COMPLETE')
+        rospy.sleep(1.0)
 
-    # Side 2:
-    side2_goal = Destination3DGoal()
-    side2_goal.destination_info.desired_velocity.x = velocity2
-    side2_goal.time_duration = side2 / velocity2
-    rel_vel_client.send_goal(side2_goal)
-    rel_vel_client.wait_for_result()
-    print('SECOND SIDE COMPLETE')
-    rospy.sleep(1.0)
+        # Side 2:
+        side2_goal = Destination3DGoal()
+        side2_goal.destination_info.desired_velocity.x = velocity2
+        side2_goal.time_duration = side2 / velocity2
+        rel_vel_client.send_goal(side2_goal)
+        rel_vel_client.wait_for_result()
+        print('SECOND SIDE COMPLETE')
+        rospy.sleep(1.0)
 
-    # Turn left:
-    turn_goal = Destination3DGoal()
-    turn_goal.destination_info.desired_yaw_rate = yaw_rate
-    turn_goal.time_duration = turning_angle / yaw_rate
-    rel_vel_client.send_goal(turn_goal)
-    rel_vel_client.wait_for_result()
-    print('TURN +90 DEG COMPLETE')
-    rospy.sleep(1.0)
+        # Turn left:
+        turn_goal = Destination3DGoal()
+        turn_goal.destination_info.desired_yaw_rate = yaw_rate
+        turn_goal.time_duration = turning_angle / yaw_rate
+        rel_vel_client.send_goal(turn_goal)
+        rel_vel_client.wait_for_result()
+        print('TURN +90 DEG COMPLETE')
+        rospy.sleep(1.0)
 
-    # Side 3:
-    side3_goal = Destination3DGoal()
-    side3_goal.destination_info.desired_velocity.x = velocity3
-    side3_goal.time_duration = side3 / velocity3
-    rel_vel_client.send_goal(side3_goal)
-    rel_vel_client.wait_for_result()
-    print('THIRD SIDE COMPLETE')
-    rospy.sleep(1.0)
+        # Side 3:
+        side3_goal = Destination3DGoal()
+        side3_goal.destination_info.desired_velocity.x = velocity3
+        side3_goal.time_duration = side3 / velocity3
+        rel_vel_client.send_goal(side3_goal)
+        rel_vel_client.wait_for_result()
+        print('THIRD SIDE COMPLETE')
+        rospy.sleep(1.0)
 
-    # Turn left:
-    turn_goal = Destination3DGoal()
-    turn_goal.destination_info.desired_yaw_rate = yaw_rate
-    turn_goal.time_duration = turning_angle / yaw_rate
-    rel_vel_client.send_goal(turn_goal)
-    rel_vel_client.wait_for_result()
-    print('TURN +90 DEG COMPLETE')
-    rospy.sleep(1.0)
+        # Turn left:
+        turn_goal = Destination3DGoal()
+        turn_goal.destination_info.desired_yaw_rate = yaw_rate
+        turn_goal.time_duration = turning_angle / yaw_rate
+        rel_vel_client.send_goal(turn_goal)
+        rel_vel_client.wait_for_result()
+        print('TURN +90 DEG COMPLETE')
+        rospy.sleep(1.0)
 
-    # Side 4:
-    side4_goal = Destination3DGoal()
-    side4_goal.destination_info.desired_velocity.x = velocity4
-    side4_goal.time_duration = side4 / velocity4
-    rel_vel_client.send_goal(side4_goal)
-    rel_vel_client.wait_for_result()
-    print('FOURTH SIDE COMPLETE')
-    rospy.sleep(5.0)
+        # Side 4:
+        side4_goal = Destination3DGoal()
+        side4_goal.destination_info.desired_velocity.x = velocity4
+        side4_goal.time_duration = side4 / velocity4
+        rel_vel_client.send_goal(side4_goal)
+        rel_vel_client.wait_for_result()
+        print('FOURTH SIDE COMPLETE')
+        rospy.sleep(5.0)
 
-    # Land:
-    landing_goal = TakeoffGoal()
-    landing_goal.takeoff_height = 0.1
-    land_client.send_goal(landing_goal)
-    land_client.wait_for_result()
-    print('LANDING COMPLETE')
-    rospy.sleep(5.0)
+        # Land:
+        landing_goal = TakeoffGoal()
+        landing_goal.takeoff_height = 0.1
+        land_client.send_goal(landing_goal)
+        land_client.wait_for_result()
+        print('LANDING COMPLETE')
+        rospy.sleep(5.0)
+
+    elif type == PathType.SPRINT:
+        # Takeoff:
+        takeoff_goal = TakeoffGoal()
+        takeoff_goal.takeoff_height = 0.3
+        takeoff_client.send_goal(takeoff_goal)
+        takeoff_client.wait_for_result()
+        print('TAKEOFF COMPLETE')
+        rospy.sleep(1.0)
+
+        # Forward path:
+        side1_goal = Destination3DGoal()
+        side1_goal.destination_info.desired_velocity.x = forward_velocity
+        side1_goal.time_duration = forward_length / forward_velocity
+        rel_vel_client.send_goal(side1_goal)
+        rel_vel_client.wait_for_result()
+        print('FORWARD PATH COMPLETE')
+        rospy.sleep(1.0)
+
+        # Turn around:
+        turn_goal = Destination3DGoal()
+        turn_goal.destination_info.desired_yaw_rate = yaw_rate
+        turn_goal.time_duration = turning_angle / yaw_rate
+        rel_vel_client.send_goal(turn_goal)
+        rel_vel_client.wait_for_result()
+        print('TURN +90 DEG COMPLETE')
+        rospy.sleep(1.0)
+
+        # Backward path:
+        side1_goal = Destination3DGoal()
+        side1_goal.destination_info.desired_velocity.x = backward_velocity
+        side1_goal.time_duration = backward_length / backward_velocity
+        rel_vel_client.send_goal(side1_goal)
+        rel_vel_client.wait_for_result()
+        print('FORWARD PATH COMPLETE')
+        rospy.sleep(1.0)
+
+        # Land:
+        landing_goal = TakeoffGoal()
+        landing_goal.takeoff_height = 0.1
+        land_client.send_goal(landing_goal)
+        land_client.wait_for_result()
+        print('LANDING COMPLETE')
+        rospy.sleep(5.0)
 
     bags_closed = True
     state_bag.close()
