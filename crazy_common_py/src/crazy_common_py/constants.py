@@ -20,7 +20,7 @@ IMU_UPDATE_RATE_DEFAULT = 1000   # [Hz]
 #                                           F O R C E  S T A T E
 # ----------------------------------------------------------------------------------------------------------------------
 # Updating frequency:
-FORCE_STATE_FREQ_UPDATE = 100   # [Hz]
+FORCE_STATE_FREQ_UPDATE = 500   # [Hz]
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                                           P H Y S I C A L  C O N S T A N T S
@@ -85,9 +85,9 @@ MAX_PITCH_RATE = 180     # 180 [deg/s]
 MAX_YAW_RATE = 180     # 180 [deg/s]
 
 # Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
-MAX_ROLL_OUTPUT = 2000 #7000
-MAX_PITCH_OUTPUT = 2000 #7000
-MAX_YAW_OUTPUT = 2000 #7000
+MAX_ROLL_OUTPUT = 10000 #7000
+MAX_PITCH_OUTPUT = 10000 #7000
+MAX_YAW_OUTPUT = 10000 #7000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S

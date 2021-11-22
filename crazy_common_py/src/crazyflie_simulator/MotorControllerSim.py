@@ -219,7 +219,7 @@ class MotorSim:
 
             #self.lift_drag_pub.publish(half_quantites)
             self.actual_Wrench = half_quantites
-            time.sleep(1/2000)
+            rospy.sleep(1/2000)
             #rospy.sleep(dur)
             #self.lift_drag_pub.publish(self.lift_drag_pub_msg)
             self.actual_Wrench = self.lift_drag_pub_msg

@@ -24,62 +24,121 @@ attitude = Attitude()
 ref_state = Position()
 
 isStarted = False
+bags_closed = False
+# ======================================================================================================================
+#                                             INITIAL PARAMETERS
+# ----------------------------------------------------------------------------------------------------------------------
+# Real (True) or simulated (False) crazyflie:
+isReal = False
+
+
+# Path info:
+yaw_rate = 360.0 / 5
+turning_angle = 90.0
+side1 = 0.2
+side2 = 0.2
+side3 = 0.2
+side4 = 0.2
+velocity1 = 0.2
+velocity2 = 0.2
+velocity3 = 0.2
+velocity4 = 0.2
+
+# Rosbag name:
+'''
+    Rectangular: R_D_N1_N2_N3_N4_V_N5_N6_N7_N8_RA_N9_RR_N10
+        - N1, N2, N3, N4 -> length of sides [m]
+        - N5, N6, N7, N8 -> velocity on each side [m/s]
+        - N9 -> angle during turning [deg]
+        - N10 -> rotating speed for turning [deg/s]
+        
+        'R_D_04_02_04_02_V_02_02_02_02_RA_90_RR_72_N1'
+        
+        'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1'
+'''
+experiment_name = 'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1'
+# ======================================================================================================================
+
+
 
 def state_sub_cb(msg):
-    global state_bag, state, state_bag_closed, isStarted
+    global state_bag, state, bags_closed, isStarted, isReal
     # Saving orientation:
     state.orientation.roll = msg.orientation.roll
     state.orientation.pitch = msg.orientation.pitch
     state.orientation.yaw = msg.orientation.yaw
 
-    # Saving linear velocity:
-    vx = msg.velocity.x
-    vy = msg.velocity.y
-    vz = msg.velocity.z
+    # Saving position:
+    state.position.x = msg.position.x
+    state.position.y = msg.position.y
+    state.position.z = msg.position.z
 
-    state.velocity.x = vx * math.cos(msg.orientation.yaw) + vy * math.sin(msg.orientation.yaw)
-    state.velocity.y = - vx * math.sin(msg.orientation.yaw) + vy * math.cos(msg.orientation.yaw)
-    state.velocity.z = vz
+    # Saving velocity:
+    if isReal:
+        state.velocity.x = msg.velocity.x
+        state.velocity.y = msg.velocity.y
+        state.velocity.z = msg.velocity.z
+    else:
+        vx = msg.velocity.x
+        vy = msg.velocity.y
+        vz = msg.velocity.z
+
+        '''state.velocity.x = vx * math.cos(msg.orientation.yaw) + vy * math.sin(msg.orientation.yaw)
+        state.velocity.y = - vx * math.sin(msg.orientation.yaw) + vy * math.cos(msg.orientation.yaw)
+        state.velocity.z = vz'''
+        state.velocity.x = vx
+        state.velocity.y = vy
+        state.velocity.z = vz
+
     # Saving rotating speed:
+    state.rotating_speed.x = msg.rotating_speed.x
+    state.rotating_speed.y = msg.rotating_speed.y
     state.rotating_speed.z = msg.rotating_speed.z
 
-    if not state_bag_closed and isStarted:
+    if (not bags_closed) and isStarted:
         state_bag.write('/cf1/' + DEFAULT_CF_STATE_TOPIC, state)
 
 def ref_cb(msg):
-    global ref_state, ref_bag, state_bag_closed, state, isStarted
+    global ref_state, ref_bag, bags_closed, state, isStarted, isReal
 
-    vx = msg.desired_velocity.x
-    vy = msg.desired_velocity.y
-    vz = msg.desired_velocity.z
+    # Saving reference velocity:
+    if isReal:
+        ref_state.desired_velocity.x = msg.desired_velocity.x
+        ref_state.desired_velocity.y = msg.desired_velocity.y
+        ref_state.desired_velocity.z = msg.desired_velocity.z
+    else:
+        vx = msg.desired_velocity.x
+        vy = msg.desired_velocity.y
+        vz = msg.desired_velocity.z
 
-    ref_state.desired_velocity.x = vx * math.cos(state.orientation.yaw) + vy * math.sin(state.orientation.yaw)
-    ref_state.desired_velocity.y = - vx * math.sin(state.orientation.yaw) + vy * math.cos(state.orientation.yaw)
-    ref_state.desired_velocity.z = vz
+        ref_state.desired_velocity.x = vx * math.cos(state.orientation.yaw) + vy * math.sin(state.orientation.yaw)
+        ref_state.desired_velocity.y = - vx * math.sin(state.orientation.yaw) + vy * math.cos(state.orientation.yaw)
+        ref_state.desired_velocity.z = vz
 
+    # Saving reference yaw rate:
     ref_state.desired_yaw_rate = msg.desired_yaw_rate
 
-    if not state_bag_closed and isStarted:
+    if (not bags_closed) and isStarted:
         ref_bag.write('/cf1/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, ref_state)
 
 def motor_command_sub_cb(msg):
-    global motor_bag, attitude, state_bag_closed, isStarted
+    global motor_bag, attitude, bags_closed, isStarted
     # Saving motor commands:
     attitude.desired_thrust = msg.desired_thrust
     attitude.desired_attitude.roll = msg.desired_attitude.roll
     attitude.desired_attitude.pitch = msg.desired_attitude.pitch
     attitude.desired_attitude.yaw = msg.desired_attitude.yaw
 
-    if not state_bag_closed and isStarted:
+    if (not bags_closed) and isStarted:
         motor_bag.write('/cf1/' + DEFAULT_MOTOR_CMD_TOPIC, attitude)
 
 def closing_operations():
-    global state_bag, motor_bag, state_bag_closed
-    if not state_bag_closed:
+    global state_bag, motor_bag, bags_closed
+    if not bags_closed:
         state_bag.close()
         motor_bag.close()
         ref_bag.close()
-        state_bag_closed = True
+        bags_closed = True
 
 
 # INITIAL PARAMETERS
@@ -89,7 +148,7 @@ pkg_path = rospack.get_path('crazyCmd')
 
 # Rosbag init:
 
-state_bag_closed = False
+
 
 if __name__ == '__main__':
     # Node initialization:
@@ -119,17 +178,22 @@ if __name__ == '__main__':
 
     rospy.on_shutdown(closing_operations)
 
-    # Path info:
-    yaw_rate = 360.0 / 5
-    velocity = 0.2
-    side = 0.2
+    if isReal:
+        state_bag_name = 'real_state_' + experiment_name + '.bag'
+        motor_bag_name = 'real_motor_' + experiment_name + '.bag'
+        ref_bag_name = 'real_ref_' + experiment_name + '.bag'
+    else:
+        state_bag_name = 'sim_state_' + experiment_name + '.bag'
+        motor_bag_name = 'sim_motor_' + experiment_name + '.bag'
+        ref_bag_name = 'sim_ref_' + experiment_name + '.bag'
 
-    state_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/sim_state_2.bag', 'w')
-    motor_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/sim_motor_2.bag', 'w')
-    ref_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/sim_ref_2.bag', 'w')
-    isStarted = True
+    state_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/' + state_bag_name, 'w')
+    motor_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/' + motor_bag_name, 'w')
+    ref_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/' + ref_bag_name, 'w')
+
     # Wait some time:
-    time.sleep(10.0)
+    rospy.sleep(10.0)
+    isStarted = True
 
     # Takeoff:
     takeoff_goal = TakeoffGoal()
@@ -137,70 +201,70 @@ if __name__ == '__main__':
     takeoff_client.send_goal(takeoff_goal)
     takeoff_client.wait_for_result()
     print('TAKEOFF COMPLETE')
-    time.sleep(1)
+    rospy.sleep(1.0)
 
     # Side 1:
     side1_goal = Destination3DGoal()
-    side1_goal.destination_info.desired_velocity.x = velocity
-    side1_goal.time_duration = side / velocity
+    side1_goal.destination_info.desired_velocity.x = velocity1
+    side1_goal.time_duration = side1 / velocity1
     rel_vel_client.send_goal(side1_goal)
     rel_vel_client.wait_for_result()
     print('FIRST SIDE COMPLETE')
-    time.sleep(1)
+    rospy.sleep(1.0)
 
     # Turn left:
     turn_goal = Destination3DGoal()
     turn_goal.destination_info.desired_yaw_rate = yaw_rate
-    turn_goal.time_duration = 90.0 / yaw_rate
+    turn_goal.time_duration = turning_angle / yaw_rate
     rel_vel_client.send_goal(turn_goal)
     rel_vel_client.wait_for_result()
     print('TURN +90 DEG COMPLETE')
-    time.sleep(1)
+    rospy.sleep(1.0)
 
     # Side 2:
     side2_goal = Destination3DGoal()
-    side2_goal.destination_info.desired_velocity.x = velocity
-    side2_goal.time_duration = side / velocity
+    side2_goal.destination_info.desired_velocity.x = velocity2
+    side2_goal.time_duration = side2 / velocity2
     rel_vel_client.send_goal(side2_goal)
     rel_vel_client.wait_for_result()
     print('SECOND SIDE COMPLETE')
-    time.sleep(1)
+    rospy.sleep(1.0)
 
     # Turn left:
     turn_goal = Destination3DGoal()
     turn_goal.destination_info.desired_yaw_rate = yaw_rate
-    turn_goal.time_duration = 90.0 / yaw_rate
+    turn_goal.time_duration = turning_angle / yaw_rate
     rel_vel_client.send_goal(turn_goal)
     rel_vel_client.wait_for_result()
     print('TURN +90 DEG COMPLETE')
-    time.sleep(1)
+    rospy.sleep(1.0)
 
     # Side 3:
     side3_goal = Destination3DGoal()
-    side3_goal.destination_info.desired_velocity.x = velocity
-    side3_goal.time_duration = side / velocity
+    side3_goal.destination_info.desired_velocity.x = velocity3
+    side3_goal.time_duration = side3 / velocity3
     rel_vel_client.send_goal(side3_goal)
     rel_vel_client.wait_for_result()
     print('THIRD SIDE COMPLETE')
-    time.sleep(1)
+    rospy.sleep(1.0)
 
     # Turn left:
     turn_goal = Destination3DGoal()
     turn_goal.destination_info.desired_yaw_rate = yaw_rate
-    turn_goal.time_duration = 90.0 / yaw_rate
+    turn_goal.time_duration = turning_angle / yaw_rate
     rel_vel_client.send_goal(turn_goal)
     rel_vel_client.wait_for_result()
     print('TURN +90 DEG COMPLETE')
-    time.sleep(1)
+    rospy.sleep(1.0)
 
     # Side 4:
     side4_goal = Destination3DGoal()
-    side4_goal.destination_info.desired_velocity.x = velocity
-    side4_goal.time_duration = side / velocity
+    side4_goal.destination_info.desired_velocity.x = velocity4
+    side4_goal.time_duration = side4 / velocity4
     rel_vel_client.send_goal(side4_goal)
     rel_vel_client.wait_for_result()
     print('FOURTH SIDE COMPLETE')
-    time.sleep(1)
+    rospy.sleep(5.0)
 
     # Land:
     landing_goal = TakeoffGoal()
@@ -208,12 +272,12 @@ if __name__ == '__main__':
     land_client.send_goal(landing_goal)
     land_client.wait_for_result()
     print('LANDING COMPLETE')
-    time.sleep(2)
+    rospy.sleep(5.0)
 
-    state_bag_closed = True
+    bags_closed = True
     state_bag.close()
     motor_bag.close()
     ref_bag.close()
 
-
+    print('\n\nTASK COMPLETE\n\n')
     rospy.spin()

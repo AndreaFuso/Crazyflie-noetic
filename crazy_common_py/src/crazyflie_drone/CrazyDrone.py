@@ -9,12 +9,14 @@ import time
 # Custom modules
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_REL_VEL_TOPIC, \
-    DEFAULT_REL_POS_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC
+    DEFAULT_REL_POS_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC, \
+    DEFAULT_ACTUAL_DESTINATION_TOPIC
 from crazy_common_py.common_functions import deg2rad
+from crazy_common_py.constants import DEFAULT_TAKEOFF_HEIGHT
 # Action messages:
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal, Destination3DFeedback, Destination3DResult
-from crazyflie_messages.msg import CrazyflieState, Attitude
+from crazyflie_messages.msg import CrazyflieState, Attitude, Position
 from std_msgs.msg import Empty
 
 # Crazyflie API
@@ -55,11 +57,14 @@ class CrazyDrone:
             Logger can contain maximum 26 bytes:
                 - LOG_FLOAT -> float => 4 bytes
         '''
-        # Attitude logger configuration (3 floats => 12/26 bytes):
+        # Attitude logger configuration (6 floats => 24/26 bytes):
         self.__attitude_logger_config = LogConfig(name='attitude_conf', period_in_ms=10)
         self.__attitude_logger_config.add_variable('stabilizer.roll', 'float')
         self.__attitude_logger_config.add_variable('stabilizer.pitch', 'float')
         self.__attitude_logger_config.add_variable('stabilizer.yaw', 'float')
+        self.__attitude_logger_config.add_variable('gyro.x', 'float')
+        self.__attitude_logger_config.add_variable('gyro.y', 'float')
+        self.__attitude_logger_config.add_variable('gyro.z', 'float')
 
         # State logger configuration (6 floats => 24/26 bytes):
         self.__state_logger_config = LogConfig(name='state_conf', period_in_ms=10)
@@ -70,7 +75,12 @@ class CrazyDrone:
         self.__state_logger_config.add_variable('stateEstimate.vy', 'float')
         self.__state_logger_config.add_variable('stateEstimate.vz', 'float')
 
-        # Reference state logger configuration:
+        # Reference velocity state logger configuration (4 floats => 16/26 bytes):
+        self.__desired_state_logger_config = LogConfig(name='desired_state_config', period_in_ms=10)
+        self.__desired_state_logger_config.add_variable('posCtl.targetVX', 'float')
+        self.__desired_state_logger_config.add_variable('posCtl.targetVY', 'float')
+        self.__desired_state_logger_config.add_variable('posCtl.targetVZ', 'float')
+        self.__desired_state_logger_config.add_variable('controller.yawRate', 'float')
 
         # Controller output logger configuration (4 floats => 16/26 bytes):
         self.__controller_output_config = LogConfig(name='controller_output_conf', period_in_ms=10)
@@ -85,6 +95,9 @@ class CrazyDrone:
         # Controller output:
         self.__controller_output = Attitude()
 
+        # Desired position:
+        self.__desired_state = Position()
+
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -98,6 +111,10 @@ class CrazyDrone:
 
         # Publisher to publish motor command for real crazyflie:
         self.__motor_command_pub = rospy.Publisher('/' + self.cfName + '/' + DEFAULT_MOTOR_CMD_TOPIC, Attitude,
+                                                   queue_size=1)
+
+        # Publisher to publish the reference:
+        self.__desired_state_pub = rospy.Publisher('/' + self.cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, Position,
                                                    queue_size=1)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -154,6 +171,10 @@ class CrazyDrone:
         self.__controller_output_logger = SyncLogger(self.__scf, self.__controller_output_config)
         self.__controller_output_logger.connect()
 
+        # Desired state logger:
+        self.__desired_state_logger = SyncLogger(self.__scf, self.__desired_state_logger_config)
+        self.__desired_state_logger.connect()
+
         self.__initialOperationsEnded = True
         #self.__mc.take_off()
         #self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
@@ -169,11 +190,15 @@ class CrazyDrone:
             attitude_data = self.__attitude_logger.next()
             state_data = self.__state_logger.next()
             controller_output_data = self.__controller_output_logger.next()
+            desired_state_data = self.__desired_state_logger.next()
 
             # Extracting attitude:
             self.__state.orientation.roll = deg2rad(attitude_data[1]['stabilizer.roll'])
             self.__state.orientation.pitch = deg2rad(- attitude_data[1]['stabilizer.pitch'])
             self.__state.orientation.yaw = deg2rad(attitude_data[1]['stabilizer.yaw'])
+            self.__state.rotating_speed.x = deg2rad(attitude_data[1]['gyro.x'])
+            self.__state.rotating_speed.y = deg2rad(attitude_data[1]['gyro.y'])
+            self.__state.rotating_speed.z = deg2rad(attitude_data[1]['gyro.z'])
 
             # Extracting state:
             self.__state.position.x = state_data[1]['stateEstimate.x']
@@ -188,12 +213,22 @@ class CrazyDrone:
             self.__controller_output.desired_attitude.pitch = controller_output_data[1]['controller.cmd_pitch']
             self.__controller_output.desired_attitude.yaw = controller_output_data[1]['controller.cmd_yaw']
             self.__controller_output.desired_thrust = controller_output_data[1]['controller.cmd_thrust']
+
+            # Extracting reference data:
+            self.__desired_state.desired_velocity.x = desired_state_data[1]['posCtl.targetVX']
+            self.__desired_state.desired_velocity.y = desired_state_data[1]['posCtl.targetVY']
+            self.__desired_state.desired_velocity.z = desired_state_data[1]['posCtl.targetVZ']
+            self.__desired_state.desired_yaw_rate = desired_state_data[1]['controller.yawRate']
+
     
             # Publishing the state:
             self.__state_pub.publish(self.__state)
 
             # Publishing the motor command:
             self.__motor_command_pub.publish(self.__controller_output)
+
+            # Publishing desired:
+            self.__desired_state_pub.publish(self.__desired_state)
 
             #print(data)
             #print('ROLL: ', data[1]['stabilizer.roll'], '; PITCH: ', data[1]['stabilizer.pitch'], '; YAW: ', data[1]['stabilizer.yaw'])
@@ -216,7 +251,11 @@ class CrazyDrone:
     # Callback for takeoff action.
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_act_callback(self, goal):
-        self.__mc.take_off()
+        if goal.takeoff_height <= 0:
+            desired_takeoff_height = DEFAULT_TAKEOFF_HEIGHT
+        else:
+            desired_takeoff_height = goal.takeoff_height
+        self.__mc.take_off(height=desired_takeoff_height)
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -259,7 +298,7 @@ class CrazyDrone:
         vx_des = goal.destination_info.desired_velocity.x
         vy_des = goal.destination_info.desired_velocity.y
         vz_des = goal.destination_info.desired_velocity.z
-        yaw_rate_des = - goal.destination_info.desired_yaw
+        yaw_rate_des = - goal.destination_info.desired_yaw_rate
 
         time_duration = goal.time_duration
 
@@ -300,9 +339,6 @@ class CrazyDrone:
         response = Destination3DResult()
         response.result = success
         self.__rel_vel_move_act.set_succeeded(response)
-
-
-
 
     # ------------------------------------------------------------------------------------------------------------------
     #
