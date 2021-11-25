@@ -1,4 +1,6 @@
 # ROS MODULES
+import time
+
 import rospy
 import actionlib
 
@@ -13,12 +15,12 @@ from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFee
 
 from std_msgs.msg import Empty
 from crazyflie_messages.msg import Position, CrazyflieState, SwarmStates
-
+from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.common_functions import deg2rad, rad2deg, extractCfNumber
 
 from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC, DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, \
     DEFAULT_STOP_TOPIC, DEFAULT_REL_VEL_TOPIC
-from crazy_common_py.constants import DEFAULT_LEADER
+from crazy_common_py.constants import DEFAULT_LEADER, MAX_VELOCITY_X, MAX_VELOCITY_Y
 
 class CrazyPyramidSwarmSim:
     # ==================================================================================================================
@@ -93,17 +95,6 @@ class CrazyPyramidSwarmSim:
         self.__swarm_takeoff_act.start()
 
         # Action to perform a relative motion of the pyramid:
-        '''self.__swarm_traslation_act = actionlib.SimpleActionServer('/pyramid_swarm/traslation_actn', Destination3DAction,
-                                                                   self.__swarm_traslation_act_callback, False)
-        self.__swarm_traslation_act.start()
-
-        # Action o perform circular motion:
-        self.__circular_motion_act = actionlib.SimpleActionServer('/pyramid_swarm/circular_motion', Destination3DAction,
-                                                                  self.__circular_motion_act_callback, False)
-        self.__circular_motion_act.start()
-        
-        self.__velocity_trajectory_act_client = actionlib.SimpleActionClient('/cf1' + '/velocity_trajectory', VelocityTrajectoryAction)'''
-
         self.__swarm_flocking_act = actionlib.SimpleActionServer('/pyramid_swarm/flocking_actn', EmptyAction,
                                                                  self.__swarm_flocking_act_callback, False)
         self.__swarm_flocking_act.start()
@@ -214,69 +205,32 @@ class CrazyPyramidSwarmSim:
         # Output:
         feedback = TakeoffFeedback()
         result = TakeoffResult()
+        result.result = True
 
         # Setting up takeoff request:
         _goal = TakeoffGoal()
         _goal.takeoff_height = goal.takeoff_height
 
         for takeoff_actn in self.takeoff_act_clients:
-            takeoff_actn.send_goal(_goal, feedback_cb=self.__cf_takeoff_feedback_cb)
+            takeoff_actn.send_goal(_goal)
             # print('\n\nTIPO:' + str(type(takeoff_actn)))
         # Vertex drone takeoff:
         takeoff_height = goal.takeoff_height + self.levels * self.vertical_offset
         _custom_goal = TakeoffGoal()
         _custom_goal.takeoff_height = takeoff_height
-        self.takeoff_act_clients[0].send_goal(_custom_goal, feedback_cb=self.__cf_takeoff_feedback_cb)
+        self.takeoff_act_clients[0].send_goal(_custom_goal)
         prev_level_pos = 0
         for ii in range(1, self.levels + 1):
             amount_of_cfs_per_level = 2 * (ii + 1) + 2 * (ii - 1)
             for jj in range(prev_level_pos + 1, prev_level_pos + amount_of_cfs_per_level + 1):
                 level_height = takeoff_height - ii * self.vertical_offset
                 _custom_goal.takeoff_height = level_height
-                self.takeoff_act_clients[jj].send_goal(_custom_goal, feedback_cb=self.__cf_takeoff_feedback_cb)
+                self.takeoff_act_clients[jj].send_goal(_custom_goal)
             prev_level_pos = prev_level_pos + amount_of_cfs_per_level
 
-
+        self.takeoff_act_clients[0].wait_for_result()
         self.__swarm_takeoff_act.set_succeeded(result)
 
-    def __swarm_traslation_act_callback(self, goal):
-        # Output:
-        feedback = Destination3DFeedback()
-        result = Destination3DResult()
-
-        for action in self.relative_motion_act_clients:
-            action.send_goal(goal, feedback_cb=self.__cf_takeoff_feedback_cb)
-        self.__swarm_traslation_act.set_succeeded(result)
-
-    def __circular_motion_act_callback(self, goal):
-        omega = goal.destination_info.desired_yaw
-        r = 2.0
-        dt = 1 / 100
-        durantion = 2 * math.pi / omega
-        time_istants = int(durantion/dt)
-
-        positions = []
-        t = 0.0
-
-        for ii in range(0, time_istants):
-            tmp_pos = Position()
-            if omega * t >= 360:
-                t = 0.0
-            tmp_pos.desired_position.x = r * math.cos(omega * t)
-            tmp_pos.desired_position.y = r * math.sin(omega * t)
-            tmp_pos.desired_position.z = 0.5
-            tmp_pos.desired_velocity.x = - r * omega * math.sin(omega * t)
-            tmp_pos.desired_velocity.y = r * omega * math.cos(omega * t)
-            tmp_pos.desired_velocity.z = 0.0
-            tmp_pos.desired_yaw = omega * t + deg2rad(90)
-            positions.append(tmp_pos)
-            t += dt
-
-        trajectory = VelocityTrajectoryGoal()
-        trajectory.states_vector = positions
-        trajectory.dt = dt
-
-        self.__velocity_trajectory_act_client.send_goal(trajectory)
 
     def __swarm_flocking_act_callback(self, goal):
         # Defining the goal:
@@ -293,7 +247,6 @@ class CrazyPyramidSwarmSim:
 
         self.__swarm_flocking_act.set_succeeded(result)
 
-
     def  __swarm_stop_act_callback(self, goal):
         result = EmptyResult()
         for stop_action in self.stop_clients:
@@ -302,55 +255,109 @@ class CrazyPyramidSwarmSim:
         self.__swarm_stop_act.set_succeeded(result)
 
     def __swarm_rel_vel_act_callback(self, goal):
+        '''
+            This action is used to perform a relative motion of the pyramid, like it was a rigid body. It is possible
+            to perform two motions:
+                1) Rigid translation (velocity components relative to pyramid body reference frame).
+                2) Rotation around an axix.
+            INPUT:
+                - Type of axis:
+                    Position.destination_info.desired_yaw = 0 => pyramid axis
+                    Position.destination_info.desired_yaw = 1 => inertial axis, coordinates expressed in nest point
+
+                - Rotation axis // to z inertial axis, placed in x_pos_axis, y_pos_axis (inertial frame):
+                    x_pos_axis = Position.destination_info.desired_position.x
+                    y_pos_axis = Position. destination_info.desired_position.y
+
+                - Angular speed:
+                    pyramid_angular_speed = Position.destination_info.desired_yaw_rate
+
+                - Translational speed of pyramid's center of mass (related to local pyramid reference frame);
+                    pyramid_vx_body = Position.destination_info.desired_velocity.x
+                    pyramid_vy_body = Position.destination_info.desired_velocity.y
+        '''
+        # Result and check variables:
         result = Destination3DResult()
+        result.result = True
+        feasible_motion = True
+
         # Extracting data:
         desired_position = goal.destination_info
         duration = goal.time_duration
 
         desired_yaw_rate = desired_position.desired_yaw_rate
 
-        # CASE 1: no rotational speed
+        # CASE 1: no rotational speed => ONLY TRANSLATION
         if desired_yaw_rate == 0:
-            # Simply a rigid body translation:
+            # Simply a rigid body translation => directly send the goal to each drone:
             for rel_vel_action in self.rel_vel_clients:
                 rel_vel_action.send_goal(goal)
+            self.rel_vel_clients[-1].wait_for_result()
+
         elif desired_yaw_rate != 0 and (desired_position.desired_velocity.x == 0 and desired_position.desired_velocity.y == 0 and desired_position.desired_velocity.z == 0):
-            # CASE 2: yaw rate != 0 but velocity = 0:
-            # Determining position of rotational axis (Hp: it passes from the vertex):
+            # CASE 2: Rotation around axis:
+
+            # Saving actual states:
             actual_states = self.states
-            vertex_state = actual_states[0]
 
-            vertex_destination_goal = Destination3DGoal()
-            vertex_destination_goal.destination_info.desired_yaw_rate = desired_yaw_rate
-            vertex_destination_goal.time_duration = duration
-            destination_goals = [vertex_destination_goal]
+            # Determining position of rotational axis:
+            if goal.destination_info.desired_yaw == 0:
+                axis_position = Vector3(actual_states[0].position.x, actual_states[0].position.y, 0)
+            else:
+                axis_position = Vector3(goal.destination_info.desired_position.x,
+                                        goal.destination_info.desired_position.y, 0)
+            # List containing all goals:
+            destination_goals = []
 
-            tmp_destination_goal = Destination3DGoal()
-            tmp_destination_goal.time_duration = duration
-            tmp_destination_goal.destination_info.desired_yaw_rate = desired_yaw_rate
+            # Determining the goal to be sent for each drone:
+            for ii in range(0, len(actual_states)):
+                # Message formulation for time duration and desired rotating speed:
+                tmp_destination_goal = Destination3DGoal()
+                tmp_destination_goal.time_duration = duration
+                tmp_destination_goal.destination_info.desired_yaw_rate = desired_yaw_rate
 
-            for ii in range(1, len(actual_states)):
-                axis_distance = math.sqrt( (actual_states[ii].position.x) ** 2 + (actual_states[ii].position.y) ** 2 )
-                psi_0 = atan2(actual_states[ii].position.y, actual_states[ii].position.x)
-                tmp_destination_goal.destination_info.desired_velocity.x = - deg2rad(desired_yaw_rate) * axis_distance * math.sin(psi_0)
-                tmp_destination_goal.destination_info.desired_velocity.y = deg2rad(desired_yaw_rate) * axis_distance * math.cos(psi_0)
-                #tmp_destination_goal.time_duration = math.fabs(psi_0/deg2rad(desired_yaw_rate))
-                destination_goals.append(tmp_destination_goal)
-                '''print(actual_states[ii].name, 'X: ', actual_states[ii].position.x, 'Y: ', actual_states[ii].position.y, 'PSI_0: ',
-                      atan2(actual_states[ii].position.y, actual_states[ii].position.x))'''
+                # Getting distance from axis:
+                axis_distance = math.sqrt((actual_states[ii].position.x - axis_position.x) ** 2 + (
+                            actual_states[ii].position.y - axis_position.y) ** 2)
 
-            for ii in range(0, len(self.rel_vel_clients)):
-                self.rel_vel_clients[ii].send_goal(destination_goals[ii])
+                # Initial angle between axis distance vector and inertial x axis:
+                psi_0 = atan2(actual_states[ii].position.y - axis_position.y,
+                              actual_states[ii].position.x - axis_position.x)
 
+                if goal.destination_info.desired_yaw == 0:
+                    # Computing velocity components in body reference frame:
+                    vx_rel = - deg2rad(desired_yaw_rate) * axis_distance * math.sin(psi_0)
+                    vy_rel = deg2rad(desired_yaw_rate) * axis_distance * math.cos(psi_0)
 
+                else:
+                    # Computing velocity components in body reference frame:
+                    vx_rel = deg2rad(desired_yaw_rate) * axis_distance * math.cos(psi_0)
+                    vy_rel = deg2rad(desired_yaw_rate) * axis_distance * math.sin(psi_0)
+
+                # Check if the required velocities respect the limits:
+                if vx_rel > MAX_VELOCITY_X or vy_rel > MAX_VELOCITY_Y:
+                    feasible_motion = False
+                    break
+                else:
+                    tmp_destination_goal.destination_info.desired_velocity.x = vx_rel
+                    tmp_destination_goal.destination_info.desired_velocity.y = vy_rel
+                    destination_goals.append(tmp_destination_goal)
+
+            # If the motion respect the limits on the velocity perform it, otherwise show error message:
+            if feasible_motion:
+                cont = 0
+                for rel_vel_client in self.rel_vel_clients:
+                    rel_vel_client.send_goal(destination_goals[cont])
+                    cont += 1
+                self.rel_vel_clients[-1].wait_for_result()
+            else:
+                result.result = False
+                rospy.logerr('REQUIRED MOTION NOT FEASIBLE: velocity limit exceeded.')
         else:
-            # CASE 3: rotation around origin:
-            # Simply a rigid body translation:
-            for rel_vel_action in self.rel_vel_clients:
-                rel_vel_action.send_goal(goal)
+            # CASE 3: not implemented:
+            result.result = False
+            rospy.logerr('MOTION NOT IMPLEMENTED')
 
-
-        result.result = True
         self.__swarm_rel_vel_act.set_succeeded(result)
     # ==================================================================================================================
     #

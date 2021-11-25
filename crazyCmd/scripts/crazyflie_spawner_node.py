@@ -8,7 +8,7 @@ from crazyflie_simulator.CrazySim import CrazySim
 
 if __name__ == '__main__':
     # Node initialization:
-    rospy.init_node('crazyflie_spawner_node', log_level=rospy.DEBUG)
+    rospy.init_node('crazyflie_spawner_node', log_level=rospy.ERROR)
 
     # Extracting rosparam informations (to understand the name and spawn position):
     crazyflie_name = rospy.get_param('crazyflie_spawner_node/name')

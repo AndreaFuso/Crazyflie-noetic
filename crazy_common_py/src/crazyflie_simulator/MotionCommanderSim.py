@@ -763,7 +763,7 @@ class MotionCommanderSim:
             result.result = True
         else:
             result.result = False
-        print('\n\nFINE MOVIMENTO\n\n')
+        #print('\n\nFINE MOVIMENTO\n\n')
         self.__relative_3D_velocity_motion_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -780,7 +780,6 @@ class MotionCommanderSim:
         rospy.logdebug(deb_msg)
 
         self.stopActions = True
-
 
         # Output:
         result = EmptyResult()
@@ -844,7 +843,7 @@ class MotionCommanderSim:
 
         # Set result:
         result.executed = True
-        print('\n\nFERMATO\n\n')
+        #print('\n\nFERMATO\n\n')
         self.__stop_act.set_succeeded(result)
         self.stopActions = False
 
