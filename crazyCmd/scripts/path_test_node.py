@@ -9,12 +9,14 @@ import actionlib
 
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, \
     DEFAULT_REL_POS_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_MOTOR_CMD_TOPIC, DEFAULT_DESIRED_MOTOR_CMD_TOPIC, \
-    DEFAULT_ACTUAL_DESTINATION_TOPIC
+    DEFAULT_ACTUAL_DESTINATION_TOPIC, DEFAULT_100Hz_PACE_TOPIC
 from crazy_common_py.dataTypes import Vector3
 from crazyflie_simulator.CrazySim import CrazySim
 from crazyflie_messages.msg import CrazyflieState, Attitude, Position
 from crazyflie_messages.msg import TakeoffAction, TakeoffGoal
 from crazyflie_messages.msg import Destination3DAction, Destination3DGoal
+from std_msgs.msg import Empty
+from rosgraph_msgs.msg import Clock
 from enum import Enum
 
 class PathType(Enum):
@@ -25,6 +27,7 @@ class PathType(Enum):
 state = CrazyflieState()
 attitude = Attitude()
 ref_state = Position()
+clock = Clock()
 
 isStarted = False
 bags_closed = False
@@ -33,7 +36,7 @@ bags_closed = False
 # ----------------------------------------------------------------------------------------------------------------------
 # Real (True) or simulated (False) crazyflie:
 isReal = False
-type = PathType.SPRINT
+type = PathType.SQUARE
 
 # Path info:
 if type == PathType.SQUARE:
@@ -72,12 +75,27 @@ elif type == PathType.SPRINT:
     Sprint: 
 '''
 if type == PathType.SQUARE:
-    experiment_name = 'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N1'
+    experiment_name = 'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N5'
 elif type == PathType.SPRINT:
-    experiment_name = 'SP_D_04_04_V_04_02_RA_90_RR_72_N1'
+    experiment_name = 'SP_D_04_04_V_04_02_RA_90_RR_72_NONUSARE'
 # ======================================================================================================================
 
+def pace100Hz_sub_cb(msg):
+    global state, bags_closed, isStarted, attitude, clock
+    # Sampling the state:
+    actual_state = state
 
+    # Sampling motor controls:
+    actual_attitude = attitude
+
+    # Sampling time:
+    actual_time = clock
+
+    if (not bags_closed) and isStarted:
+        state_bag.write('/cf1/' + DEFAULT_CF_STATE_TOPIC, actual_state)
+        motor_bag.write('/cf1/' + DEFAULT_MOTOR_CMD_TOPIC, actual_attitude)
+        if not isReal:
+            clock_bag.write('/clock', actual_time)
 
 def state_sub_cb(msg):
     global state_bag, state, bags_closed, isStarted, isReal
@@ -113,8 +131,7 @@ def state_sub_cb(msg):
     state.rotating_speed.y = msg.rotating_speed.y
     state.rotating_speed.z = msg.rotating_speed.z
 
-    if (not bags_closed) and isStarted:
-        state_bag.write('/cf1/' + DEFAULT_CF_STATE_TOPIC, state)
+
 
 def ref_cb(msg):
     global ref_state, ref_bag, bags_closed, state, isStarted, isReal
@@ -147,8 +164,12 @@ def motor_command_sub_cb(msg):
     attitude.desired_attitude.pitch = msg.desired_attitude.pitch
     attitude.desired_attitude.yaw = msg.desired_attitude.yaw
 
-    if (not bags_closed) and isStarted:
-        motor_bag.write('/cf1/' + DEFAULT_MOTOR_CMD_TOPIC, attitude)
+    '''if (not bags_closed) and isStarted:
+        motor_bag.write('/cf1/' + DEFAULT_MOTOR_CMD_TOPIC, attitude)'''
+
+def clock_sub_cb(msg):
+    global clock
+    clock = msg
 
 def closing_operations():
     global state_bag, motor_bag, bags_closed
@@ -156,7 +177,10 @@ def closing_operations():
         state_bag.close()
         motor_bag.close()
         ref_bag.close()
+        if not isReal:
+            clock_bag.close()
         bags_closed = True
+
 
 
 # INITIAL PARAMETERS
@@ -176,6 +200,9 @@ if __name__ == '__main__':
     state_sub = rospy.Subscriber('/cf1/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState, state_sub_cb)
     motor_command_sub = rospy.Subscriber('/cf1/' + DEFAULT_MOTOR_CMD_TOPIC, Attitude, motor_command_sub_cb)
     ref_state_sub = rospy.Subscriber('/cf1/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, Position, ref_cb)
+    pace_100Hz_sub = rospy.Subscriber(DEFAULT_100Hz_PACE_TOPIC, Empty, pace100Hz_sub_cb)
+    if not isReal:
+        clock_sub = rospy.Subscriber('/clock', Clock, clock_sub_cb)
 
     # ACTION CLIENTs
     # Takeoff client:
@@ -204,14 +231,17 @@ if __name__ == '__main__':
         state_bag_name = 'sim_state_' + experiment_name + '.bag'
         motor_bag_name = 'sim_motor_' + experiment_name + '.bag'
         ref_bag_name = 'sim_ref_' + experiment_name + '.bag'
+        clock_bag_name = 'sim_clock_' + experiment_name + '.bag'
 
     state_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/' + state_bag_name, 'w')
     motor_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/' + motor_bag_name, 'w')
     ref_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/' + ref_bag_name, 'w')
+    if not isReal:
+        clock_bag = rosbag.Bag(pkg_path + '/data/output/Rosbags/' + clock_bag_name, 'w')
 
     # Wait some time:
-    rospy.sleep(10.0)
-    isStarted = True
+    rospy.sleep(5.0) # 10
+    #isStarted = True
 
     if type == PathType.SQUARE:
         # Takeoff:
@@ -220,7 +250,9 @@ if __name__ == '__main__':
         takeoff_client.send_goal(takeoff_goal)
         takeoff_client.wait_for_result()
         print('TAKEOFF COMPLETE')
-        rospy.sleep(1.0)
+        rospy.sleep(5.0)
+        isStarted = True
+        rospy.sleep(5)
 
         # Side 1:
         side1_goal = Destination3DGoal()
@@ -285,14 +317,6 @@ if __name__ == '__main__':
         print('FOURTH SIDE COMPLETE')
         rospy.sleep(5.0)
 
-        # Land:
-        landing_goal = TakeoffGoal()
-        landing_goal.takeoff_height = 0.1
-        land_client.send_goal(landing_goal)
-        land_client.wait_for_result()
-        print('LANDING COMPLETE')
-        rospy.sleep(5.0)
-
     elif type == PathType.SPRINT:
         # Takeoff:
         takeoff_goal = TakeoffGoal()
@@ -329,18 +353,20 @@ if __name__ == '__main__':
         print('FORWARD PATH COMPLETE')
         rospy.sleep(1.0)
 
-        # Land:
-        landing_goal = TakeoffGoal()
-        landing_goal.takeoff_height = 0.1
-        land_client.send_goal(landing_goal)
-        land_client.wait_for_result()
-        print('LANDING COMPLETE')
-        rospy.sleep(5.0)
-
     bags_closed = True
     state_bag.close()
     motor_bag.close()
     ref_bag.close()
+    if not isReal:
+        clock_bag.close()
+
+    # Land:
+    landing_goal = TakeoffGoal()
+    landing_goal.takeoff_height = 0.1
+    land_client.send_goal(landing_goal)
+    land_client.wait_for_result()
+    print('LANDING COMPLETE')
+    rospy.sleep(5.0)
 
     print('\n\nTASK COMPLETE\n\n')
     rospy.spin()

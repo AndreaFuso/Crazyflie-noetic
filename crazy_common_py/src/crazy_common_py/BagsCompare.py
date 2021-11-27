@@ -4,8 +4,8 @@ from crazy_common_py.common_functions import rad2deg
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC, \
     DEFAULT_ACTUAL_DESTINATION_TOPIC
 from matplotlib.pyplot import plot, xlabel, ylabel, show, figure, title, ylim, subplot, xlim, legend
-from numpy import linspace, full, array
-
+from numpy import linspace, full, array, ones, zeros, concatenate, argmax
+from scipy.signal import savgol_filter, correlate
 rospack = rospkg.RosPack()
 
 # ======================================================================================================================
@@ -678,106 +678,140 @@ if show_real_motor_command:
 if show_comp_position:
     fig_cont += 1
     figure(fig_cont)
+
+    new_real_time_state = array(real_time_state) - 2.8
+    new_sim_time_state = array(sim_time_state) - 2.8
+    new_ref_time = array(real_time_ref) - 2.8
     # X position:
-    subplot(311)
-    plot(real_time_state, real_x, label='Real')
-    plot(sim_time_state, sim_x, label='Sim')
-    plot(real_time_state, real_ref_x, label='Theor')
+    subplot(211)
+    plot(new_real_time_state, real_x, label='Real')
+    plot(new_sim_time_state, sim_x, label='Sim')
+    plot(new_ref_time, real_ref_x, label='Theor')
     ylabel('X [m]')
     title('Position comparison')
     legend(loc="upper right")
-    xlim(0, 25)
+    xlim(0, 20)
 
     # Y position:
-    subplot(312)
-    plot(real_time_state, real_y, label='Real')
-    plot(sim_time_state, sim_y, label='Sim')
-    plot(real_time_state, real_ref_y, label='Theor')
+    subplot(212)
+    plot(new_real_time_state, real_y, label='Real')
+    plot(new_sim_time_state, sim_y, label='Sim')
+    plot(new_ref_time, real_ref_y, label='Theor')
     ylabel('Y [m]')
     legend(loc="upper right")
-    xlim(0, 25)
+    xlim(0, 20)
+    ylim(-0.1, 0.4)
+    xlabel('Time [s]')
 
     # Z position:
-    subplot(313)
-    plot(real_time_state, real_z, label='Real')
-    #plot(sim_time_state, sim_z, label='Sim')
+    '''subplot(313)
+    plot(new_real_time_state, real_z, label='Real')
+    plot(new_sim_time_state, sim_z, label='Sim')
 
-    plot(sim_fake_time_state, sim_fake_z, label='Sim')
-    plot(real_time_state, real_ref_z, label='Theor')
+    #plot(sim_fake_time_state, sim_fake_z, label='Sim')
+    plot(new_ref_time, real_ref_z, label='Theor')
     ylabel('Z [m]')
     xlabel('Time [s]')
     legend(loc="bottom center")
-    xlim(0, 25)
+    xlim(0, 20)'''
 
 if show_comp_velocity:
     fig_cont += 1
     figure(fig_cont)
+
+    new_real_time_state = array(real_time_state) - 2.8
+    new_sim_time_state = array(sim_time_state) - 2.8
+    new_ref_time = array(real_time_ref) - 2.8
+
+    real_vx = array(real_vx)
+    sim_vx = array(sim_vx)
+    print(real_vx.shape)
+    print(sim_vx.shape)
+    equiv_real_vx = real_vx[argmax(new_real_time_state>0):argmax(new_real_time_state>20)]
+    equiv_sim_vx = sim_vx[0:argmax(new_sim_time_state>20)]
+    print('Lunghezza sim:', equiv_real_vx.shape)
+    print('Lunghezza real:', equiv_sim_vx.shape)
+
     # Real Vx VS actual Vx:
-    subplot(411)
-    plot(real_time_state, real_vx, label="Real")
-    plot(sim_time_state, sim_vx, label='Sim')
-    plot(real_time_ref, real_ref_vx, label="Ref")
+    subplot(311)
+    plot(new_real_time_state, real_vx, label="Real")
+    plot(new_sim_time_state, sim_vx, label='Sim')
+    plot(new_ref_time, real_ref_vx, label="Ref")
     ylabel('Vx [m/s]')
     title('Velocity comparison')
     legend(loc="upper right")
-    xlim(0, 25)
+    xlim(0, 20)
 
     # Real Vy VS actual Vy:
-    subplot(412)
-    plot(real_time_state, real_vy, label="Real")
-    plot(sim_time_state, sim_vy, label='Sim')
-    plot(real_time_ref, real_ref_vy, label="Ref")
+    subplot(312)
+    plot(new_real_time_state, real_vy, label="Real")
+    plot(new_sim_time_state, sim_vy, label='Sim')
+    plot(new_ref_time, real_ref_vy, label="Ref")
     ylabel('Vy [m/s]')
     legend(loc="upper right")
-    xlim(0, 25)
+    xlim(0, 20)
 
     # Real Vz VS actual Vz:
-    subplot(413)
-    plot(real_time_state, real_vz, label="Real")
-    plot(sim_time_state, sim_vz, label='Sim')
-    plot(real_time_ref, real_ref_vz, label="Ref")
+    '''subplot(413)
+    plot(new_real_time_state, real_vz, label="Real")
+    plot(new_sim_time_state, sim_vz, label='Sim')
+    plot(new_ref_time, real_ref_vz, label="Ref")
     ylabel('Vz [m/s]')
     legend(loc="upper right")
-    xlim(0, 25)
+    ylim(-0.2, 0.7)
+    xlim(0, 20)'''
 
     # Real Wz VS actual Wz:
-    subplot(414)
-    plot(real_time_state, real_wz, label="Real")
+    subplot(313)
+    plot(new_real_time_state, real_wz, label="Real")
     # plot(real_time_ref, real_ref_wz, label="Ref")
-    plot(sim_time_state, sim_wz, label='Sim')
-    plot(real_time_ref, real_ref_wz_theoretical, label="Ref")
+    plot(new_sim_time_state, sim_wz, label='Sim')
+    plot(new_ref_time, real_ref_wz_theoretical, label="Ref")
     ylabel('Wz [deg/s]')
     xlabel('Time [s]')
     legend(loc="upper right")
-    xlim(0, 25)
+    xlim(0, 20)
 
 if show_comp_orientation:
     fig_cont += 1
     figure(fig_cont)
+    sim_time_head = linspace(0, 2.8, 45)
+    zeros_arr = zeros((len(sim_time_head)))
+    new_sim_time_state = array(sim_time_state)
+    new_sim_roll = array(sim_roll)
+    new_real_time_state = array(real_time_state)
+    new_real_time_state = new_real_time_state - 2.8
+    new_sim_time_state = new_sim_time_state - 2.8
     # Roll value:
     subplot(311)
-    plot(real_time_state, real_roll, label='Real')
-    plot(sim_time_state, sim_roll, label='Sim')
+    plot(new_real_time_state, real_roll, label='Real')
+    plot(new_sim_time_state, new_sim_roll, label='Sim')
     ylabel('R [deg]')
     title('Orientation comparison')
-    xlim(0, 25)
+    xlim(0, 20)
+    ylim(-4, 4)
     legend(loc="upper right")
+
+    print(len(sim_time_state))
+    print(len(real_time_state))
+    print(sim_time_state[0])
+    print(real_time_state[0])
 
     # Pitch value:
     subplot(312)
-    plot(real_time_state, real_pitch, label='Real')
-    plot(sim_time_state, sim_pitch, label='Sim')
+    plot(new_real_time_state, real_pitch, label='Real')
+    plot(new_sim_time_state, sim_pitch, label='Sim')
     ylabel('P [deg]')
-    xlim(0, 25)
+    xlim(0, 20)
     legend(loc="upper right")
 
     # Yaw value:
     subplot(313)
-    plot(real_time_state, real_yaw, label='Real')
-    plot(sim_time_state, sim_yaw, label='Sim')
+    plot(new_real_time_state, real_yaw, label='Real')
+    plot(new_sim_time_state, sim_yaw, label='Sim')
     ylabel('Y [deg]')
     xlabel('Time [s]')
-    xlim(0, 25)
+    xlim(0, 20)
     legend(loc="upper right")
 
 if show_comp_motor_command:
@@ -789,7 +823,7 @@ if show_comp_motor_command:
     plot(real_time_motor, real_roll_cmd, label='Real')
 
     ylabel('R [u]')
-    xlim(0, 25)
+    xlim(0, 20)
     title('Motor commands comparison')
     legend(loc="upper right")
 
@@ -799,7 +833,7 @@ if show_comp_motor_command:
     plot(real_time_motor, real_pitch_cmd, label='Real')
 
     ylabel('P [u]')
-    xlim(0, 25)
+    xlim(0, 20)
     legend(loc="upper right")
 
     # Yaw command value:
@@ -808,7 +842,7 @@ if show_comp_motor_command:
     plot(real_time_motor, real_yaw_cmd, label='Real')
 
     ylabel('Y [u]')
-    xlim(0, 25)
+    xlim(0, 20)
     legend(loc="upper right")
 
     # Thrust command value:
@@ -818,7 +852,7 @@ if show_comp_motor_command:
 
     ylabel('T [u]')
     xlabel('Time [s]')
-    xlim(0, 25)
+    xlim(0, 20)
     legend(loc="upper right")
 
 print(len(real_roll), len(sim_roll))

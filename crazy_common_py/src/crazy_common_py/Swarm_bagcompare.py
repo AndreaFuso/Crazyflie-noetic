@@ -6,12 +6,14 @@ from crazy_common_py.common_functions import rad2deg
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC, \
     DEFAULT_ACTUAL_DESTINATION_TOPIC
 from matplotlib.pyplot import plot, xlabel, ylabel,show, figure, title, ylim, subplot, xlim, legend, axes, Circle, \
-    gca, axis, subplots
+    gca, axis, subplots, scatter
 from numpy import array, argmax, linspace, ones, zeros, flip, concatenate, linalg, hstack, mean
 from enum import Enum
 from crazyflie_messages.msg import SwarmStates
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch, Ellipse
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 from mpl_toolkits.mplot3d import proj3d
 from crazy_common_py.common_functions import Vector3, RotateVector, deg2rad, rad2deg
 from pykalman import KalmanFilter
@@ -118,10 +120,13 @@ show_rotation_before = False
 show_rotation_after = False
 
 show_comparison_cm_first_path = False
-show_comparison_rotation_CM = True
+show_comparison_rotation_CM = False
 show_comparison_rotation_levels = False
 
 show_traj_approximation = False
+show_final_comparison_lev1 = False
+show_final_comparison_lev21 = False
+show_final_comparison_lev22 = True
 
 # Colors:
 level0_color = '#0047AB'
@@ -296,7 +301,11 @@ b_parameters = []
 xcs = []
 ycs = []
 theta = []
-
+rhos = []
+mus = []
+kappas = []
+eccs = []
+etas = []
 for ii in range(0, len(rotation_trajectories_level1_x)):
     b = ones((len(real_time_rotation), 1)) * (-1)
     X = (array(rotation_trajectories_level1_x[ii]).T).reshape((len(real_time_rotation), 1))
@@ -314,12 +323,22 @@ for ii in range(0, len(rotation_trajectories_level1_x)):
         a = coeffs[3]
         b = coeffs[4]
         cf_ecc = math.sqrt(1 - ((b ** 2) / (a ** 2)))
+        eccs.append(cf_ecc)
         a_parameters.append(a)
         b_parameters.append(b)
         xcs.append(coeffs[1])
         ycs.append(coeffs[2])
         theta.append(coeffs[6])
-        print('cf', ii + 2, ': delta =', coeffs[5], '; a =', a, '; b =', b, '; e =', cf_ecc)
+        r = math.sqrt(0.5 ** 2 + 0.5 ** 2)
+        rho = (a + b) / (2 * r)
+        rhos.append(rho)
+        mu = math.sqrt((1 - rho) ** 2 + cf_ecc ** 2)
+        mus.append(mu)
+        kappa = math.sqrt((coeffs[1] - 2.0) ** 2 + (coeffs[2] - 0.0) ** 2)
+        kappas.append(kappa)
+        eta = math.sqrt((1 - rho) ** 2 + cf_ecc ** 2 + (coeffs[1] - 2.0) ** 2 + (coeffs[2] - 0.0) ** 2)
+        etas.append(eta)
+        print('cf', ii + 2, ': delta =', coeffs[5], '; a =', a, '; b =', b, '; e =', cf_ecc, '; rho =', rho, '; mu =', mu, '; kappa =', kappa, '; eta =', eta)
 
 # Real circular path level 2:
 positions_level2 = zeros((len(real_time_rotation), 2 * 8))
@@ -384,15 +403,36 @@ for ii in range(0, len(rotation_trajectories_level2_x)):
         a = coeffs[3]
         b = coeffs[4]
         cf_ecc = math.sqrt(1 - ((b ** 2) / (a ** 2)))
+        eccs.append(cf_ecc)
         a_parameters.append(a)
         b_parameters.append(b)
         xcs.append(coeffs[1])
         ycs.append(coeffs[2])
         theta.append(coeffs[6])
-        print('cf', ii + 6, ': delta =', coeffs[5], '; a =', a, '; b =', b, '; e =', cf_ecc)
+        if ii + 6 in [6, 8, 10, 12]:
+            r = math.sqrt(2)
+        else:
+            r = 1.0
+        rho = (a + b) / (2 * r)
+        rhos.append(rho)
+        mu = math.sqrt((1 - rho) ** 2 + cf_ecc ** 2)
+        mus.append(mu)
+        kappa = math.sqrt((coeffs[1] - 2.0) ** 2 + (coeffs[2] - 0.0) ** 2)
+        kappas.append(kappa)
+        eta = math.sqrt((1 - rho) ** 2 + cf_ecc ** 2 + (coeffs[1] - 2.0) ** 2 + (coeffs[2] - 0.0) ** 2)
+        etas.append(eta)
+        print('cf', ii + 6, ': delta =', coeffs[5], '; a =', a, '; b =', b, '; e =', cf_ecc, '; rho =', rho, '; mu =', mu, '; kappa =', kappa, '; eta =', eta)
 
 # Calculating distorsion:
-
+if len(eccs) == len(mus) == len(kappas) == len(rhos) == len(etas):
+    eccs = array(eccs)
+    rhos = array(rhos)
+    mus = array(mus)
+    kappas = array(kappas)
+    etas = array(etas)
+    print('MEAN VALUES LEVEL 1: e =', mean(eccs[[0, 1, 2, 3]]), '; rho =', mean(rhos[[0, 1, 2, 3]]), '; mu =', mean(mus[[0, 1, 2, 3]]), '; kappa =', mean(kappas[[0, 1, 2, 3]]), '; eta =', mean(etas[[0, 1, 2, 3]]))
+    print('MEAN VALUES LEVEL 2 (int): e =', mean(eccs[[5, 7, 9, 11]]), '; rho =', mean(rhos[[5, 7, 9, 11]]), '; mu =', mean(mus[[5, 7, 9, 11]]), '; kappa =', mean(kappas[[5, 7, 9, 11]]), '; eta =', mean(etas[[5, 7, 9, 11]]))
+    print('MEAN VALUES LEVEL 2 (ext): e =', mean(eccs[[4, 6, 8, 10]]), '; rho =', mean(rhos[[4, 6, 8, 10]]), '; mu =', mean(mus[[4, 6, 8, 10]]), '; kappa =', mean(kappas[[4, 6, 8, 10]]), '; eta =', mean(etas[[4, 6, 8, 10]]))
 # ======================================================================================================================
 #                                                   R E F E R E N C E
 # ======================================================================================================================
@@ -464,10 +504,11 @@ if experiment_type == TaskType.LINEAR_AND_ROUNDS:
     # Level 1 reference:
     level1_ref_circle1 = []
     level1_ref_circle2 = []
-    level1_ref_x = linspace(1.5, 2.5, len(real_time_rotation))
+    r1 = math.sqrt(0.5 ** 2 + 0.5 ** 2)
+    level1_ref_x = linspace(2 - r1, 2 + r1, len(real_time_rotation))
     for ii in range(0, len(real_time_rotation)):
-        level1_ref_circle1.append(math.sqrt(0.5 ** 2 - (level1_ref_x[ii] - 2) ** 2))
-        level1_ref_circle2.append(- math.sqrt(0.5 ** 2 - (level1_ref_x[ii] - 2) ** 2))
+        level1_ref_circle1.append(math.sqrt(r1 ** 2 - (level1_ref_x[ii] - 2) ** 2))
+        level1_ref_circle2.append(- math.sqrt(r1 ** 2 - (level1_ref_x[ii] - 2) ** 2))
 
     # Level 2 reference external:
     level2_ref_circle1_ext = []
@@ -791,4 +832,125 @@ if show_traj_approximation:
     ax.set_xlim(0, 4)
     ax.set_ylim(-3, 3)
 
+if show_final_comparison_lev1:
+    red_color = '#EC7073'
+    green_color = '#58D68D'
+    orange_color = ' #f5b041 '
+    # LEVEL 1
+    fig, ax = subplots(subplot_kw={'aspect': 'equal'})
+    #plot(level1_ref_x, level1_ref_circle1, label='Ref', color=level1_color)
+    #plot(level1_ref_x, level1_ref_circle2, color=level1_color)
+    #plot(cf2_rotation_trajectory_x, cf2_rotation_trajectory_y, label='Real', color='b')
+
+    r = math.sqrt(0.5 ** 2 + 0.5 ** 2)
+    reference_circ = Ellipse((2, 0), r * 2, r * 2, angle=0, color=level1_color, fill=False, linewidth=2, label='Ref')
+    ax.add_artist(reference_circ)
+    scatter(2, 0, c=level1_color)
+
+    ellipse_cf5 = Ellipse((xcs[3], ycs[3]), (a_parameters[3]) * 2, b_parameters[3] * 2, angle=rad2deg(theta[3]),
+                      fill=False, color=red_color, linewidth=2)
+    ax.add_artist(ellipse_cf5)
+    scatter(xcs[3], ycs[3], c=red_color)
+
+    ellipse_cf3 = Ellipse((xcs[1], ycs[1]), (a_parameters[1]) * 2, b_parameters[1] * 2, angle=rad2deg(theta[3]),
+                          fill=False, color=green_color, linewidth=2)
+    ax.add_artist(ellipse_cf3)
+    scatter(xcs[1], ycs[1], c=green_color)
+
+    '''legend_elements = [Line2D([0], [0], color=level1_color, lw=2, label='Ref'),
+                       Line2D([0], [0], marker='o', color='w', label='Ref center',
+                        markerfacecolor=level1_color, markersize=10),
+                       Line2D([0], [0], color=red_color, lw=2, label='Cf5'),
+                       Line2D([0], [0], marker='o', color='w', label='Cf5 center',
+                              markerfacecolor=red_color, markersize=10),
+                       Line2D([0], [0], color=green_color, lw=2, label='Cf3'),
+                       Line2D([0], [0], marker='o', color='w', label='Cf3 center',
+                              markerfacecolor=green_color, markersize=10)]'''
+    legend_elements = [Line2D([0], [0], color=level1_color, lw=2, label='Ref'),
+                       Line2D([0], [0], color=red_color, lw=2, label='Cf5'),
+                       Line2D([0], [0], color=green_color, lw=2, label='Cf3')]
+    ax.legend(handles=legend_elements, loc='upper right')
+    xlabel('X [m]')
+    ylabel('Y [m]')
+    title('Level 1: best and worse trajectories')
+    ax.set_xlim(1, 3.5)
+    ax.set_ylim(-1, 1)
+
+if show_final_comparison_lev21:
+    red_color = '#EC7073'
+    green_color = '#58D68D'
+    orange_color = ' #f5b041 '
+    # LEVEL 2 inner:
+    fig, ax = subplots(subplot_kw={'aspect': 'equal'})
+    # plot(level1_ref_x, level1_ref_circle1, label='Ref', color=level1_color)
+    # plot(level1_ref_x, level1_ref_circle2, color=level1_color)
+    #plot(cf13_rotation_trajectory_x, cf13_rotation_trajectory_y, label='Real', color='black')
+
+    r = 1.0
+    reference_circ = Ellipse((2, 0), r * 2, r * 2, angle=0, color=level1_color, fill=False, linewidth=2, label='Ref')
+    ax.add_artist(reference_circ)
+    scatter(2, 0, c=level1_color)
+
+    ellipse_cf13 = Ellipse((xcs[11], ycs[11]), (a_parameters[11]) * 2, b_parameters[11] * 2, angle=rad2deg(theta[3]),
+                           fill=False, color=red_color, linewidth=2)
+    ax.add_artist(ellipse_cf13)
+    scatter(xcs[11], ycs[11], c=red_color)
+
+    ellipse_cf7 = Ellipse((xcs[5], ycs[5]), (a_parameters[5]) * 2, b_parameters[5] * 2, angle=rad2deg(theta[3]),
+                          fill=False, color=green_color, linewidth=2)
+    ax.add_artist(ellipse_cf7)
+    scatter(xcs[5], ycs[5], c=green_color)
+
+
+
+    legend_elements = [Line2D([0], [0], color=level1_color, lw=2, label='Ref'),
+                       Line2D([0], [0], color=red_color, lw=2, label='Cf13'),
+                       Line2D([0], [0], color=green_color, lw=2, label='Cf7')]
+    ax.legend(handles=legend_elements, loc='upper right')
+    xlabel('X [m]')
+    ylabel('Y [m]')
+    title('Level 2 (r = 1.00 m): best and worse trajectories')
+    ax.set_xlim(0.5, 4.0)
+    ax.set_ylim(-1.5, 1.5)
+
+if show_final_comparison_lev22:
+    red_color = '#EC7073'
+    green_color = '#58D68D'
+    orange_color = '#F5B041'
+    # LEVEL 2 inner:
+    fig, ax = subplots(subplot_kw={'aspect': 'equal'})
+    # plot(level1_ref_x, level1_ref_circle1, label='Ref', color=level1_color)
+    # plot(level1_ref_x, level1_ref_circle2, color=level1_color)
+    #plot(cf13_rotation_trajectory_x, cf13_rotation_trajectory_y, label='Real', color='black')
+
+    r = 1.41
+    reference_circ = Ellipse((2, 0), r * 2, r * 2, angle=0, color=level1_color, fill=False, linewidth=2, label='Ref')
+    ax.add_artist(reference_circ)
+    scatter(2, 0, c=level1_color)
+
+    ellipse_cf10 = Ellipse((xcs[8], ycs[8]), (a_parameters[8]) * 2, b_parameters[8] * 2, angle=rad2deg(theta[8]),
+                           fill=False, color=red_color, linewidth=2)
+    ax.add_artist(ellipse_cf10)
+    scatter(xcs[8], ycs[8], c=red_color)
+
+    ellipse_cf8 = Ellipse((xcs[6], ycs[6]), (a_parameters[6]) * 2, b_parameters[6] * 2, angle=rad2deg(theta[6]),
+                          fill=False, color=green_color, linewidth=2)
+    ax.add_artist(ellipse_cf8)
+    scatter(xcs[6], ycs[6], c=green_color)
+
+    ellipse_cf12 = Ellipse((xcs[10], ycs[10]), (a_parameters[10]) * 2, b_parameters[10] * 2, angle=rad2deg(theta[10]),
+                          fill=False, color=orange_color, linewidth=2)
+    ax.add_artist(ellipse_cf12)
+    scatter(xcs[10], ycs[10], c=orange_color)
+
+    legend_elements = [Line2D([0], [0], color=level1_color, lw=2, label='Ref'),
+                       Line2D([0], [0], color=red_color, lw=2, label='Cf10'),
+                       Line2D([0], [0], color=green_color, lw=2, label='Cf8'),
+                       Line2D([0], [0], color=orange_color, lw=2, label='Cf12')]
+    ax.legend(handles=legend_elements, loc='upper right')
+    xlabel('X [m]')
+    ylabel('Y [m]')
+    title('Level 2 (r = 1.41 m): best and worse trajectories')
+    ax.set_xlim(0.0, 4.5)
+    ax.set_ylim(-2.0, 2.0)
 show()
