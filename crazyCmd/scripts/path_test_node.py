@@ -29,7 +29,7 @@ attitude = Attitude()
 ref_state = Position()
 clock = Clock()
 
-isStarted = False
+canWriteBags = False
 bags_closed = False
 # ======================================================================================================================
 #                                             INITIAL PARAMETERS
@@ -81,7 +81,7 @@ elif type == PathType.SPRINT:
 # ======================================================================================================================
 
 def pace100Hz_sub_cb(msg):
-    global state, bags_closed, isStarted, attitude, clock
+    global state, bags_closed, canWriteBags, attitude, clock
     # Sampling the state:
     actual_state = state
 
@@ -98,7 +98,7 @@ def pace100Hz_sub_cb(msg):
             clock_bag.write('/clock', actual_time)
 
 def state_sub_cb(msg):
-    global state_bag, state, bags_closed, isStarted, isReal
+    global state_bag, state, bags_closed, canWriteBags, isReal
     # Saving orientation:
     state.orientation.roll = msg.orientation.roll
     state.orientation.pitch = msg.orientation.pitch
@@ -134,7 +134,7 @@ def state_sub_cb(msg):
 
 
 def ref_cb(msg):
-    global ref_state, ref_bag, bags_closed, state, isStarted, isReal
+    global ref_state, ref_bag, bags_closed, state, canWriteBags, isReal
 
     # Saving reference velocity:
     if isReal:
@@ -157,7 +157,7 @@ def ref_cb(msg):
         ref_bag.write('/cf1/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, ref_state)
 
 def motor_command_sub_cb(msg):
-    global motor_bag, attitude, bags_closed, isStarted
+    global motor_bag, attitude, bags_closed, canWriteBags
     # Saving motor commands:
     attitude.desired_thrust = msg.desired_thrust
     attitude.desired_attitude.roll = msg.desired_attitude.roll
@@ -251,7 +251,7 @@ if __name__ == '__main__':
         takeoff_client.wait_for_result()
         print('TAKEOFF COMPLETE')
         rospy.sleep(5.0)
-        isStarted = True
+        canWriteBags = True
         rospy.sleep(5)
 
         # Side 1:

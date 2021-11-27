@@ -69,7 +69,7 @@ class MotionCommanderSim:
         # Spotter:
         if cfName != DEFAULT_LEADER:
             self.role = Role.FOLLOWER
-            spotting_radius = 1.0
+            spotting_radius = DEFAULT_RADIUS_HORIZON
             spherical_spotter = SphericalSpotter(spotting_radius)
             self.spotter = NeighborSpotter(cfName, spherical_spotter)
         else:
@@ -870,7 +870,7 @@ class MotionCommanderSim:
         # Setting mode to VELOCITY:
         self.flight_controller.mode = MovementMode.VELOCITY
 
-        while True:
+        while True and not self.stopActions:
             # Setting the desired velocity equal to the one coming from the spotter:
             self.position_target.desired_velocity.x = self.spotter.desired_velocity.x
             self.position_target.desired_velocity.y = self.spotter.desired_velocity.y

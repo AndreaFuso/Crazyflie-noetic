@@ -4,7 +4,7 @@ import actionlib
 import math
 # CUSTOM MODULES
 from crazy_common_py.default_rosparameters import DEFAULT_ROSPARAM_NUMBER_OF_CFS
-from crazy_common_py.constants import DEFAULT_NAME, DEFAULT_RADIUS_SS, MAX_VELOCITY_X, MAX_VELOCITY_Y, MAX_VELOCITY_Z, \
+from crazy_common_py.constants import DEFAULT_NAME, DEFAULT_RADIUS_HORIZON, MAX_VELOCITY_X, MAX_VELOCITY_Y, MAX_VELOCITY_Z, \
     DEFAULT_SAFETY_RADIUS_SS, DEFAULT_LEADER
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC
 
@@ -26,7 +26,7 @@ class NeighborSpotter:
     # INPUTS:
     #   1) cfName -> name of the crazyflie in the simulation;
     # ==================================================================================================================
-    def __init__(self, cfName, spotter_type=SphericalSpotter(DEFAULT_RADIUS_SS)):
+    def __init__(self, cfName, spotter_type=SphericalSpotter(DEFAULT_RADIUS_HORIZON)):
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -65,7 +65,8 @@ class NeighborSpotter:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber to pace 100Hz:
         self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
-        self.states_sub = rospy.Subscriber('/pyramid_swarm/states', SwarmStates, self.__states_sub_callback)
+        #self.states_sub = rospy.Subscriber('/pyramid_swarm/states', SwarmStates, self.__states_sub_callback)
+        self.states_sub = rospy.Subscriber('/swarm/states', SwarmStates, self.__states_sub_callback)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
@@ -197,8 +198,9 @@ class NeighborSpotter:
     # This method is use to comp[ute desired velocity.
     # ------------------------------------------------------------------------------------------------------------------
     def __compute_desired_velocity(self, states, cf_ref_state, safety_radius=DEFAULT_SAFETY_RADIUS_SS,
-                                   w_a=1.0, w_c=1.0, w_s=0.15, w_nl=1.0, w_l=4.0):
+                                   w_a=0.5, w_c=1.0, w_s=2.5, w_nl=1.0, w_l=10.0):
         # 1.0 1.0 0.25 1.0 4.0
+        # 0.5 0.8 0.10 1.0 10.0 (quadratic separation)
         # Number of crazyflies within horizion:
         number_of_cfs = len(self.__actual_neighbors)
 
@@ -240,6 +242,8 @@ class NeighborSpotter:
                 if self.__actual_neighbors[ii].name == DEFAULT_LEADER:
                     leader_present = True
                     w_m = w_l
+                else:
+                    w_m = w_nl
 
                 # Updating v_a components:
                 va_x += self.__actual_neighbors[ii].velocity.x
@@ -269,14 +273,19 @@ class NeighborSpotter:
                 x_diff_y += (1 / (x_diff_norm - safety_radius)) * (x_diff_y_tmp / x_diff_norm)
                 x_diff_z += (1 / (x_diff_norm - safety_radius)) * (x_diff_z_tmp / x_diff_norm)'''
 
+
                 '''x_diff_x += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_x_tmp
                 x_diff_y += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_y_tmp
                 x_diff_z += (1 / (x_diff_norm * (x_diff_norm - 2 * safety_radius) ** 2)) * x_diff_z_tmp'''
 
-                #if x_diff_norm != 0:
-                x_diff_x += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_x_tmp
+                #Quadratic sepratation
+                '''x_diff_x += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_x_tmp
                 x_diff_y += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_y_tmp
-                x_diff_z += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_z_tmp
+                x_diff_z += (1 / ((x_diff_norm - 2 * safety_radius) * x_diff_norm)) * x_diff_z_tmp'''
+                # 1/r sepration
+                x_diff_x += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_x_tmp
+                x_diff_y += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_y_tmp
+                x_diff_z += (1 / (x_diff_norm - 2 * safety_radius)) * x_diff_z_tmp
 
             # ALIGNMENT COMPONENT
             # Calculating velocity alignment components:
@@ -284,11 +293,14 @@ class NeighborSpotter:
             va_y_mean = va_y / number_of_cfs
             va_z_mean = va_z / number_of_cfs
 
-            va_mean_norm = math.sqrt(va_x_mean ** 2 + va_y_mean ** 2 + va_z_mean ** 2)
+            '''va_mean_norm = math.sqrt(va_x_mean ** 2 + va_y_mean ** 2 + va_z_mean ** 2)
 
             va_x = w_a * va_mean_norm * va_x_mean
             va_y = w_a * va_mean_norm * va_y_mean
-            va_z = w_a * va_mean_norm * va_z_mean
+            va_z = w_a * va_mean_norm * va_z_mean'''
+            va_x = w_a * va_x_mean
+            va_y = w_a * va_y_mean
+            va_z = w_a * va_z_mean
 
             # Getting x_m components:
             #xm_x = xm_x / number_of_cfs

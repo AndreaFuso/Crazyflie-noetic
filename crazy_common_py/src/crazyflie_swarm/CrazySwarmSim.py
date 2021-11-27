@@ -50,11 +50,13 @@ class CrazySwarmSim:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+        # Subscriber to pace 100Hz:
+        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+        # States publisher:
+        self.states_pub = rospy.Publisher('/swarm/states', SwarmStates, queue_size=1)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -119,6 +121,19 @@ class CrazySwarmSim:
 
         # Update state vector:
         self.states[ID - 1] = msg
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                  __P A C E _ 1 0 0 H Z _ S U B _ C A L L B A C K
+    #
+    # This callback is called whenever an Empty message is published by pace_100Hz_node; it is used to develop the main
+    # routine.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __pace_100Hz_sub_callback(self, msg):
+        # Initializing states message:
+        states = SwarmStates()
+        states.states = self.states
+        self.states_pub.publish(states)
     # ==================================================================================================================
     #
     #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
