@@ -21,7 +21,7 @@ from rosgraph_msgs.msg import Clock
 clock = Clock()
 states = SwarmStates()
 canWriteBags = False
-experiment_name = 'flocking_N1'
+experiment_name = 'flocking_N3'
 
 rospack = rospkg.RosPack()
 pkg_path = rospack.get_path('crazyCmd')
@@ -89,11 +89,11 @@ if __name__ == '__main__':
     # Takeoff:
     print('\n\nSTARTING TAKEOFF\n\n')
     takeoff_request = TakeoffGoal()
-    takeoff_request.takeoff_height = 1.0
+    takeoff_request.takeoff_height = 2.0
     takeoff_action_client.send_goal(takeoff_request)
     takeoff_action_client.wait_for_result()
     print('\n\nTAKEOFF COMPLETED\n\n')
-    rospy.sleep(3)
+    rospy.sleep(10)
 
     # Moving cf1 in position:
     print('\n\nSTARTING MOTION OF CF1\n\n')

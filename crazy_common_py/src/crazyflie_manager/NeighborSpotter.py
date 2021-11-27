@@ -198,9 +198,10 @@ class NeighborSpotter:
     # This method is use to comp[ute desired velocity.
     # ------------------------------------------------------------------------------------------------------------------
     def __compute_desired_velocity(self, states, cf_ref_state, safety_radius=DEFAULT_SAFETY_RADIUS_SS,
-                                   w_a=0.5, w_c=1.0, w_s=2.5, w_nl=1.0, w_l=10.0):
+                                   w_a=0.5, w_c=0.8, w_s=3.0, w_nl=1.0, w_l=10.0):
         # 1.0 1.0 0.25 1.0 4.0
         # 0.5 0.8 0.10 1.0 10.0 (quadratic separation)
+        # 0.5 1.0 2.5 1.0 10.0
         # Number of crazyflies within horizion:
         number_of_cfs = len(self.__actual_neighbors)
 
