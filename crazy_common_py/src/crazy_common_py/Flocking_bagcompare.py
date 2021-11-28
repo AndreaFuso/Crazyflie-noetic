@@ -185,13 +185,16 @@ bag_clock = rosbag.Bag(bag_clock_path)
 checkCollision = False
 safe_radius = 0.2
 safe_distance = safe_radius * 2
-
+experiment_N = 1
 # Images:
 show_initial_pos = False
+
 
 show_positions_comparison = False
 show_velocities_comparison = False
 show_collisions = True
+show_collisions_3 = False
+
 # ======================================================================================================================
 #                                             D A T A  E X T R A C T I O N
 # ======================================================================================================================
@@ -253,6 +256,9 @@ for time_instant in range(0, len(states_collection)):
 # ======================================================================================================================
 # Initial positions:
 initial_altitude = 1.0
+if experiment_N == 3:
+    initial_altitude = 2.0
+
 initial_positions = [[2, 0, initial_altitude + 0.5],
                      [0, 1, initial_altitude],
                      [0, 2, initial_altitude],
@@ -269,6 +275,7 @@ initial_positions = [[2, 0, initial_altitude + 0.5],
                      [3, 1, initial_altitude],
                      [3, 2, initial_altitude],
                      [3, 3, initial_altitude]]
+
 # Leader trajectory:
 radius = 2.0
 cf1_ref_circle_y1 = []
@@ -295,8 +302,11 @@ if show_initial_pos:
     for ii in range(1, number_of_cfs):
         ax.scatter3D(initial_positions[ii][0], initial_positions[ii][1], initial_positions[ii][2], color=blu_color)
     # Reference trajectory:
-    ax.plot3D(cf1_ref_x, cf1_ref_circle_y1, ones((len(cf1_ref_x),)) * 1.5, color=orange_color)
-    ax.plot3D(cf1_ref_x, cf1_ref_circle_y2, ones((len(cf1_ref_x),)) * 1.5, color=orange_color)
+    circle_altitude = 1.5
+    if experiment_N == 3:
+        circle_altitude = 2.5
+    ax.plot3D(cf1_ref_x, cf1_ref_circle_y1, ones((len(cf1_ref_x),)) * circle_altitude, color=orange_color)
+    ax.plot3D(cf1_ref_x, cf1_ref_circle_y2, ones((len(cf1_ref_x),)) * circle_altitude, color=orange_color)
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_zlabel('Z [m]')
@@ -343,7 +353,7 @@ if show_positions_comparison:
         cont += 1
     plot(clock_gazebo, positions_x[:, 0], color=grid_colors[0], label='Leader')
     ylabel('X [m]')
-    title('Firs row: position')
+    title('First row: position')
     legend(loc='upper right')
     subplot(312)
     cont = 2
@@ -479,7 +489,7 @@ if show_velocities_comparison:
         cont += 1
     plot(clock_gazebo, velocities_x[:, 0], color=grid_colors[0], label='Leader')
     ylabel('Vx [m/s]')
-    title('Firs row: velocity')
+    title('First row: velocity')
     legend(loc='upper right')
     subplot(312)
     cont = 2
@@ -713,7 +723,7 @@ if show_collisions:
     plot(clock_gazebo[0:final_pos], diff_2_6, color=color1, label='Cf2-Cf6')
     ylabel('|xij| [m]')
     legend(loc='upper right')
-    title('Relative absolute distance')
+    title('Relative distance')
 
     subplot(312)
     plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * cf_radius * 2, color=red_color,
@@ -789,10 +799,10 @@ if show_collisions:
     ax.scatter3D(initial_positions[1][0], initial_positions[1][1], initial_positions[1][2], color=blu_color)
     ax.scatter3D(initial_positions[5][0], initial_positions[5][1], initial_positions[5][2], color=blu_color)
     # Reference trajectory:
-    ax.plot3D(positions_x[0:min_2_6_pos+1, 0], positions_y[0:min_2_6_pos+1, 0], positions_z[0:min_2_6_pos+1, 0],
+    '''ax.plot3D(positions_x[0:min_2_6_pos+1, 0], positions_y[0:min_2_6_pos+1, 0], positions_z[0:min_2_6_pos+1, 0],
               color=grid_colors[0])
     ax.scatter3D(positions_x[min_2_6_pos, 0], positions_y[min_2_6_pos, 0], positions_z[min_2_6_pos, 0],
-                 color=grid_colors[0])
+                 color=grid_colors[0])'''
     # Trajectory Cf2:
     ax.plot3D(positions_x[0:min_2_6_pos+1, 1], positions_y[0:min_2_6_pos+1, 1], positions_z[0:min_2_6_pos+1, 1],
               color=grid_colors[1])
@@ -827,11 +837,342 @@ if show_collisions:
                               markerfacecolor=red_color, markersize=1)]
     ax.legend(handles=legend_elements, loc='upper right')
 
-    ax.set_xlim3d([1, 2])
-    ax.set_ylim3d([-1, 1])
-    ax.set_zlim3d([1, 1.5])
+    dim_x = 0.5
+    dim_y = 0.5
+    dim_z = 0.5
+    ax.set_xlim3d([positions_x[min_2_6_pos, 1] - dim_x, positions_x[min_2_6_pos, 1] + dim_x])
+    ax.set_ylim3d([positions_y[min_2_6_pos, 1] - dim_y, positions_y[min_2_6_pos, 1] + dim_y])
+    ax.set_zlim3d([positions_z[min_2_6_pos, 1] - dim_z, positions_z[min_2_6_pos, 1] + dim_z])
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_zlabel('Z [m]')
+
+    # 3D collision box 8_12
+    fig_cont += 1
+    figure(fig_cont)
+    ax = axes(projection='3d')
+    # Initial conditions:
+    ax.scatter3D(initial_positions[7][0], initial_positions[7][1], initial_positions[7][2], color=blu_color)
+    ax.scatter3D(initial_positions[11][0], initial_positions[11][1], initial_positions[11][2], color=blu_color)
+    # Reference trajectory:
+    '''ax.plot3D(positions_x[0:min_2_6_pos + 1, 0], positions_y[0:min_2_6_pos + 1, 0], positions_z[0:min_2_6_pos + 1, 0],
+              color=grid_colors[0])
+    ax.scatter3D(positions_x[min_2_6_pos, 0], positions_y[min_2_6_pos, 0], positions_z[min_2_6_pos, 0],
+                 color=grid_colors[0])'''
+    # Trajectory Cf8:
+    ax.plot3D(positions_x[0:min_12_8_pos + 1, 7], positions_y[0:min_12_8_pos + 1, 7], positions_z[0:min_12_8_pos + 1, 7],
+              color=grid_colors[7])
+    ax.scatter3D(positions_x[min_12_8_pos, 7], positions_y[min_12_8_pos, 7], positions_z[min_12_8_pos, 7],
+                 color=grid_colors[7])
+    # Trajectory Cf12:
+    ax.plot3D(positions_x[0:min_12_8_pos + 1, 11], positions_y[0:min_12_8_pos + 1, 11], positions_z[0:min_12_8_pos + 1, 11],
+              color=grid_colors[11])
+    ax.scatter3D(positions_x[min_12_8_pos, 11], positions_y[min_12_8_pos, 11], positions_z[min_12_8_pos, 11],
+                 color=grid_colors[11])
+    # Box and sphere Cf8:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_12_8_pos, 7], positions_y[min_12_8_pos, 7], positions_z[min_12_8_pos, 7]],
+               [orientations_roll[min_12_8_pos, 7], orientations_pitch[min_12_8_pos, 7],
+                orientations_yaw[min_12_8_pos, 7]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_12_8_pos, 7], positions_y[min_12_8_pos, 7], positions_z[min_12_8_pos, 7]],
+                    radius=cf_radius, color=red_color)
+
+    # Box and sphere Cf12:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_12_8_pos, 11], positions_y[min_12_8_pos, 11], positions_z[min_12_8_pos, 11]],
+               [orientations_roll[min_12_8_pos, 11], orientations_pitch[min_12_8_pos, 11],
+                orientations_yaw[min_12_8_pos, 11]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_12_8_pos, 11], positions_y[min_12_8_pos, 11], positions_z[min_12_8_pos, 11]],
+                    radius=cf_radius, color=red_color)
+
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label='Cf8',
+                              markerfacecolor=grid_colors[7], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf12',
+                              markerfacecolor=grid_colors[11], markersize=10),
+                       Line2D([0], [0], marker='o', color=red_color, label='Collision limit',
+                              markerfacecolor=red_color, markersize=1)]
+    ax.legend(handles=legend_elements, loc='upper right')
+
+    dim_x = 0.5
+    dim_y = 0.5
+    dim_z = 0.5
+    ax.set_xlim3d([positions_x[min_12_8_pos, 7] - dim_x, positions_x[min_12_8_pos, 7] + dim_x])
+    ax.set_ylim3d([positions_y[min_12_8_pos, 7] - dim_y, positions_y[min_12_8_pos, 7] + dim_y])
+    ax.set_zlim3d([positions_z[min_12_8_pos, 7] - dim_z, positions_z[min_12_8_pos, 7] + dim_z])
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+
+    # 3D collision box 12_16
+    fig_cont += 1
+    figure(fig_cont)
+    ax = axes(projection='3d')
+    # Initial conditions:
+    ax.scatter3D(initial_positions[11][0], initial_positions[11][1], initial_positions[11][2], color=blu_color)
+    ax.scatter3D(initial_positions[15][0], initial_positions[15][1], initial_positions[15][2], color=blu_color)
+    # Reference trajectory:
+    '''ax.plot3D(positions_x[0:min_2_6_pos + 1, 0], positions_y[0:min_2_6_pos + 1, 0], positions_z[0:min_2_6_pos + 1, 0],
+              color=grid_colors[0])
+    ax.scatter3D(positions_x[min_2_6_pos, 0], positions_y[min_2_6_pos, 0], positions_z[min_2_6_pos, 0],
+                 color=grid_colors[0])'''
+    # Trajectory Cf12:
+    ax.plot3D(positions_x[0:min_12_16_pos + 1, 11], positions_y[0:min_12_16_pos + 1, 11], positions_z[0:min_12_16_pos + 1, 11],
+              color=grid_colors[11])
+    ax.scatter3D(positions_x[min_12_16_pos, 11], positions_y[min_12_16_pos, 11], positions_z[min_12_16_pos, 11],
+                 color=grid_colors[11])
+    # Trajectory Cf16:
+    ax.plot3D(positions_x[0:min_12_16_pos + 1, 15], positions_y[0:min_12_16_pos + 1, 15],
+              positions_z[0:min_12_16_pos + 1, 15],
+              color=grid_colors[15])
+    ax.scatter3D(positions_x[min_12_16_pos, 15], positions_y[min_12_16_pos, 15], positions_z[min_12_16_pos, 15],
+                 color=grid_colors[15])
+    # Box and sphere Cf12:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_12_16_pos, 11], positions_y[min_12_16_pos, 11], positions_z[min_12_16_pos, 11]],
+               [orientations_roll[min_12_16_pos, 11], orientations_pitch[min_12_16_pos, 11],
+                orientations_yaw[min_12_16_pos, 11]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_12_16_pos, 11], positions_y[min_12_16_pos, 11], positions_z[min_12_16_pos, 11]],
+                    radius=cf_radius, color=red_color)
+
+    # Box and sphere Cf16:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_12_16_pos, 15], positions_y[min_12_16_pos, 15], positions_z[min_12_16_pos, 15]],
+               [orientations_roll[min_12_16_pos, 15], orientations_pitch[min_12_16_pos, 15],
+                orientations_yaw[min_12_16_pos, 15]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_12_16_pos, 15], positions_y[min_12_16_pos, 15], positions_z[min_12_16_pos, 15]],
+                    radius=cf_radius, color=red_color)
+
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label='Cf12',
+                              markerfacecolor=grid_colors[11], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf16',
+                              markerfacecolor=grid_colors[15], markersize=10),
+                       Line2D([0], [0], marker='o', color=red_color, label='Collision limit',
+                              markerfacecolor=red_color, markersize=1)]
+    ax.legend(handles=legend_elements, loc='upper right')
+
+    dim_x = 0.5
+    dim_y = 0.5
+    dim_z = 0.5
+    ax.set_xlim3d([positions_x[min_12_16_pos, 11] - dim_x, positions_x[min_12_16_pos, 11] + dim_x])
+    ax.set_ylim3d([positions_y[min_12_16_pos, 11] - dim_y, positions_y[min_12_16_pos, 11] + dim_y])
+    ax.set_zlim3d([positions_z[min_12_16_pos, 11] - dim_z, positions_z[min_12_16_pos, 11] + dim_z])
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+
+
+    # Velocity zoom cf12 and cf16
+    fig_cont += 1
+    figure(fig_cont)
+    subplot(311)
+    pos_3s = argmax(clock_gazebo>3)
+    pos_1s = argmax(clock_gazebo>1)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_x[pos_1s:pos_3s + 1, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_x[pos_1s:pos_3s + 1, 15], color=grid_colors[15], label='Cf16')
+    ylabel('Vx [m/s]')
+    legend(loc='upper right')
+    title('Velocity Cf12-Cf16')
+
+    subplot(312)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_y[pos_1s:pos_3s + 1, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_y[pos_1s:pos_3s + 1, 15], color=grid_colors[15], label='Cf16')
+    ylabel('Vy [m/s]')
+    legend(loc='upper right')
+
+    subplot(313)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_z[pos_1s:pos_3s + 1, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_z[pos_1s:pos_3s + 1, 15], color=grid_colors[15], label='Cf16')
+    ylabel('Vz [m/s]')
+    legend(loc='upper right')
+    xlabel('Time [s]')
+
+    # Position zoom cf12 and cf16
+    fig_cont += 1
+    figure(fig_cont)
+    subplot(311)
+    pos_3s = argmax(clock_gazebo > 3)
+    pos_1s = argmax(clock_gazebo > 1)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], positions_x[pos_1s:pos_3s + 1, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], positions_x[pos_1s:pos_3s + 1, 15], color=grid_colors[15], label='Cf16')
+    ylabel('X [m]')
+    legend(loc='upper right')
+    title('Position Cf12-Cf16')
+
+    subplot(312)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], positions_y[pos_1s:pos_3s + 1, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], positions_y[pos_1s:pos_3s + 1, 15], color=grid_colors[15], label='Cf16')
+    ylabel('Y [m]')
+    legend(loc='upper right')
+
+    subplot(313)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], positions_z[pos_1s:pos_3s + 1, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], positions_z[pos_1s:pos_3s + 1, 15], color=grid_colors[15], label='Cf16')
+    ylabel('Z [m]')
+    legend(loc='upper right')
+    xlabel('Time [s]')
+
+
+
+if show_collisions_3:
+    # 1-9:
+    fig_cont += 1
+    figure(fig_cont)
+    subplot(311)
+    final_pos = argmax(clock_gazebo>5)
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 0], color=grid_colors[0], label='Leader')
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 8], color=grid_colors[8], label='Cf9')
+    ylabel('X [m]')
+    title('Collision alert Leader-Cf9')
+    legend(loc='upper right')
+
+    subplot(312)
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 0], color=grid_colors[0], label='Leader')
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 8], color=grid_colors[8], label='Cf9')
+    ylabel('Y [m]')
+    legend(loc='upper right')
+
+    subplot(313)
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 0], color=grid_colors[0], label='Leader')
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 8], color=grid_colors[8], label='Cf9')
+    ylabel('Z [m]')
+    legend(loc='upper right')
+    xlabel('Time [s]')
+
+    #Difference
+    color1 = '#82E0AA'
+    color2 = '#F7DC6F'
+    color3 = '#E59866'
+    fig_cont += 1
+    figure(fig_cont)
+
+    diff_1_9 = zeros((len(clock_gazebo[0:final_pos]), 1))
+    for ii in range(0, len(clock_gazebo[0:final_pos])):
+        diff_1_9[ii, 0] = math.sqrt((positions_x[ii, 0] - positions_x[ii, 8]) ** 2 +
+                                    (positions_y[ii, 0] - positions_y[ii, 8]) ** 2 +
+                                    (positions_z[ii, 0] - positions_z[ii, 8]) ** 2)
+
+
+    min_1_9_pos = argmin(diff_1_9, axis=0)
+    min_1_9_pos = min_1_9_pos[0]
+
+
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos],))) * cf_radius * 2, color=red_color,
+         label='Collision limit')
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * safe_radius * 2, color=light_black_color,
+         label='Safe limit')
+    plot(clock_gazebo[0:final_pos], diff_1_9, color=color1, label='Leader-Cf9')
+    ylabel('|xij| [m]')
+    legend(loc='upper right')
+    title('Relative distance')
+
+
+    # 3D trajectories:
+    fig_cont += 1
+    figure(fig_cont)
+    ax = axes(projection='3d')
+
+    for ii in range(1, number_of_cfs):
+        ax.scatter3D(initial_positions[ii][0], initial_positions[ii][1], initial_positions[ii][2], color=blu_color)
+    # Reference trajectory:
+    ax.plot3D(positions_x[0:final_pos, 0], positions_y[0:final_pos, 0], positions_z[0:final_pos, 0],
+              color=grid_colors[0])
+    ax.scatter3D(positions_x[final_pos, 0], positions_y[final_pos, 0], positions_z[final_pos, 0], color=grid_colors[0])
+    ax.plot3D(positions_x[0:final_pos, 8], positions_y[0:final_pos, 8], positions_z[0:final_pos, 8],
+              color=grid_colors[8])
+    ax.scatter3D(positions_x[final_pos, 8], positions_y[final_pos, 8], positions_z[final_pos, 8], color=grid_colors[8])
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+    ax.set_title('3D collisions')
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label='Leader',
+                              markerfacecolor=grid_colors[0], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf9',
+                              markerfacecolor=grid_colors[8], markersize=10)]
+    ax.legend(handles=legend_elements, loc='upper right')
+
+
+
+    # 3D collision box 1_9
+    fig_cont += 1
+    figure(fig_cont)
+    ax = axes(projection='3d')
+    # Initial conditions:
+    #ax.scatter3D(initial_positions[0][0], initial_positions[0][1], initial_positions[0][2], color=blu_color)
+    ax.scatter3D(initial_positions[8][0], initial_positions[8][1], initial_positions[8][2], color=blu_color)
+    # Reference trajectory:
+    '''ax.plot3D(positions_x[0:min_2_6_pos+1, 0], positions_y[0:min_2_6_pos+1, 0], positions_z[0:min_2_6_pos+1, 0],
+              color=grid_colors[0])
+    ax.scatter3D(positions_x[min_2_6_pos, 0], positions_y[min_2_6_pos, 0], positions_z[min_2_6_pos, 0],
+                 color=grid_colors[0])'''
+    # Trajectory Cf1:
+    ax.plot3D(positions_x[0:min_1_9_pos+1, 0], positions_y[0:min_1_9_pos+1, 0], positions_z[0:min_1_9_pos+1, 0],
+              color=grid_colors[0])
+    ax.scatter3D(positions_x[min_1_9_pos, 0], positions_y[min_1_9_pos, 0], positions_z[min_1_9_pos, 0],
+                 color=grid_colors[0])
+    # Trajectory Cf9:
+    ax.plot3D(positions_x[0:min_1_9_pos+1, 8], positions_y[0:min_1_9_pos+1, 8], positions_z[0:min_1_9_pos+1, 8],
+              color=grid_colors[8])
+    ax.scatter3D(positions_x[min_1_9_pos, 8], positions_y[min_1_9_pos, 8], positions_z[min_1_9_pos, 8],
+                 color=grid_colors[8])
+    # Box and sphere Cf1:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_1_9_pos, 0], positions_y[min_1_9_pos, 0], positions_z[min_1_9_pos, 0]],
+               [orientations_roll[min_1_9_pos, 0], orientations_pitch[min_1_9_pos, 0],
+                orientations_yaw[min_1_9_pos, 0]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_1_9_pos, 0], positions_y[min_1_9_pos, 0], positions_z[min_1_9_pos, 0]],
+                    radius=cf_radius, color=red_color)
+
+    # Box and sphere Cf9:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_1_9_pos, 8], positions_y[min_1_9_pos, 8], positions_z[min_1_9_pos, 8]],
+               [orientations_roll[min_1_9_pos, 8], orientations_pitch[min_1_9_pos, 8],
+                orientations_yaw[min_1_9_pos, 8]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_1_9_pos, 8], positions_y[min_1_9_pos, 8], positions_z[min_1_9_pos, 8]],
+                    radius=cf_radius, color=red_color)
+
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label='Leader',
+                              markerfacecolor=grid_colors[0], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf9',
+                              markerfacecolor=grid_colors[8], markersize=10),
+                       Line2D([0], [0], marker='o', color=red_color, label='Collision limit',
+                              markerfacecolor=red_color, markersize=1)]
+    ax.legend(handles=legend_elements, loc='upper right')
+
+    dim_x = 0.5
+    dim_y = 0.5
+    dim_z = 0.5
+    ax.set_xlim3d([positions_x[min_1_9_pos, 0] - dim_x, positions_x[min_1_9_pos, 0] + dim_x])
+    ax.set_ylim3d([positions_y[min_1_9_pos, 0] - dim_y, positions_y[min_1_9_pos, 0] + dim_y])
+    ax.set_zlim3d([positions_z[min_1_9_pos, 0] - dim_z, positions_z[min_1_9_pos, 0] + dim_z])
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+
+
+
+    # Velocity zoom cf1 and cf9
+    fig_cont += 1
+    figure(fig_cont)
+    subplot(311)
+    pos_3s = argmax(clock_gazebo>3)
+    pos_1s = argmax(clock_gazebo>1)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_x[pos_1s:pos_3s + 1, 0], color=grid_colors[0], label='Leader')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_x[pos_1s:pos_3s + 1, 8], color=grid_colors[8], label='Cf9')
+    ylabel('Vx [m/s]')
+    legend(loc='upper right')
+    title('Velocity Leader-Cf9')
+
+    subplot(312)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_y[pos_1s:pos_3s + 1, 0], color=grid_colors[0], label='Leader')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_y[pos_1s:pos_3s + 1, 8], color=grid_colors[8], label='Cf9')
+    ylabel('Vy [m/s]')
+    legend(loc='upper right')
+
+    subplot(313)
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_z[pos_1s:pos_3s + 1, 0], color=grid_colors[0], label='Leader')
+    plot(clock_gazebo[pos_1s:pos_3s + 1], velocities_z[pos_1s:pos_3s + 1, 8], color=grid_colors[8], label='Cf9')
+    ylabel('Vz [m/s]')
+    legend(loc='upper right')
+    xlabel('Time [s]')
 
 show()
