@@ -7,7 +7,7 @@ from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_MOTOR
     DEFAULT_ACTUAL_DESTINATION_TOPIC
 from matplotlib.pyplot import plot, xlabel, ylabel,show, figure, title, ylim, subplot, xlim, legend, axes, Circle, \
     gca, axis, subplots, scatter
-from numpy import array, argmax, linspace, ones, zeros, flip, concatenate, linalg, hstack, mean, absolute
+from numpy import array, argmax, linspace, ones, zeros, flip, concatenate, linalg, hstack, mean, absolute, argmin
 from enum import Enum
 from crazyflie_messages.msg import SwarmStates
 from mpl_toolkits.mplot3d import Axes3D
@@ -18,6 +18,11 @@ from mpl_toolkits.mplot3d import proj3d
 from crazy_common_py.common_functions import Vector3, RotateVector, deg2rad, rad2deg
 from pykalman import KalmanFilter
 from scipy.signal import savgol_filter, correlate
+
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import numpy as np
+from itertools import product, combinations
 
 class Arrow3D(FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
@@ -30,6 +35,111 @@ class Arrow3D(FancyArrowPatch):
         self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
         FancyArrowPatch.draw(self, renderer)
 
+
+def displayBox(ax, dimensions, center, RPY, color, m_scale=20, lineWidth=1):
+    # Non rotated coordinates:
+    p_A = Vector3(center[0] - dimensions[0] / 2, center[1] - dimensions[1] / 2, center[2] + dimensions[2] / 2)
+    p_B = Vector3(center[0] - dimensions[0] / 2, center[1] + dimensions[1] / 2, center[2] + dimensions[2] / 2)
+    p_C = Vector3(center[0] + dimensions[0] / 2, center[1] + dimensions[1] / 2, center[2] + dimensions[2] / 2)
+    p_D = Vector3(center[0] + dimensions[0] / 2, center[1] - dimensions[1] / 2, center[2] + dimensions[2] / 2)
+
+    p_E = Vector3(center[0] - dimensions[0] / 2, center[1] - dimensions[1] / 2, center[2] - dimensions[2] / 2)
+    p_F = Vector3(center[0] - dimensions[0] / 2, center[1] + dimensions[1] / 2, center[2] - dimensions[2] / 2)
+    p_G = Vector3(center[0] + dimensions[0] / 2, center[1] + dimensions[1] / 2, center[2] - dimensions[2] / 2)
+    p_H = Vector3(center[0] + dimensions[0] / 2, center[1] - dimensions[1] / 2, center[2] - dimensions[2] / 2)
+
+    p_center = Vector3(center[0], center[1], center[2])
+    # Rotate al the cevtors:
+    p_A_rot = RotateVector(p_A, Vector3(RPY[0], RPY[1], RPY[2]))
+    p_B_rot = RotateVector(p_B, Vector3(RPY[0], RPY[1], RPY[2]))
+    p_C_rot = RotateVector(p_C, Vector3(RPY[0], RPY[1], RPY[2]))
+    p_D_rot = RotateVector(p_D, Vector3(RPY[0], RPY[1], RPY[2]))
+
+    p_E_rot = RotateVector(p_E, Vector3(RPY[0], RPY[1], RPY[2]))
+    p_F_rot = RotateVector(p_F, Vector3(RPY[0], RPY[1], RPY[2]))
+    p_G_rot = RotateVector(p_G, Vector3(RPY[0], RPY[1], RPY[2]))
+    p_H_rot = RotateVector(p_H, Vector3(RPY[0], RPY[1], RPY[2]))
+
+    p_center_rot = RotateVector(p_center, Vector3(RPY[0], RPY[1], RPY[2]))
+
+    upperFace = [p_A_rot, p_B_rot, p_C_rot, p_D_rot, p_A_rot]
+    lowerFace = [p_E_rot, p_F_rot, p_G_rot, p_H_rot, p_E_rot]
+
+    # Translation:
+    if RPY[0] != 0 or RPY[1] != 0 or RPY[2] != 0:
+        deltax = p_center_rot.x - p_center.x
+        deltay = p_center_rot.y - p_center.y
+        deltaz = p_center_rot.z - p_center.z
+        for ii in range(0, len(upperFace) - 1):
+            upperFace[ii].x = upperFace[ii].x - deltax
+            lowerFace[ii].x = lowerFace[ii].x - deltax
+
+            upperFace[ii].y = upperFace[ii].y - deltay
+            lowerFace[ii].y = lowerFace[ii].y - deltay
+
+            upperFace[ii].z = upperFace[ii].z - deltaz
+            lowerFace[ii].z = lowerFace[ii].z - deltaz
+
+    for ii in range(0, 4):
+        a = Arrow3D([upperFace[ii].x, upperFace[ii+1].x], [upperFace[ii].y, upperFace[ii+1].y],
+                    [upperFace[ii].z, upperFace[ii+1].z], mutation_scale=m_scale,
+                    lw=lineWidth, arrowstyle="-", color=color)
+        ax.add_artist(a)
+        b = Arrow3D([lowerFace[ii].x, lowerFace[ii+1].x], [lowerFace[ii].y, lowerFace[ii+1].y],
+                    [lowerFace[ii].z, lowerFace[ii+1].z], mutation_scale=m_scale,
+                    lw=lineWidth, arrowstyle="-", color=color)
+        ax.add_artist(b)
+        c = Arrow3D([upperFace[ii].x, lowerFace[ii].x], [upperFace[ii].y, lowerFace[ii].y],
+                    [upperFace[ii].z, lowerFace[ii].z], mutation_scale=m_scale,
+                    lw=lineWidth, arrowstyle="-", color=color)
+        ax.add_artist(c)
+
+def WireframeSphere(ax, centre, radius, color, alpha=0.5,
+                    n_meridians=20, n_circles_latitude=None):
+    """
+    Create the arrays of values to plot the wireframe of a sphere.
+
+    Parameters
+    ----------
+    centre: array like
+        A point, defined as an iterable of three numerical values.
+    radius: number
+        The radius of the sphere.
+    n_meridians: int
+        The number of meridians to display (circles that pass on both poles).
+    n_circles_latitude: int
+        The number of horizontal circles (akin to the Equator) to display.
+        Notice this includes one for each pole, and defaults to 4 or half
+        of the *n_meridians* if the latter is larger.
+
+    Returns
+    -------
+    sphere_x, sphere_y, sphere_z: arrays
+        The arrays with the coordinates of the points to make the wireframe.
+        Their shape is (n_meridians, n_circles_latitude).
+
+    Examples
+    --------
+    >>> fig = plt.figure()
+    >>> ax = fig.gca(projection='3d')
+    >>> ax.set_aspect("equal")
+    >>> sphere = ax.plot_wireframe(*WireframeSphere(), color="r", alpha=0.5)
+    >>> fig.show()
+
+    >>> fig = plt.figure()
+    >>> ax = fig.gca(projection='3d')
+    >>> ax.set_aspect("equal")
+    >>> frame_xs, frame_ys, frame_zs = WireframeSphere()
+    >>> sphere = ax.plot_wireframe(frame_xs, frame_ys, frame_zs, color="r", alpha=0.5)
+    >>> fig.show()
+    """
+    if n_circles_latitude is None:
+        n_circles_latitude = max(n_meridians / 2, 4)
+    u, v = np.mgrid[0:2 * np.pi:n_meridians * 1j, 0:np.pi:n_circles_latitude * 1j]
+    sphere_x = centre[0] + radius * np.cos(u) * np.sin(v)
+    sphere_y = centre[1] + radius * np.sin(u) * np.sin(v)
+    sphere_z = centre[2] + radius * np.cos(v)
+    ax.plot_wireframe(sphere_x, sphere_y, sphere_z, color=color, alpha=alpha)
 # ======================================================================================================================
 #                                                   S E T T I N G S
 # ======================================================================================================================
@@ -56,6 +166,10 @@ time_round_precision = 1
 # Limit radius:
 cf_radius = 0.1
 
+# Cf dimension:
+cf_dimx = 0.09
+cf_dimy = 0.09
+cf_dimz = 0.03
 
 # Bags:
 bag_states_name = 'sim_states_flocking_N1.bag'
@@ -68,7 +182,7 @@ bag_states = rosbag.Bag(bag_states_path)
 bag_clock = rosbag.Bag(bag_clock_path)
 
 # Functions:
-checkCollision = True
+checkCollision = False
 safe_radius = 0.2
 safe_distance = safe_radius * 2
 
@@ -512,6 +626,7 @@ if show_collisions:
     plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 5], color=grid_colors[5], label='Cf6')
     ylabel('Z [m]')
     legend(loc='upper right')
+    xlabel('Time [s]')
 
     # 12-8:
     fig_cont += 1
@@ -581,6 +696,16 @@ if show_collisions:
         diff_12_16[ii, 0] = math.sqrt((positions_x[ii, 11] - positions_x[ii, 15]) ** 2 +
                                       (positions_y[ii, 11] - positions_y[ii, 15]) ** 2 +
                                       (positions_z[ii, 11] - positions_z[ii, 15]) ** 2)
+
+    min_2_6_pos = argmin(diff_2_6, axis=0)
+    min_2_6_pos = min_2_6_pos[0]
+    min_12_8_pos = argmin(diff_12_8, axis=0)
+    min_12_8_pos = min_12_8_pos[0]
+    min_12_16_pos = argmin(diff_12_16, axis=0)
+    min_12_16_pos = min_12_16_pos[0]
+
+
+
     plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos],))) * cf_radius * 2, color=red_color,
          label='Collision limit')
     plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * safe_radius * 2, color=light_black_color,
@@ -609,6 +734,7 @@ if show_collisions:
     legend(loc='upper right')
     xlabel('Time [s]')
 
+    # 3D trajectories:
     fig_cont += 1
     figure(fig_cont)
     ax = axes(projection='3d')
@@ -652,5 +778,60 @@ if show_collisions:
                               markerfacecolor=grid_colors[15], markersize=10)
                        ]
     ax.legend(handles=legend_elements, loc='upper right')
+
+
+
+    # 3D collision box 2_6
+    fig_cont += 1
+    figure(fig_cont)
+    ax = axes(projection='3d')
+    # Initial conditions:
+    ax.scatter3D(initial_positions[1][0], initial_positions[1][1], initial_positions[1][2], color=blu_color)
+    ax.scatter3D(initial_positions[5][0], initial_positions[5][1], initial_positions[5][2], color=blu_color)
+    # Reference trajectory:
+    ax.plot3D(positions_x[0:min_2_6_pos+1, 0], positions_y[0:min_2_6_pos+1, 0], positions_z[0:min_2_6_pos+1, 0],
+              color=grid_colors[0])
+    ax.scatter3D(positions_x[min_2_6_pos, 0], positions_y[min_2_6_pos, 0], positions_z[min_2_6_pos, 0],
+                 color=grid_colors[0])
+    # Trajectory Cf2:
+    ax.plot3D(positions_x[0:min_2_6_pos+1, 1], positions_y[0:min_2_6_pos+1, 1], positions_z[0:min_2_6_pos+1, 1],
+              color=grid_colors[1])
+    ax.scatter3D(positions_x[min_2_6_pos, 1], positions_y[min_2_6_pos, 1], positions_z[min_2_6_pos, 1],
+                 color=grid_colors[1])
+    # Trajectory Cf6:
+    ax.plot3D(positions_x[0:min_2_6_pos+1, 5], positions_y[0:min_2_6_pos+1, 5], positions_z[0:min_2_6_pos+1, 5],
+              color=grid_colors[5])
+    ax.scatter3D(positions_x[min_2_6_pos, 5], positions_y[min_2_6_pos, 5], positions_z[min_2_6_pos, 5],
+                 color=grid_colors[5])
+    # Box and sphere Cf2:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_2_6_pos, 1], positions_y[min_2_6_pos, 1], positions_z[min_2_6_pos, 1]],
+               [orientations_roll[min_2_6_pos, 1], orientations_pitch[min_2_6_pos, 1],
+                orientations_yaw[min_2_6_pos, 1]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_2_6_pos, 1], positions_y[min_2_6_pos, 1], positions_z[min_2_6_pos, 1]],
+                    radius=cf_radius, color=red_color)
+
+    # Box and sphere Cf6:
+    displayBox(ax, [cf_dimx, cf_dimy, cf_dimz],
+               [positions_x[min_2_6_pos, 5], positions_y[min_2_6_pos, 5], positions_z[min_2_6_pos, 5]],
+               [orientations_roll[min_2_6_pos, 5], orientations_pitch[min_2_6_pos, 5],
+                orientations_yaw[min_2_6_pos, 5]], color=light_black_color)
+    WireframeSphere(ax, [positions_x[min_2_6_pos, 5], positions_y[min_2_6_pos, 5], positions_z[min_2_6_pos, 5]],
+                    radius=cf_radius, color=red_color)
+
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label='Cf2',
+                              markerfacecolor=grid_colors[2], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf6',
+                              markerfacecolor=grid_colors[5], markersize=10),
+                       Line2D([0], [0], marker='o', color=red_color, label='Collision limit',
+                              markerfacecolor=red_color, markersize=1)]
+    ax.legend(handles=legend_elements, loc='upper right')
+
+    ax.set_xlim3d([1, 2])
+    ax.set_ylim3d([-1, 1])
+    ax.set_zlim3d([1, 1.5])
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
 
 show()
