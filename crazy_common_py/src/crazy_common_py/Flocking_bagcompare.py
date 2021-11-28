@@ -7,7 +7,7 @@ from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_MOTOR
     DEFAULT_ACTUAL_DESTINATION_TOPIC
 from matplotlib.pyplot import plot, xlabel, ylabel,show, figure, title, ylim, subplot, xlim, legend, axes, Circle, \
     gca, axis, subplots, scatter
-from numpy import array, argmax, linspace, ones, zeros, flip, concatenate, linalg, hstack, mean
+from numpy import array, argmax, linspace, ones, zeros, flip, concatenate, linalg, hstack, mean, absolute
 from enum import Enum
 from crazyflie_messages.msg import SwarmStates
 from mpl_toolkits.mplot3d import Axes3D
@@ -42,6 +42,7 @@ center_path_color = '#FF6347'
 red_color = '#EC7073'
 green_color = '#58D68D'
 orange_color = '#F5B041'
+light_black_color = '#34495E'
 
 first_row_red = [orange_color, '#78281F', '#B03A2E', '#E74C3C']
 second_row_purple = ['#4A235A', '#6C3483', '#8E44AD', '#BB8FCE']
@@ -52,9 +53,13 @@ grid_colors = first_row_red + second_row_purple + third_row_blu + fourth_row_gre
 # Time precision:
 time_round_precision = 1
 
+# Limit radius:
+cf_radius = 0.1
+
+
 # Bags:
-bag_states_name = 'sim_states_flocking_N3.bag'
-bag_clock_name = 'sim_clock_flocking_N3.bag'
+bag_states_name = 'sim_states_flocking_N1.bag'
+bag_clock_name = 'sim_clock_flocking_N1.bag'
 rospack = rospkg.RosPack()
 package_path = rospack.get_path('crazyCmd')
 bag_states_path = package_path + '/data/output/Rosbags/' + bag_states_name
@@ -70,8 +75,8 @@ safe_distance = safe_radius * 2
 # Images:
 show_initial_pos = False
 
-show_positions_comparison = True
-show_velocities_comparison = True
+show_positions_comparison = False
+show_velocities_comparison = False
 show_collisions = True
 # ======================================================================================================================
 #                                             D A T A  E X T R A C T I O N
@@ -202,7 +207,7 @@ if checkCollision:
                                          (positions_y[time_instant, ii] - positions_y[time_instant, jj]) ** 2 +
                                          (positions_z[time_instant, ii] - positions_z[time_instant, jj]) ** 2)
                     if distance <= safe_distance:
-                        print(f'ALERT COLLISION! between Cf{ii} and Cf{jj}, at time {clock_gazebo[time_instant]}: distance = {distance}')
+                        print(f'ALERT COLLISION! between Cf{ii+1} and Cf{jj+1}, at time {clock_gazebo[time_instant]}: distance = {distance}')
                         cont += 1
     print(f'TOTAL POSSIBLE COLLISIONS: {cont}')
 
@@ -485,27 +490,167 @@ if show_velocities_comparison:
 #                                       C O L L I S I O N S  D E T E C T I O N S
 # ----------------------------------------------------------------------------------------------------------------------
 if show_collisions:
+    # 2-6:
     fig_cont += 1
     figure(fig_cont)
     subplot(311)
     final_pos = argmax(clock_gazebo>5)
-    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 0], color=grid_colors[0], label='Leader')
-    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 4], color=grid_colors[4], label='Cf5')
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 1], color=grid_colors[1], label='Cf2')
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 5], color=grid_colors[5], label='Cf6')
     ylabel('X [m]')
-    title('Firs row: velocity')
+    title('Collision alert 2-6')
     legend(loc='upper right')
 
     subplot(312)
-    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 0], color=grid_colors[0], label='Leader')
-    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 4], color=grid_colors[4], label='Cf5')
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 1], color=grid_colors[1], label='Cf2')
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 5], color=grid_colors[5], label='Cf6')
     ylabel('Y [m]')
     legend(loc='upper right')
 
     subplot(313)
-    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 0], color=grid_colors[0], label='Leader')
-    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 4], color=grid_colors[4], label='Cf5')
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 1], color=grid_colors[1], label='Cf2')
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 5], color=grid_colors[5], label='Cf6')
+    ylabel('Z [m]')
+    legend(loc='upper right')
+
+    # 12-8:
+    fig_cont += 1
+    figure(fig_cont)
+    subplot(311)
+    final_pos = argmax(clock_gazebo > 5)
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 7], color=grid_colors[7], label='Cf8')
+    ylabel('X [m]')
+    title('Collision alert 12-8')
+    legend(loc='upper right')
+
+    subplot(312)
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 7], color=grid_colors[7], label='Cf8')
+    ylabel('Y [m]')
+    legend(loc='upper right')
+
+    subplot(313)
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 7], color=grid_colors[7], label='Cf8')
     ylabel('Z [m]')
     legend(loc='upper right')
     xlabel('Time [s]')
+
+    # 12-16:
+    fig_cont += 1
+    figure(fig_cont)
+    subplot(311)
+    final_pos = argmax(clock_gazebo > 5)
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[0:final_pos], positions_x[0:final_pos, 15], color=grid_colors[15], label='Cf16')
+    ylabel('X [m]')
+    title('Collision alert 12-16')
+    legend(loc='upper right')
+
+    subplot(312)
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[0:final_pos], positions_y[0:final_pos, 15], color=grid_colors[15], label='Cf16')
+    ylabel('Y [m]')
+    legend(loc='upper right')
+
+    subplot(313)
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 11], color=grid_colors[11], label='Cf12')
+    plot(clock_gazebo[0:final_pos], positions_z[0:final_pos, 15], color=grid_colors[15], label='Cf16')
+    ylabel('Z [m]')
+    legend(loc='upper right')
+    xlabel('Time [s]')
+
+    #Difference
+    color1 = '#82E0AA'
+    color2 = '#F7DC6F'
+    color3 = '#E59866'
+    fig_cont += 1
+    figure(fig_cont)
+    subplot(311)
+    diff_2_6 = zeros((len(clock_gazebo[0:final_pos]), 1))
+    diff_12_8 = zeros((len(clock_gazebo[0:final_pos]), 1))
+    diff_12_16 = zeros((len(clock_gazebo[0:final_pos]), 1))
+    for ii in range(0, len(clock_gazebo[0:final_pos])):
+        diff_2_6[ii, 0] = math.sqrt((positions_x[ii, 1] - positions_x[ii, 5]) ** 2 +
+                                    (positions_y[ii, 1] - positions_y[ii, 5]) ** 2 +
+                                    (positions_z[ii, 1] - positions_z[ii, 5]) ** 2)
+        diff_12_8[ii, 0] = math.sqrt((positions_x[ii, 11] - positions_x[ii, 7]) ** 2 +
+                                     (positions_y[ii, 11] - positions_y[ii, 7]) ** 2 +
+                                     (positions_z[ii, 11] - positions_z[ii, 7]) ** 2)
+        diff_12_16[ii, 0] = math.sqrt((positions_x[ii, 11] - positions_x[ii, 15]) ** 2 +
+                                      (positions_y[ii, 11] - positions_y[ii, 15]) ** 2 +
+                                      (positions_z[ii, 11] - positions_z[ii, 15]) ** 2)
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos],))) * cf_radius * 2, color=red_color,
+         label='Collision limit')
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * safe_radius * 2, color=light_black_color,
+         label='Safe limit')
+    plot(clock_gazebo[0:final_pos], diff_2_6, color=color1, label='Cf2-Cf6')
+    ylabel('|xij| [m]')
+    legend(loc='upper right')
+    title('Relative absolute distance')
+
+    subplot(312)
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * cf_radius * 2, color=red_color,
+         label='Collision limit')
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * safe_radius * 2, color=light_black_color,
+         label='Safe limit')
+    plot(clock_gazebo[0:final_pos], diff_12_8, color=color2, label='Cf12-Cf8')
+    ylabel('|xij| [m]')
+    legend(loc='upper right')
+
+    subplot(313)
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * cf_radius * 2, color=red_color,
+         label='Collision limit')
+    plot(clock_gazebo[0:final_pos], ones((len(clock_gazebo[0:final_pos], ))) * safe_radius * 2, color=light_black_color,
+         label='Safe limit')
+    plot(clock_gazebo[0:final_pos], diff_12_16, color=color3, label='Cf12-Cf16')
+    ylabel('|xij| [m]')
+    legend(loc='upper right')
+    xlabel('Time [s]')
+
+    fig_cont += 1
+    figure(fig_cont)
+    ax = axes(projection='3d')
+
+    for ii in range(1, number_of_cfs):
+        ax.scatter3D(initial_positions[ii][0], initial_positions[ii][1], initial_positions[ii][2], color=blu_color)
+    # Reference trajectory:
+    ax.plot3D(positions_x[0:final_pos, 0], positions_y[0:final_pos, 0], positions_z[0:final_pos, 0],
+              color=grid_colors[0])
+    ax.scatter3D(positions_x[final_pos, 0], positions_y[final_pos, 0], positions_z[final_pos, 0], color=grid_colors[0])
+    ax.plot3D(positions_x[0:final_pos, 1], positions_y[0:final_pos, 1], positions_z[0:final_pos, 1],
+              color=grid_colors[1])
+    ax.scatter3D(positions_x[final_pos, 1], positions_y[final_pos, 1], positions_z[final_pos, 1], color=grid_colors[1])
+    ax.plot3D(positions_x[0:final_pos, 5], positions_y[0:final_pos, 5], positions_z[0:final_pos, 5],
+              color=grid_colors[5])
+    ax.scatter3D(positions_x[final_pos, 5], positions_y[final_pos, 5], positions_z[final_pos, 5], color=grid_colors[5])
+    ax.plot3D(positions_x[0:final_pos, 7], positions_y[0:final_pos, 7], positions_z[0:final_pos, 7],
+              color=grid_colors[7])
+    ax.scatter3D(positions_x[final_pos, 7], positions_y[final_pos, 7], positions_z[final_pos, 7], color=grid_colors[7])
+    ax.plot3D(positions_x[0:final_pos, 11], positions_y[0:final_pos, 11], positions_z[0:final_pos, 11],
+              color=grid_colors[11])
+    ax.scatter3D(positions_x[final_pos, 11], positions_y[final_pos, 11], positions_z[final_pos, 1], color=grid_colors[11])
+    ax.plot3D(positions_x[0:final_pos, 15], positions_y[0:final_pos, 15], positions_z[0:final_pos, 15],
+              color=grid_colors[15])
+    ax.scatter3D(positions_x[final_pos, 15], positions_y[final_pos, 15], positions_z[final_pos, 15], color=grid_colors[15])
+    ax.set_xlabel('X [m]')
+    ax.set_ylabel('Y [m]')
+    ax.set_zlabel('Z [m]')
+    ax.set_title('3D collisions')
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label='Leader',
+                              markerfacecolor=grid_colors[0], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf2',
+                              markerfacecolor=grid_colors[1], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf6',
+                              markerfacecolor=grid_colors[5], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf8',
+                              markerfacecolor=grid_colors[7], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf12',
+                              markerfacecolor=grid_colors[11], markersize=10),
+                       Line2D([0], [0], marker='o', color='w', label='Cf16',
+                              markerfacecolor=grid_colors[15], markersize=10)
+                       ]
+    ax.legend(handles=legend_elements, loc='upper right')
 
 show()

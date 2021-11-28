@@ -21,7 +21,7 @@ from rosgraph_msgs.msg import Clock
 clock = Clock()
 states = SwarmStates()
 canWriteBags = False
-experiment_name = 'flocking_N3'
+experiment_name = 'flocking_N4'
 
 rospack = rospkg.RosPack()
 pkg_path = rospack.get_path('crazyCmd')
