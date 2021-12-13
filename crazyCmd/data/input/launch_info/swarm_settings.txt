@@ -49,15 +49,20 @@
 # NOTE: the first drone will be spawned in [x, y] = [0.0, 0.0]
 # ----------------------------------------------------------------------------------------------------------------------
 # ======================================================================================================================
-spawn_formation: grid
-    number_of_cfs: 16
-    cfs_x_side: 4
-    cfs_y_side: 4
-    x_offset: 1.0
-    y_offset: 1.0
-    spawn_altitude: 0.2
+#spawn_formation: grid
+#    number_of_cfs: 16
+#    cfs_x_side: 4
+#    cfs_y_side: 4
+#    x_offset: 1.0
+#    y_offset: 1.0
+#    spawn_altitude: 0.2
+
 #spawn_formation: pyramid
-#    levels: 2
+#    levels: 0
 #    drone_distance: 1.0
 #    vertical_offset: 0.5
 #    spawn_altitude: 0.2
+
+spawn_formation: sentence
+    char_height: 2.0
+    char_width: 1.0

@@ -15,119 +15,539 @@
 	<group ns = "cf1">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf1</rosparam>
-			<rosparam param="initial_position">[0.0, 0.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.0, 2.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf2">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf2</rosparam>
-			<rosparam param="initial_position">[0.0, 1.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 2.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf3">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf3</rosparam>
-			<rosparam param="initial_position">[0.0, 2.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.0, 2.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf4">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf4</rosparam>
-			<rosparam param="initial_position">[0.0, 3.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf5">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf5</rosparam>
-			<rosparam param="initial_position">[1.0, 0.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf6">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf6</rosparam>
-			<rosparam param="initial_position">[1.0, 1.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 1.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf7">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf7</rosparam>
-			<rosparam param="initial_position">[1.0, 2.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 1.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf8">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf8</rosparam>
-			<rosparam param="initial_position">[1.0, 3.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.5, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf9">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf9</rosparam>
-			<rosparam param="initial_position">[2.0, 0.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf10">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf10</rosparam>
-			<rosparam param="initial_position">[2.0, 1.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.5, 1.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf11">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf11</rosparam>
-			<rosparam param="initial_position">[2.0, 2.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.5, 1.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf12">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf12</rosparam>
-			<rosparam param="initial_position">[2.0, 3.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.5, 2.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf13">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf13</rosparam>
-			<rosparam param="initial_position">[3.0, 0.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[2.5, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf14">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf14</rosparam>
-			<rosparam param="initial_position">[3.0, 1.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[2.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf15">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf15</rosparam>
-			<rosparam param="initial_position">[3.0, 2.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[2.5, 1.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf16">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf16</rosparam>
-			<rosparam param="initial_position">[3.0, 3.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[2.5, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf17">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf17</rosparam>
+			<rosparam param="initial_position">[2.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf18">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf18</rosparam>
+			<rosparam param="initial_position">[2.0, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf19">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf19</rosparam>
+			<rosparam param="initial_position">[3.0, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf20">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf20</rosparam>
+			<rosparam param="initial_position">[3.125, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf21">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf21</rosparam>
+			<rosparam param="initial_position">[3.25, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf22">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf22</rosparam>
+			<rosparam param="initial_position">[3.375, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf23">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf23</rosparam>
+			<rosparam param="initial_position">[3.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf24">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf24</rosparam>
+			<rosparam param="initial_position">[3.625, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf25">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf25</rosparam>
+			<rosparam param="initial_position">[3.75, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf26">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf26</rosparam>
+			<rosparam param="initial_position">[3.875, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf27">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf27</rosparam>
+			<rosparam param="initial_position">[4.0, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf28">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf28</rosparam>
+			<rosparam param="initial_position">[3.5, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf29">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf29</rosparam>
+			<rosparam param="initial_position">[4.5, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf30">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf30</rosparam>
+			<rosparam param="initial_position">[4.5, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf31">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf31</rosparam>
+			<rosparam param="initial_position">[4.5, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf32">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf32</rosparam>
+			<rosparam param="initial_position">[4.5, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf33">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf33</rosparam>
+			<rosparam param="initial_position">[4.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf34">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf34</rosparam>
+			<rosparam param="initial_position">[5.5, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf35">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf35</rosparam>
+			<rosparam param="initial_position">[5.5, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf36">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf36</rosparam>
+			<rosparam param="initial_position">[5.5, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf37">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf37</rosparam>
+			<rosparam param="initial_position">[5.5, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf38">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf38</rosparam>
+			<rosparam param="initial_position">[5.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf39">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf39</rosparam>
+			<rosparam param="initial_position">[4.75, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf40">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf40</rosparam>
+			<rosparam param="initial_position">[5.0, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf41">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf41</rosparam>
+			<rosparam param="initial_position">[5.25, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf42">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf42</rosparam>
+			<rosparam param="initial_position">[6.0, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf43">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf43</rosparam>
+			<rosparam param="initial_position">[6.0, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf44">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf44</rosparam>
+			<rosparam param="initial_position">[6.0, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf45">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf45</rosparam>
+			<rosparam param="initial_position">[6.0, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf46">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf46</rosparam>
+			<rosparam param="initial_position">[6.0, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf47">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf47</rosparam>
+			<rosparam param="initial_position">[6.5, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf48">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf48</rosparam>
+			<rosparam param="initial_position">[7.0, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf49">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf49</rosparam>
+			<rosparam param="initial_position">[6.5, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf50">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf50</rosparam>
+			<rosparam param="initial_position">[7.0, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf51">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf51</rosparam>
+			<rosparam param="initial_position">[11.0, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf52">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf52</rosparam>
+			<rosparam param="initial_position">[11.0, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf53">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf53</rosparam>
+			<rosparam param="initial_position">[11.0, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf54">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf54</rosparam>
+			<rosparam param="initial_position">[10.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf55">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf55</rosparam>
+			<rosparam param="initial_position">[10.75, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf56">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf56</rosparam>
+			<rosparam param="initial_position">[11.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf57">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf57</rosparam>
+			<rosparam param="initial_position">[11.25, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf58">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf58</rosparam>
+			<rosparam param="initial_position">[12.0, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf59">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf59</rosparam>
+			<rosparam param="initial_position">[12.0, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf60">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf60</rosparam>
+			<rosparam param="initial_position">[12.0, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf61">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf61</rosparam>
+			<rosparam param="initial_position">[13.0, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf62">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf62</rosparam>
+			<rosparam param="initial_position">[13.0, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf63">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf63</rosparam>
+			<rosparam param="initial_position">[13.0, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf64">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf64</rosparam>
+			<rosparam param="initial_position">[12.5, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf65">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf65</rosparam>
+			<rosparam param="initial_position">[12.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf66">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf66</rosparam>
+			<rosparam param="initial_position">[13.5, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf67">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf67</rosparam>
+			<rosparam param="initial_position">[13.5, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf68">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf68</rosparam>
+			<rosparam param="initial_position">[13.5, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf69">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf69</rosparam>
+			<rosparam param="initial_position">[13.5, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf70">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf70</rosparam>
+			<rosparam param="initial_position">[13.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf71">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf71</rosparam>
+			<rosparam param="initial_position">[14.5, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf72">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf72</rosparam>
+			<rosparam param="initial_position">[14.5, 0.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf73">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf73</rosparam>
+			<rosparam param="initial_position">[14.5, 1.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf74">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf74</rosparam>
+			<rosparam param="initial_position">[14.5, 1.5, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf75">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf75</rosparam>
+			<rosparam param="initial_position">[14.5, 2.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf76">
+		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf76</rosparam>
+			<rosparam param="initial_position">[14.0, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "swarm">
-		<rosparam param="cfs_number">16</rosparam>
+		<rosparam param="cfs_number">76</rosparam>
 		<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">
-			<rosparam param="cfs_number">16</rosparam>
+			<rosparam param="cfs_number">76</rosparam>
 		</node>
 	</group>
 
