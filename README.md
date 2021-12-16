@@ -11,7 +11,7 @@ Here it follows a table with tested operating systems:
 
 Operating systems    | Version     
 :-----------------: | :---------:
- Ubuntu              | 24.04.2 LTS
+ Ubuntu              | 20.04.2 LTS
 
 the same for ROS and Gazebo:
 
