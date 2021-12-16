@@ -79,7 +79,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   mav_msgs#   mav_planning_msgs#   mav_state_machine_msgs#   mav_system_msgs#   std_msgs
+#   
 # )
 generate_messages(
     DEPENDENCIES
