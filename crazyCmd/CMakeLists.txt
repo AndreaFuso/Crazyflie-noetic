@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   geometry_msgs
   crazy_common_py
-  mav_msgs
   trajectory_msgs
   crazyflie_messages
   rotors_control
