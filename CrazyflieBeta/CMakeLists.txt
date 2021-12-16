@@ -9,19 +9,8 @@ project(CrazyflieBeta)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  mav_msgs
-  mav_planning_msgs
-  mav_state_machine_msgs
-  mav_system_msgs
   roscpp
   rospy
-  rotors_comm
-  rotors_control
-  rotors_description
-  rotors_evaluation
-  rotors_gazebo
-  rotors_gazebo_plugins
-  rotors_joy_interface
   std_msgs
   message_generation
 )
