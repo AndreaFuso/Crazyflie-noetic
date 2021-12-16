@@ -12,9 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   geometry_msgs
   crazy_common_py
-  trajectory_msgs
   crazyflie_messages
-  rotors_control
 )
 
 ## System dependencies are found with CMake's conventions
