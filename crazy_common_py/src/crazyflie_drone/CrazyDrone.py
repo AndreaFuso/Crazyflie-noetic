@@ -254,7 +254,7 @@ class CrazyDrone:
         if goal.takeoff_height <= 0:
             desired_takeoff_height = DEFAULT_TAKEOFF_HEIGHT
         else:
-            desired_takeoff_height = goal.takeoff_height
+            desired_takeoff_height = goal.takeoff_height + self.__state.position.z
         self.__mc.take_off(height=desired_takeoff_height)
 
     # ------------------------------------------------------------------------------------------------------------------
