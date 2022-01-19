@@ -36,7 +36,6 @@ bags_closed = False
 # ----------------------------------------------------------------------------------------------------------------------
 # Real (True) or simulated (False) crazyflie:
 isReal = False
-isStarted = False
 type = PathType.SQUARE
 
 # Path info:
@@ -76,7 +75,7 @@ elif type == PathType.SPRINT:
     Sprint: 
 '''
 if type == PathType.SQUARE:
-    experiment_name = 'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N10'
+    experiment_name = 'S_D_02_02_02_02_V_02_02_02_02_RA_90_RR_72_N5'
 elif type == PathType.SPRINT:
     experiment_name = 'SP_D_04_04_V_04_02_RA_90_RR_72_NONUSARE'
 # ======================================================================================================================

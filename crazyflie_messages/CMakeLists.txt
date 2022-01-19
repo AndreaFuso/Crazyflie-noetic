@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
+  mav_msgs
   actionlib_msgs
 )
 
@@ -119,7 +120,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES crazyflie_messages
-    CATKIN_DEPENDS geometry_msgs rospy std_msgs message_runtime
+    CATKIN_DEPENDS geometry_msgs rospy std_msgs message_runtime mav_msgs
 #  DEPENDS system_lib
 )
 

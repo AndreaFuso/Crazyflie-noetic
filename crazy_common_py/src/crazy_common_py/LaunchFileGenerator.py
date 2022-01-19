@@ -1,14 +1,12 @@
 import rospkg
 from crazy_common_py.dataTypes import Vector3
-from crazy_common_py.TextFormation import TextFormation
-import numpy as np
+
 import math
 from enum import Enum
 
 class SwarmType(Enum):
     GRID = 0
     PYRAMID = 1
-    SENTENCE = 2
 
 class LaunchFileGenerator:
     # ==================================================================================================================
@@ -137,7 +135,7 @@ class LaunchFileGenerator:
 
         self.launchfile.write('\n\t<group ns = "swarm">\n')
         self.launchfile.write('\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
-        if self.__type == SwarmType.GRID or self.__type == SwarmType.SENTENCE:
+        if self.__type == SwarmType.GRID:
             self.launchfile.write('\t\t<node pkg="crazyCmd" type="swarm_node.py" name="swarm_node" output="screen">\n')
             self.launchfile.write('\t\t\t<rosparam param="cfs_number">' + str(cf_count) + '</rosparam>\n')
         elif self.__type == SwarmType.PYRAMID:
@@ -179,9 +177,6 @@ class LaunchFileGenerator:
         elif initial_formation == 'pyramid':
             self.__pyramid_spawn()
             self.__type = SwarmType.PYRAMID
-        elif initial_formation == 'sentence':
-            self.__sentence_spawn()
-            self.__type = SwarmType.SENTENCE
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                       __ G R I D _ S P A W N
@@ -277,15 +272,6 @@ class LaunchFileGenerator:
                 self.initial_positions.append(Vector3(x_pos_new, y_pos_new, z_pos_new))
                 cont += 1
         self.cfs_number = sum(cf_per_level)
-
-    def __sentence_spawn(self):
-        sentence = "THANK YOU"
-        sentence_generator_coord = TextFormation(2.0, 1.0, 1, 0.2)
-        coords = sentence_generator_coord.getCoords(sentence)
-
-        for ii in range(0, coords.shape[0]):
-            self.initial_positions.append(Vector3(coords[ii, 0], coords[ii, 1], coords[ii, 2]))
-        self.cfs_number = coords.shape[0]
 
     # ==================================================================================================================
     #

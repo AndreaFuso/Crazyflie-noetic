@@ -56,7 +56,7 @@ class CrazySim:
         self.IMU = GazeboIMU(IMU_GAUSSIAN_NOISE_DEFAULT, IMU_UPDATE_RATE_DEFAULT)
         self.state_estimator = FakeStateEstimator(name)
 
-        # Istance of motion commander:
+        # Instance of motion commander:
         self.motion_commander = MotionCommanderSim(name)
 
         # Test bench choice:
