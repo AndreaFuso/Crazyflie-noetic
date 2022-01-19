@@ -9,19 +9,8 @@ project(CrazyflieBeta)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  mav_msgs
-  mav_planning_msgs
-  mav_state_machine_msgs
-  mav_system_msgs
   roscpp
   rospy
-  rotors_comm
-  rotors_control
-  rotors_description
-  rotors_evaluation
-  rotors_gazebo
-  rotors_gazebo_plugins
-  rotors_joy_interface
   std_msgs
   message_generation
 )
@@ -90,7 +79,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   mav_msgs#   mav_planning_msgs#   mav_state_machine_msgs#   mav_system_msgs#   std_msgs
+#
 # )
 generate_messages(
     DEPENDENCIES
@@ -130,7 +119,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES CrazyflieBeta
-    CATKIN_DEPENDS geometry_msgs mav_msgs mav_planning_msgs mav_state_machine_msgs mav_system_msgs roscpp rospy rotors_comm rotors_control rotors_description rotors_evaluation rotors_gazebo rotors_gazebo_plugins rotors_joy_interface std_msgs message_runtime
+    CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
 

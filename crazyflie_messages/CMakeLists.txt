@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
-  mav_msgs
   actionlib_msgs
 )
 
@@ -58,6 +57,7 @@ add_message_files(
     Position.msg
     Attitude.msg
     KeyboardKeys.msg
+    SwarmStates.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -75,6 +75,9 @@ add_action_files(
     FILES
     Takeoff.action
     Destination3D.action
+    VelocityTrajectory.action
+    Empty.action
+    GetState.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -116,7 +119,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES crazyflie_messages
-    CATKIN_DEPENDS geometry_msgs rospy std_msgs message_runtime mav_msgs
+    CATKIN_DEPENDS geometry_msgs rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
 

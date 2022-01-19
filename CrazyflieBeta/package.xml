@@ -50,51 +50,20 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>mav_msgs</build_depend>
-  <build_depend>mav_planning_msgs</build_depend>
-  <build_depend>mav_state_machine_msgs</build_depend>
-  <build_depend>mav_system_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
-  <build_depend>rotors_comm</build_depend>
-  <build_depend>rotors_control</build_depend>
-  <build_depend>rotors_description</build_depend>
-  <build_depend>rotors_evaluation</build_depend>
-  <build_depend>rotors_gazebo</build_depend>
-  <build_depend>rotors_gazebo_plugins</build_depend>
-  <build_depend>rotors_joy_interface</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>message_generation</build_depend>
+
   <build_export_depend>geometry_msgs</build_export_depend>
-  <build_export_depend>mav_msgs</build_export_depend>
-  <build_export_depend>mav_planning_msgs</build_export_depend>
-  <build_export_depend>mav_state_machine_msgs</build_export_depend>
-  <build_export_depend>mav_system_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
-  <build_export_depend>rotors_comm</build_export_depend>
-  <build_export_depend>rotors_control</build_export_depend>
-  <build_export_depend>rotors_description</build_export_depend>
-  <build_export_depend>rotors_evaluation</build_export_depend>
-  <build_export_depend>rotors_gazebo</build_export_depend>
-  <build_export_depend>rotors_gazebo_plugins</build_export_depend>
-  <build_export_depend>rotors_joy_interface</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>message_runtime</build_export_depend>
+
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>mav_msgs</exec_depend>
-  <exec_depend>mav_planning_msgs</exec_depend>
-  <exec_depend>mav_state_machine_msgs</exec_depend>
-  <exec_depend>mav_system_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
-  <exec_depend>rotors_comm</exec_depend>
-  <exec_depend>rotors_control</exec_depend>
-  <exec_depend>rotors_description</exec_depend>
-  <exec_depend>rotors_evaluation</exec_depend>
-  <exec_depend>rotors_gazebo</exec_depend>
-  <exec_depend>rotors_gazebo_plugins</exec_depend>
-  <exec_depend>rotors_joy_interface</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
 

@@ -5,10 +5,22 @@ from crazy_common_py.controllers import WindupType
 #
 # ======================================================================================================================
 # ----------------------------------------------------------------------------------------------------------------------
+#                                                   N A M E S
+# ----------------------------------------------------------------------------------------------------------------------
+# Default name in the simulation:
+DEFAULT_NAME = 'cf'
+
+# ----------------------------------------------------------------------------------------------------------------------
 #                                           I M U  S E N S O R
 # ----------------------------------------------------------------------------------------------------------------------
 IMU_GAUSSIAN_NOISE_DEFAULT = 0.0
 IMU_UPDATE_RATE_DEFAULT = 1000   # [Hz]
+
+# ----------------------------------------------------------------------------------------------------------------------
+#                                           F O R C E  S T A T E
+# ----------------------------------------------------------------------------------------------------------------------
+# Updating frequency:
+FORCE_STATE_FREQ_UPDATE = 500   # [Hz]
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                                           P H Y S I C A L  C O N S T A N T S
@@ -49,13 +61,13 @@ A1_LIFT_TORQUE = 0.005964552
 INT16_MAX = 32767
 
 # Motor command limits:
-MAX_THRUST = 65535
-MIN_THRUST = 20000
-THRUST_BASE = 38180
+MAX_THRUST = 65535  # 65535
+MIN_THRUST = 20000  # 20000
+THRUST_BASE = 38180 # 36300
 thrustScale = 1000.0
 
 # Default technique to solve windup problem in pid:
-DEFAULT_WINDUP_TYPE = WindupType.Exclusion
+DEFAULT_WINDUP_TYPE = WindupType.Clamped # WindupType.Exclusion
 
 # Maximum absolute velocities (used as saturation values for PositionController pid output):
 MAX_VELOCITY_X = 1.0    # [m/s]
@@ -63,18 +75,19 @@ MAX_VELOCITY_Y = 1.0    # [m/s]
 MAX_VELOCITY_Z = 1.0    # [m/s]
 
 # Maximum absolute attitude (used as saturaration values for VelocityController pid output):
-MAX_PITCH = 20  # [deg]
-MAX_ROLL = 20   # [deg]
+MAX_PITCH = 20  # 20 [deg]
+MAX_ROLL = 20  # 20 [deg]
 
 # Maximum absolute attitude rate (used as saturaration values for AttitudeController pid output):
-MAX_ROLL_RATE = 40      # [deg/s]
-MAX_PITCH_RATE = 40     # [deg/s]
-MAX_YAW_RATE = 40       # [deg/s]
+# P.S. very high values to avoid clamping
+MAX_ROLL_RATE = 180      # 180 [deg/s]
+MAX_PITCH_RATE = 180     # 180 [deg/s]
+MAX_YAW_RATE = 180     # 180 [deg/s]
 
 # Maximum absolute motor command (used as saturation values for AttitudeRateController pid output):
-MAX_ROLL_OUTPUT = 10000 #7000
-MAX_PITCH_OUTPUT = 10000 #7000
-MAX_YAW_OUTPUT = 10000 #7000
+MAX_ROLL_OUTPUT = 2000 #7000
+MAX_PITCH_OUTPUT = 2000 #7000
+MAX_YAW_OUTPUT = 2000 #7000
 
 # ----------------------------------------------------------------------------------------------------------------------
 #                               D E F A U L T  P O S I T I O N I N G  V A L U E S
@@ -90,12 +103,13 @@ DEFAULT_LAND_SPEED = 0.5        # [m/s]
 # Forward/backward motion:
 DEFAULT_FORWARD_VELOCITY = 1.0  # [m/s]
 DEFAULT_BACKWARD_VELOCITY = 1.0  # [m/s]
+
 # ----------------------------------------------------------------------------------------------------------------------
 #                                   A C T U A T O R  V E L O C I T Y  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
-ACTUATOR_VELOCITY_CONTROLLER_KP = 1.0
-ACTUATOR_VELOCITY_CONTROLLER_KI = 1.0
-ACTUATOR_VELOCITY_CONTROLLER_KD = 0.0
+ACTUATOR_VELOCITY_CONTROLLER_KP = 10.0   # 1.0
+ACTUATOR_VELOCITY_CONTROLLER_KI = 10.0   # 1.0
+ACTUATOR_VELOCITY_CONTROLLER_KD = 100.0   # 0.0
 ACTUATOR_VELOCITY_CONTROLLER_I_CLAMP = 100.0
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -160,15 +174,15 @@ PID_YAW_INTEGRATION_LIMIT = 360.0   #360 50.0
 #                                     O T H E R  F I R M W A R E  P I D  V A L U E S
 # ----------------------------------------------------------------------------------------------------------------------
 # Desired Roll Rate VS actual Roll Rate => ROLL OUTPUT
-PID_ROLL_RATE_KP = 100.0    #250 100.0
-PID_ROLL_RATE_KI = 250.0    #500 250.0
-PID_ROLL_RATE_KD = 200.0     #2.5 200.0
+PID_ROLL_RATE_KP = 120.0    #250 80.0
+PID_ROLL_RATE_KI = 16.7    #500 200.0
+PID_ROLL_RATE_KD = 2.5    #2.5 350.0
 PID_ROLL_RATE_INTEGRATION_LIMIT = 33.3     #33.3
 
 # Desired Pitch Rate VS actual Pitch Rate => PITCH OUTPUT
-PID_PITCH_RATE_KP = 100.0   #250 100.0
-PID_PITCH_RATE_KI = 250.0  #500 250.0
-PID_PITCH_RATE_KD = 200.0    #2.5 200.0
+PID_PITCH_RATE_KP = 120.0   #250 80.0
+PID_PITCH_RATE_KI = 16.7  #500 200.0
+PID_PITCH_RATE_KD = 2.5    #2.5 350.0
 PID_PITCH_RATE_INTEGRATION_LIMIT = 33.3 #33.3
 
 # Desired Yaw Rate VS actual Yaw Rate => YAW OUTPUT
@@ -200,3 +214,17 @@ DELAY_DECK_CHECK = 1
 
 DEFAULT_TAKEOFF_HEIGHT = 0.2
 
+# ======================================================================================================================
+#
+#                               G E N E R A L  C R A Z Y F L I E  D E F A U L T  V A L U E S
+#
+# ======================================================================================================================
+# ----------------------------------------------------------------------------------------------------------------------
+#                                                      S P O T T E R
+# ----------------------------------------------------------------------------------------------------------------------
+# Default radius spherical spotter:
+DEFAULT_RADIUS_HORIZON = 4.0
+DEFAULT_SAFETY_RADIUS_SS = 0.3
+DEFAULT_LEADER = 'cf1'
+DEFAULT_PYRAMID_SWARM_NAME = 'pyramid_swarm'
+DEFAULT_GRID_SWARM_NAME = 'swarm'

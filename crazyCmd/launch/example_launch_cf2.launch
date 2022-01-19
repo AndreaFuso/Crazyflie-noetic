@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!-- Launching the Gazebo world scene -->
+
+    <rosparam param="/cf2/joint_state_controller/type">joint_state_controller/JointStateController</rosparam>
+    <rosparam param="/cf2/joint_state_controller/publish_rate">500</rosparam>
+
+    <rosparam param="/cf2/crazyflie_M1_joint_velocity_controller/type">velocity_controllers/JointVelocityController</rosparam>
+    <rosparam param="/cf2/crazyflie_M1_joint_velocity_controller/joint">crazyflie_M1_joint</rosparam>
+    <rosparam param="/cf2/crazyflie_M1_joint_velocity_controller/pid/p">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M1_joint_velocity_controller/pid/i">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M1_joint_velocity_controller/pid/d">0.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M1_joint_velocity_controller/pid/i_clamp">100.0</rosparam>
+
+    <rosparam param="/cf2/crazyflie_M2_joint_velocity_controller/type">velocity_controllers/JointVelocityController</rosparam>
+    <rosparam param="/cf2/crazyflie_M2_joint_velocity_controller/joint">crazyflie_M2_joint</rosparam>
+    <rosparam param="/cf2/crazyflie_M2_joint_velocity_controller/pid/p">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M2_joint_velocity_controller/pid/i">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M2_joint_velocity_controller/pid/d">0.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M2_joint_velocity_controller/pid/i_clamp">100.0</rosparam>
+
+    <rosparam param="/cf1/crazyflie_M3_joint_velocity_controller/type">velocity_controllers/JointVelocityController</rosparam>
+    <rosparam param="/cf2/crazyflie_M3_joint_velocity_controller/joint">crazyflie_M3_joint</rosparam>
+    <rosparam param="/cf2/crazyflie_M3_joint_velocity_controller/pid/p">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M3_joint_velocity_controller/pid/i">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M3_joint_velocity_controller/pid/d">0.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M3_joint_velocity_controller/pid/i_clamp">100.0</rosparam>
+
+    <rosparam param="/cf2/crazyflie_M4_joint_velocity_controller/type">velocity_controllers/JointVelocityController</rosparam>
+    <rosparam param="/cf2/crazyflie_M4_joint_velocity_controller/joint">crazyflie_M4_joint</rosparam>
+    <rosparam param="/cf2/crazyflie_M4_joint_velocity_controller/pid/p">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M4_joint_velocity_controller/pid/i">1.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M4_joint_velocity_controller/pid/d">0.0</rosparam>
+    <rosparam param="/cf2/crazyflie_M4_joint_velocity_controller/pid/i_clamp">100.0</rosparam>
+
+    <!-- Importing urdf informations to create a model of Crazyflie -->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find crazyflie_description)/urdf/crazyflie_reference_cf2.urdf'" />
+
+    <!-- Parameters to set the spawn position of the model -->
+    <arg name="x1" default="0"/>
+    <arg name="y1" default="0"/>
+    <arg name="z1" default="0.2"/>
+
+    <arg name="x2" default="0"/>
+    <arg name="y2" default="1.0"/>
+    <arg name="z2" default="0.2"/>
+
+    <arg name="x3" default="0"/>
+    <arg name="y3" default="2.0"/>
+    <arg name="z3" default="0.2"/>
+
+    <arg name="x4" default="0"/>
+    <arg name="y4" default="3.0"/>
+    <arg name="z4" default="0.2"/>
+
+
+
+    <!-- Spawning the model -->
+    <node name="cf2_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+          args="-urdf -param robot_description -model cf2 -x $(arg x2) -y $(arg y2) -z $(arg z2)" />
+    <!-- <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model cf1 -x $(arg x) -y $(arg y) -z $(arg z) -param robot_description -y -6"/> -->
+
+    <!-- loads the controllers -->
+    <node name="controller_spawner_cf2" pkg="controller_manager" type="spawner" ns="/cf2" args="crazyflie_M1_joint_velocity_controller crazyflie_M2_joint_velocity_controller crazyflie_M3_joint_velocity_controller crazyflie_M4_joint_velocity_controller joint_state_controller"/>
+   <!-- converts joint states to TF transforms -->
+
+
+</launch>

@@ -22,7 +22,7 @@ from crazy_common_py.constants import *
 # MESSAGES
 from crazyflie_messages.msg import RollPitchYaw
 
-class CrazyManager:
+class CrazyManagerOLD:
     #=======================================================================================================
     #
     #                                           C O N S T R U C T O R

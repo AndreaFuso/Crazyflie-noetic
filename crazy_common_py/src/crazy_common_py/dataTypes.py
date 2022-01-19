@@ -68,3 +68,39 @@ class MovementMode(Enum):
 class rotatingDirection(Enum):
     CW = 1
     CCW = -1
+
+# Spotter types:
+class SpotterType(Enum):
+    SPHERICAL = 0
+    BOX = 1
+
+# Spherical spotter:
+class SphericalSpotter:
+    def __init__(self, radius):
+        self.__type = SpotterType.SPHERICAL
+        self.__radius = radius
+
+    # This method is used to understand if an agent at position "position" is inside the sphere centered in "center":
+    def isContained(self, center=Vector3(), position=Vector3()):
+        sphere_eq = (position.x - center.x) ** 2 + (position.y - center.y) ** 2 + (position.z - center.z) ** 2
+        if sphere_eq <= (self.__radius ** 2):
+            return True
+        else:
+            return False
+
+    # Method to change the radius:
+    def setRadius(self, radius):
+        self.__radius = radius
+
+    # Method to get actual radius:
+    def getRadius(self):
+        return self.__radius
+
+    #Method to get spotter type;
+    def getType(self):
+        return self.__type
+
+
+class Role(Enum):
+    FOLLOWER = 0
+    LEADER = 1

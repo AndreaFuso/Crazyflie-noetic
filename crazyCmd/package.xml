@@ -53,7 +53,6 @@
   <build_depend>rospy</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>crazy_common_py</build_depend>
-  <build_depend>mav_msgs</build_depend>
   <build_depend>trajectory_msgs</build_depend>
   <build_depend>crazyflie_messages</build_depend>
   <build_depend>rotors_control</build_depend>
@@ -62,7 +61,6 @@
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>crazy_common_py</build_export_depend>
-  <build_export_depend>mav_msgs</build_export_depend>
   <build_export_depend>trajectory_msgs</build_export_depend>
   <build_export_depend>crazyflie_messages</build_export_depend>
   <build_export_depend>rotors_control</build_export_depend>
@@ -71,7 +69,6 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>crazy_common_py</exec_depend>
-  <exec_depend>mav_msgs</exec_depend>
   <exec_depend>trajectory_msgs</exec_depend>
   <exec_depend>crazyflie_messages</exec_depend>
   <exec_depend>rotors_control</exec_depend>

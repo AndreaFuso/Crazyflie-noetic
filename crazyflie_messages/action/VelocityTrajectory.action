@@ -1,0 +1,9 @@
+# GOAL SECTION
+crazyflie_messages/Position[] states_vector
+float64 dt
+---
+# RESULT SECTION
+bool result
+---
+# FEEDBACK SECTION
+float64 remaining_time

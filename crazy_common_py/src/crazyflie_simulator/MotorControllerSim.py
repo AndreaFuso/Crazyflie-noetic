@@ -2,7 +2,7 @@
 import rospy
 import time
 # MESSAGE
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Empty
 from crazyflie_messages.msg import Position, Attitude, CrazyflieState
 from geometry_msgs.msg import Wrench
 
@@ -11,6 +11,8 @@ from crazyflie_simulator.FlightControllerSimFirmwr import MAX_THRUST, INT16_MAX
 from crazy_common_py.common_functions import RotateVector, constrain
 from crazy_common_py.dataTypes import Vector3, rotatingDirection
 from crazy_common_py.constants import *
+from crazy_common_py.default_topics import DEFAULT_FORCE_STATE_TOPIC_M1, DEFAULT_FORCE_STATE_TOPIC_M2, \
+    DEFAULT_FORCE_STATE_TOPIC_M3, DEFAULT_FORCE_STATE_TOPIC_M4, DEFAULT_CF_STATE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC
 
 # OTHER MODULES
 from enum import Enum
@@ -38,12 +40,23 @@ class MotorSim:
         self.motorID = motorID
         self.direction = direction
 
+        self.prev_lift_force = Vector3()
+        self.prev_drag_torque = Vector3()
+
+        self.apply_delay = False
+
+        self.wrench_updated = False
+        self.actual_Wrench = Wrench()
+        self.prev_Wrench = Wrench()
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                   S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber to receive informations about the state of the virtual Crazyflie:
-        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/state', CrazyflieState, self.__actual_state_callback)
+        self.actual_state_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_CF_STATE_TOPIC,
+                                                 CrazyflieState, self.__actual_state_callback)
         self.actual_state = CrazyflieState()
+        self.pace_1000Hz_sub = rospy.Subscriber('/pace_1000Hz', Empty, self.__pace_1000Hz_callback)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
@@ -54,7 +67,17 @@ class MotorSim:
         self.__velocitySetpoint = Float64()
 
         # Publisher to send the force&torque state to the Gazebo simulation:
-        self.lift_drag_pub = rospy.Publisher('/' + cfName + '/lift_M' + str(motorID), Wrench, queue_size=1)
+        force_state_default_topic_name = ''
+        if motorID == 1:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M1
+        elif motorID == 2:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M2
+        elif motorID == 3:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M3
+        else:
+            force_state_default_topic_name = DEFAULT_FORCE_STATE_TOPIC_M4
+
+        self.lift_drag_pub = rospy.Publisher('/' + cfName + '/' + force_state_default_topic_name, Wrench, queue_size=1)
         self.lift_drag_pub_msg = Wrench()
 
 
@@ -65,6 +88,33 @@ class MotorSim:
     #                                       C A L L B A C K S  M E T H O D S
     #
     # ==================================================================================================================
+    def __pace_1000Hz_callback(self, msg):
+        '''actual_Wrench = self.actual_Wrench
+        message_Wrench = Wrench()
+        if self.apply_delay:
+            if self.wrench_updated:
+                self.wrench_updated = False
+                #print('UPDATED')
+                perc = 0.4
+                message_Wrench.force.x = self.prev_Wrench.force.x + (self.actual_Wrench.force.x - self.prev_Wrench.force.x) * perc
+                message_Wrench.force.y = self.prev_Wrench.force.y + (self.actual_Wrench.force.y - self.prev_Wrench.force.y) * perc
+                message_Wrench.force.z = self.prev_Wrench.force.z + (self.actual_Wrench.force.z - self.prev_Wrench.force.z) * perc
+                message_Wrench.torque.x = self.prev_Wrench.torque.x + (self.actual_Wrench.torque.x - self.prev_Wrench.torque.x) * perc
+                message_Wrench.torque.y = self.prev_Wrench.torque.y + (self.actual_Wrench.torque.y - self.prev_Wrench.torque.y) * perc
+                message_Wrench.torque.z = self.prev_Wrench.torque.z + (self.actual_Wrench.torque.z - self.prev_Wrench.torque.z) * perc
+            else:
+                #print('NOT UPDATED')
+                message_Wrench.force.x = self.actual_Wrench.force.x
+                message_Wrench.force.y = self.actual_Wrench.force.y
+                message_Wrench.force.z = self.actual_Wrench.force.z
+                message_Wrench.torque.x = self.actual_Wrench.torque.x
+                message_Wrench.torque.y = self.actual_Wrench.torque.y
+                message_Wrench.torque.z = self.actual_Wrench.torque.z
+        else:
+            message_Wrench = actual_Wrench
+        self.lift_drag_pub.publish(message_Wrench)'''
+        #self.lift_drag_pub.publish(self.actual_Wrench)
+
     # ------------------------------------------------------------------------------------------------------------------
     #
     #                                   __A C T U A L S T A T E C A L L B A C K
@@ -111,11 +161,12 @@ class MotorSim:
     # ------------------------------------------------------------------------------------------------------------------
 
     def __setForceTorque(self, input):
+        rate = rospy.Rate(10000)
         # Getting actual state:
         actual_state = self.actual_state
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           F O R C E S
+        #                                   F O R C E S  C O M P U T A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         # Calculating lift force components:
@@ -131,7 +182,7 @@ class MotorSim:
         self.lift_drag_pub_msg.force.z = resLiftForce.z
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           T O R Q U E S
+        #                                T O R Q U E S  C O M P U T A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         # Calculating drag torque components:
@@ -139,16 +190,46 @@ class MotorSim:
         if self.direction == rotatingDirection.CCW:
             dragTorque = (-1.0) * dragTorque
 
-        resDragTorque = RotateVector(Vector3(0.0, 0.0, dragTorque),
-                                 Vector3(actual_state.orientation.roll,
-                                         actual_state.orientation.pitch,
-                                         actual_state.orientation.yaw))
+        resDragTorque = RotateVector(Vector3(0.0, 0.0, dragTorque), Vector3(actual_state.orientation.roll,
+                                                                            actual_state.orientation.pitch,
+                                                                            actual_state.orientation.yaw))
         # Setting the new torque:
         self.lift_drag_pub_msg.torque.x = resDragTorque.x
         self.lift_drag_pub_msg.torque.y = resDragTorque.y
         self.lift_drag_pub_msg.torque.z = resDragTorque.z
 
-        self.lift_drag_pub.publish(self.lift_drag_pub_msg)
+        self.prev_Wrench = self.actual_Wrench
+        self.actual_Wrench = self.lift_drag_pub_msg
+        self.wrench_updated = True
+
+
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                             F O R C E  S T A T E  A P P L I C A T I O N
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        dur = rospy.Duration.from_sec(1 / 1000)
+        if self.apply_delay:
+            half_quantites = Wrench()
+            perc = 1.0
+            half_quantites.force.x = self.prev_lift_force.x + (resLiftForce.x - self.prev_lift_force.x) * perc
+            half_quantites.force.y = self.prev_lift_force.y + (resLiftForce.y - self.prev_lift_force.y) * perc
+            half_quantites.force.z = self.prev_lift_force.z + (resLiftForce.z - self.prev_lift_force.z) * perc
+            half_quantites.torque.x = self.prev_drag_torque.x + (resDragTorque.x - self.prev_drag_torque.x) * perc
+            half_quantites.torque.y = self.prev_drag_torque.y + (resDragTorque.y - self.prev_drag_torque.y) * perc
+            half_quantites.torque.z = self.prev_drag_torque.z + (resDragTorque.z - self.prev_drag_torque.z) * perc
+
+            #self.lift_drag_pub.publish(half_quantites)
+            self.actual_Wrench = half_quantites
+            rospy.sleep(1/2000)
+            #rospy.sleep(dur)
+            #self.lift_drag_pub.publish(self.lift_drag_pub_msg)
+            self.actual_Wrench = self.lift_drag_pub_msg
+
+            self.prev_lift_force = resLiftForce
+            self.prev_drag_torque = resDragTorque
+        else:
+            self.lift_drag_pub.publish(self.lift_drag_pub_msg)
+            self.actual_Wrench = self.lift_drag_pub_msg
+
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -263,7 +344,7 @@ class MotorControllerSim:
         #                                   S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber that receives motor commands coming from MotionCommanderSim:
-        self.motor_command_sub = rospy.Subscriber('/' + cfName + '/motor_command', Attitude,
+        self.motor_command_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_MOTOR_CMD_TOPIC, Attitude,
                                                   self.__motor_command_sub_callback)
 
     # ==================================================================================================================
@@ -287,10 +368,10 @@ class MotorControllerSim:
             thrust = msg.desired_thrust
 
             # Calculating the thrust for each motor:
-            thrust_M1 = constrain(thrust - roll - pitch - yaw, 0, MAX_THRUST)
-            thrust_M2 = constrain(thrust - roll + pitch + yaw, 0, MAX_THRUST)
-            thrust_M3 = constrain(thrust + roll + pitch - yaw, 0, MAX_THRUST)
-            thrust_M4 = constrain(thrust + roll - pitch + yaw, 0, MAX_THRUST)
+            thrust_M1 = constrain(thrust - roll - pitch - yaw, MIN_THRUST, MAX_THRUST)
+            thrust_M2 = constrain(thrust - roll + pitch + yaw, MIN_THRUST, MAX_THRUST)
+            thrust_M3 = constrain(thrust + roll + pitch - yaw, MIN_THRUST, MAX_THRUST)
+            thrust_M4 = constrain(thrust + roll - pitch + yaw, MIN_THRUST, MAX_THRUST)
 
             # Sending the thrust command:
             self.M1.sendInputCommand(thrust_M1)

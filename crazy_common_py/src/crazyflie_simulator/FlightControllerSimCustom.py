@@ -9,7 +9,8 @@ from crazy_common_py.controllers import PidController, WindupType, WindupInfo
 from crazy_common_py.constants import *
 from crazy_common_py.common_functions import rad2deg, constrain, isSameVector, RotateVector
 from crazy_common_py.dataTypes import Vector3, MovementMode
-
+from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_500Hz_PACE_TOPIC, \
+    DEFAULT_DESIRED_MOTOR_CMD_TOPIC, DEFAULT_ACTUAL_DESTINATION_TOPIC
 # TOPIC MESSAGES
 from crazyflie_messages.msg import CrazyflieState, Attitude, Position, RollPitchYaw
 from std_msgs.msg import Empty
@@ -37,15 +38,16 @@ class FlightControllerCustom:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                    S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        self.pace_100Hz_sub = rospy.Subscriber('/pace_100Hz', Empty, self.__pace_100Hz_callback)
-        self.pace_500Hz_sub = rospy.Subscriber('/pace_500Hz', Empty, self.__pace_500Hz_callback)
+        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_callback)
+        self.pace_500Hz_sub = rospy.Subscriber('/' + DEFAULT_500Hz_PACE_TOPIC, Empty, self.__pace_500Hz_callback)
 
         # Subscriber to get the actual state of the drone in the simulation:
-        state_sub = rospy.Subscriber('/' + cfName + '/state', CrazyflieState, self.__state_sub_callback)
+        state_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
+                                     self.__state_sub_callback)
         self.actual_state = CrazyflieState()
 
         # Subscriber looking for a point to go:
-        self.desired_position_sub = rospy.Subscriber('/' + cfName + '/set_destination_position', Position,
+        self.desired_position_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, Position,
                                                      self.__desired_position_sub_callback)
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -53,7 +55,8 @@ class FlightControllerCustom:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # self.desired_attitude_pub = rospy.Publisher('/' + name + '/set_desired_attitude', Attitude)
 
-        self.motor_command_pub = rospy.Publisher('/' + cfName + '/set_desired_motor_command', Attitude, queue_size=1)
+        self.motor_command_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_DESIRED_MOTOR_CMD_TOPIC,
+                                                 Attitude, queue_size=1)
         self.desired_motor_command = Attitude()
 
         self.previous_desired_position = Vector3(0.0001, 0.0001, 0.0001)
@@ -113,6 +116,11 @@ class FlightControllerCustom:
             # Calling attitude controller:
             desired_attitude_rate = self.__attitudeController(desired_attitude, actual_state)
 
+
+            # If it's moving in velocity mode let's overwrite the desired yaw rate:
+            if self.mode == MovementMode.VELOCITY:
+                desired_attitude_rate.z = self.desired_yaw_rate
+
             '''print('DESIRED ATTITUDE RATE: ', desired_attitude_rate.x, '; ', desired_attitude_rate.y, '; ', desired_attitude_rate.z)
             print('ACTUAL ATTITUDE RATE: ', actual_state.rotating_speed.x, '; ', actual_state.rotating_speed.y, '; ', actual_state.rotating_speed.z)'''
 
@@ -125,7 +133,7 @@ class FlightControllerCustom:
 
             #print('MOTOR COMMANDS: ', motor_commands[0], '; ', motor_commands[1], '; ', motor_commands[2], '; ', motor_commands[3], '\n')
 
-            # Setting up messaghe to be published:
+            # Setting up message to be published:
             self.desired_motor_command.desired_attitude.roll = desired_rpy_command.x
             self.desired_motor_command.desired_attitude.pitch = desired_rpy_command.y
             self.desired_motor_command.desired_attitude.yaw = desired_rpy_command.z
@@ -180,6 +188,7 @@ class FlightControllerCustom:
 
         self.desired_position = desired_position
         self.desired_yaw = msg.desired_yaw
+        self.desired_yaw_rate = msg.desired_yaw_rate
 
         # Check if there's a new desired position:
         if not isSameVector(self.previous_desired_position, desired_position) or self.previous_desired_yaw != self.desired_yaw:
@@ -207,7 +216,7 @@ class FlightControllerCustom:
             self.OK = True
             self.OK500 = False
 
-            print('Requested new destination for ', self.cfName, ': [', self.desired_position.x, '; ', self.desired_position.y, '; ', self.desired_position.z, '] YAW:', self.desired_yaw, '[deg]')
+            #print('Requested new destination for ', self.cfName, ': [', self.desired_position.x, '; ', self.desired_position.y, '; ', self.desired_position.z, '] YAW:', self.desired_yaw, '[deg]')
 
         # Calculating desired velocity (if in position control) or setting the desired one:
         if self.mode == MovementMode.POSITION:
