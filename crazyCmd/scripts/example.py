@@ -25,7 +25,7 @@ if __name__ == '__main__':
     CF1 = CrazySim('cf1', Vector3(1.0, 0.5, 0.2))
     CF2 = CrazySim('cf2', Vector3(1.0, 1.0, 0.2))
 
-    time.sleep(3)
+    time.sleep(15)
     CF1.motion_commander.takeoff_actn()
     CF2.motion_commander.takeoff_actn()
 
