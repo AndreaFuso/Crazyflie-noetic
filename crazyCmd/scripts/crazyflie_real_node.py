@@ -11,19 +11,27 @@ def exiting_hook():
     global drone
     drone.exit_operations()
 
+def compute_address(name):
+    num_ID = int(name[2:]) - 1
+    return 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
+
 if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('crazyflie_real_node', log_level=rospy.DEBUG)
 
-    '''# Extracting rosparam informations (to understand the name and spawn position):
+    # Extracting rosparam informations (to understand the name and spawn position):
     crazyflie_name = rospy.get_param('crazyflie_spawner_node/name')
     initial_pos = rospy.get_param('crazyflie_spawner_node/initial_position')
 
     # Spawning the virtual Crazyflie:
-    CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))'''
+    drone = CrazyDrone(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
 
-    # CrazyDrone instance:
-    drone = CrazyDrone('cf1', 'radio://0/80/2M/E7E7E7E7E7', Vector3(0, 0, 0))
+    '''# CrazyDrone instance:
+    drone = CrazyDrone('cf1', 'radio://0/80/2M/E7E7E7E7E7', Vector3(0, 0, 0))'''
+
+    '''
+    radio://USB_DONGLE_NUMBER/RADIO_CHANNEL/RADIO_SPEED(kbit/s)/CRAZYFLIE_ID
+    '''
 
     rospy.spin()
 

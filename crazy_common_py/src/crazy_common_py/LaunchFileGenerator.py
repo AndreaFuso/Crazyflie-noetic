@@ -10,6 +10,10 @@ class SwarmType(Enum):
     PYRAMID = 1
     SENTENCE = 2
 
+class CrazyflieType(Enum):
+    SIM = 0
+    REAL = 1
+
 class LaunchFileGenerator:
     # ==================================================================================================================
     #
@@ -129,7 +133,11 @@ class LaunchFileGenerator:
         for position in range(0, self.cfs_number):
             cf_count += 1
             self.launchfile.write('\n\t<group ns = "cf' + str(cf_count) + '">\n')
-            self.launchfile.write('\t\t<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">\n')
+            if self.__cf_type == 'sim':
+                self.launchfile.write('\t\t<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">\n')
+            else:
+                self.launchfile.write('\t\t<node pkg="crazyCmd" type="crazyflie_real_node.py" name="crazyflie_real_node" output="screen">\n')
+
             self.launchfile.write('\t\t\t<rosparam param="name">cf' + str(cf_count) + '</rosparam>\n')
             self.launchfile.write('\t\t\t<rosparam param="initial_position">[' + str(self.initial_positions[position].x) + ', ' + str(self.initial_positions[position].y) + ', ' + str(self.initial_positions[position].z) + ']</rosparam>\n')
             self.launchfile.write('\t\t</node>\n')
@@ -192,6 +200,7 @@ class LaunchFileGenerator:
         cf_cont = 0
 
         # Extracting all the parameters:
+        self.__cf_type = self.extract_value('type', 'str')
         self.cfs_number = self.extract_value('number_of_cfs', 'int')
         cfs_x_side = self.extract_value('cfs_x_side', 'int')
         cfs_y_side = self.extract_value('cfs_y_side', 'int')
