@@ -27,6 +27,9 @@ if __name__ == '__main__':
     pos3 = Vector3(1.0, 4.0, 0.2)
     pos4 = Vector3(1.0, 6.0, 0.2)
 
+<<<<<<< HEAD
+    time.sleep(15)
+=======
     pos_sel = pos1
     deltax = 1.5
     deltay = 1.5
@@ -38,6 +41,7 @@ if __name__ == '__main__':
     #CF4 = CrazySim('cf4', pos4)
 
     time.sleep(5)
+>>>>>>> 5f681f844510e004d9a54e1d2fa2047f66ea63bb
     CF1.motion_commander.takeoff_actn()
     CF2.motion_commander.takeoff_actn()
     #CF3.motion_commander.takeoff_actn()

@@ -10,6 +10,7 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #                                                   S T R U C T U R E
 # spawn_formation: grid
+#    type: real
 #    number_of_cfs: 6
 #    cfs_x_side: 2
 #    cfs_y_side: 3
@@ -19,6 +20,7 @@
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # where:
+#   type: 'real' or 'sim'
 #   number_of_cfs: number of crazyflies we want to spawn;
 #   cfs_x_side: number of crazyflies along x axis;
 #   cfs_y_side: number of crazyflies along y axis;
@@ -49,20 +51,17 @@
 # NOTE: the first drone will be spawned in [x, y] = [0.0, 0.0]
 # ----------------------------------------------------------------------------------------------------------------------
 # ======================================================================================================================
-#spawn_formation: grid
-#    number_of_cfs: 16
-#    cfs_x_side: 4
-#    cfs_y_side: 4
-#    x_offset: 1.0
-#    y_offset: 1.0
-#    spawn_altitude: 0.2
-
-spawn_formation: pyramid
-    levels: 0
-    drone_distance: 1.0
-    vertical_offset: 0.5
+spawn_formation: grid
+    type: real
+    number_of_cfs: 3
+    cfs_x_side: 3
+    cfs_y_side: 2
+    x_offset: 1.0
+    y_offset: 1.0
     spawn_altitude: 0.2
 
-#spawn_formation: sentence
-#    char_height: 2.0
-#    char_width: 1.0
+#spawn_formation: pyramid
+#    levels: 0
+#    drone_distance: 1.0
+#    vertical_offset: 0.5
+#    spawn_altitude: 0.2

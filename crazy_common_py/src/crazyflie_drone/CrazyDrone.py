@@ -149,8 +149,10 @@ class CrazyDrone:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                        I N I T I A L  O P E R A T I O N S
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # Drivers initialization:
-        cflib.crtp.init_drivers()
+       
+        if self.cfName == 'cf1':
+            # Drivers initialization:
+            cflib.crtp.init_drivers()
 
         # Instantiation of SyncCrazyflie and opening communication:
         self.__scf = SyncCrazyflie(URI)
@@ -254,7 +256,7 @@ class CrazyDrone:
         if goal.takeoff_height <= 0:
             desired_takeoff_height = DEFAULT_TAKEOFF_HEIGHT
         else:
-            desired_takeoff_height = goal.takeoff_height
+            desired_takeoff_height = goal.takeoff_height + self.__state.position.z
         self.__mc.take_off(height=desired_takeoff_height)
 
     # ------------------------------------------------------------------------------------------------------------------
