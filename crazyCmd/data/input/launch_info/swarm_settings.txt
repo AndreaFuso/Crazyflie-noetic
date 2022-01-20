@@ -57,12 +57,12 @@
 #    y_offset: 1.0
 #    spawn_altitude: 0.2
 
-#spawn_formation: pyramid
-#    levels: 0
-#    drone_distance: 1.0
-#    vertical_offset: 0.5
-#    spawn_altitude: 0.2
+spawn_formation: pyramid
+    levels: 0
+    drone_distance: 1.0
+    vertical_offset: 0.5
+    spawn_altitude: 0.2
 
-spawn_formation: sentence
-    char_height: 2.0
-    char_width: 1.0
+#spawn_formation: sentence
+#    char_height: 2.0
+#    char_width: 1.0
