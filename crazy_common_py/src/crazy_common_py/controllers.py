@@ -129,9 +129,9 @@ class MPCController:
 
         # Setting the desired state, in particular position and velocity
         self.desired_position = desired_position
-        self.x_des = self.desired_position.position.x
-        self.y_des = self.desired_position.position.y
-        self.z_des = self.desired_position.position.z
+        self.x_des = self.desired_position.x
+        self.y_des = self.desired_position.y
+        self.z_des = self.desired_position.z
 
         # Solving the NLP solver
         self.v_desired = self.nlp_solver()
@@ -233,13 +233,13 @@ class MPCController:
                X_i[4].__float__(), X_i[5].__float__()]
 
         # Formulate the NLP
-        for k in range(self.N):
+        for k in range(self.N_mpc):
             # New NLP variable for the control
             Uk = MX.sym('U_' + str(k), 3)  # creating symbolic expression for the 
                                         # new optimization variable
             w   += [Uk]     
-            lbw += [-20, -20, -20]
-            ubw += [ 20,  20,  20]
+            lbw += [-30, -30, -30]
+            ubw += [ 30,  30,  30]
             w0  += [u_i[0].__float__(), u_i[1].__float__(), u_i[2].__float__()]
 
             # Integrate till the end of the interval
@@ -250,16 +250,16 @@ class MPCController:
             # New NLP variable for state at end of interval
             Xk = MX.sym('X_' + str(k+1), 6)
             w   += [Xk]
-            lbw += [-inf, -inf, -inf, -0.6, -0.6, -0.6]
-            ubw += [ inf,  inf,  inf,  0.6,  0.6,  0.6]
+            lbw += [-inf, -inf, -inf, -inf, -inf, -inf]
+            ubw += [ inf,  inf,  inf,  inf,  inf,  inf]
 
 
-            w0  += [X_i[0].__float__() + (k+1)/self.N*P_N[0], 
-                    X_i[1].__float__() + (k+1)/self.N*P_N[1],
-                    X_i[2].__float__() + (k+1)/self.N*P_N[2],
-                    X_i[3].__float__() + (k+1)/self.N*P_N[3],
-                    X_i[4].__float__() + (k+1)/self.N*P_N[4], 
-                    X_i[5].__float__() + (k+1)/self.N*P_N[5]]
+            w0  += [X_i[0].__float__() + (k+1)/self.N_mpc*P_N[0], 
+                    X_i[1].__float__() + (k+1)/self.N_mpc*P_N[1],
+                    X_i[2].__float__() + (k+1)/self.N_mpc*P_N[2],
+                    X_i[3].__float__() + (k+1)/self.N_mpc*P_N[3],
+                    X_i[4].__float__() + (k+1)/self.N_mpc*P_N[4], 
+                    X_i[5].__float__() + (k+1)/self.N_mpc*P_N[5]]
 
             # Add equality constraint (continuity constraint for multiple shooting)
             g   += [Xk_end-Xk]
@@ -309,3 +309,190 @@ class MPCController:
 
         return self.v_desired
 
+
+class MPCSingleController:
+    
+    # Defining class variables
+    r_drone = 0.05
+    r_safety = 0.05
+    g = 9.8065
+
+    def __init__(self, x_obs, y_obs, r_obs, T_mpc, N_mpc):
+        # Defining obstacle positions and radii as vectors
+        self.x_obs = x_obs
+        self.y_obs = y_obs
+        self.r_obs = r_obs
+        # Time horizon of the MPC Controller
+        self.T_mpc = T_mpc
+        # Number of control intervals
+        self.N_mpc = N_mpc
+        # Time step
+        self.dt = self.T_mpc/self.N_mpc
+    
+
+    def updateMPC(self, actual_state, desired_position):
+        # Setting the actual state, in particular position and velocity
+        self.actual_state = actual_state
+        self.x = self.actual_state.position.x
+        self.y = self.actual_state.position.y
+        self.z = self.actual_state.position.z
+        self.vx = self.actual_state.velocity.x
+        self.vy = self.actual_state.velocity.y
+        self.vz = self.actual_state.velocity.z
+
+        # Setting the desired state, in particular position
+        self.desired_position = desired_position
+        self.x_des = self.desired_position.x
+        self.y_des = self.desired_position.y
+        self.z_des = self.desired_position.z
+
+        # Solving the NLP solver
+        self.v_desired = self.nlp_solver()
+
+        return self.v_desired
+
+
+    def nlp_solver(self):
+
+        # Declare model variables
+        x1 = MX.sym('x1')
+        x2 = MX.sym('x2')
+        x3 = MX.sym('x3')
+        x = vertcat(x1, x2, x3)
+
+
+        v1 = MX.sym('v1')
+        v2 = MX.sym('v2')
+        v3 = MX.sym('v3')
+        v = vertcat(v1, v2, v3)
+
+        # Model equations
+        xdot = vertcat(v1, v2, v3)
+
+        # Objective term
+        L = v1**2 + v2**2 + v3**2
+
+        # Formulate discrete time dynamics
+        if False:
+            # CVODES from the SUNDIALS suite
+            dae = {'x':x, 'p':u, 'ode':xdot, 'quad':L}
+            opts = {'tf':T/N}
+            F = integrator('F', 'cvodes', dae, opts)
+        else:
+            # Fixed step Runge-Kutta 4 integrator
+            M = 4 # RK4 steps per interval
+            DT = self.T_mpc/self.N_mpc/M
+            f = Function('f', [x, v], [xdot, L])
+            X0 = MX.sym('X0', 3)
+            U = MX.sym('U', 3)
+            X = X0
+            Q = 0
+            for j in range(M):
+                k1, k1_q = f(X, U)
+                k2, k2_q = f(X + DT/2 * k1, U)
+                k3, k3_q = f(X + DT/2 * k2, U)
+                k4, k4_q = f(X + DT * k3, U)
+                X = X + DT/6*(k1 + 2*k2 + 2*k3 + k4)
+                Q = Q + DT/6*(k1_q + 2*k2_q + 2*k3_q + k4_q)
+            F = Function('F', [X0, U], [X, Q],['x0','p'],['xf','qf'])
+        
+        
+        # MPC LOOP
+        P_0 = [self.x, self.y, self.z]
+        P_N = [self.x_des, self.y_des, self.z_des]
+        v_ig = [0, 0, 0]
+        
+        # Initializing state estimate at time instant i
+        X_i = P_0
+        v_i = v_ig
+        # print('X_i: ', X_i)
+
+
+        # Start with an empty NLP at each time step
+        w = []
+        # print('w: ', w)
+        w0 = []
+        lbw = []
+        ubw = []
+        J = 0
+        g = []        # it includes the constraint for obstacle avoidance
+        lbg = []
+        ubg = []
+
+        # "Lift" initial conditions
+        Xk = MX.sym('X0', 3)
+        w += [Xk]
+
+        lbw += [X_i[0].__float__(), X_i[1].__float__(), X_i[2].__float__()]
+        ubw += [X_i[0].__float__(), X_i[1].__float__(), X_i[2].__float__()]
+        w0 += [X_i[0].__float__(), X_i[1].__float__(), X_i[2].__float__()]
+
+        # Formulate the NLP
+        for k in range(self.N_mpc):
+            # New NLP variable for the control
+            Vk = MX.sym('V_' + str(k), 3)  # creating symbolic expression for the 
+                                        # new optimization variable
+            w   += [Vk]     
+            lbw += [-inf, -inf, -inf]
+            ubw += [ inf,  inf,  inf]
+            w0  += [v_i[0].__float__(), v_i[1].__float__(), v_i[2].__float__()]
+
+            # Integrate till the end of the interval
+            Fk = F(x0=Xk, p=Vk)         # we call the integrator
+            Xk_end = Fk['xf']
+            J=J+Fk['qf']
+
+            # New NLP variable for state at end of interval
+            Xk = MX.sym('X_' + str(k+1), 3)
+            w   += [Xk]
+            lbw += [-inf, -inf, -inf]
+            ubw += [ inf,  inf,  inf]
+
+
+            w0  += [X_i[0].__float__() + (k+1)/self.N_mpc*P_N[0], 
+                    X_i[1].__float__() + (k+1)/self.N_mpc*P_N[1],
+                    X_i[2].__float__() + (k+1)/self.N_mpc*P_N[2]]
+
+            # Add equality constraint (continuity constraint for multiple shooting)
+            g   += [Xk_end-Xk]
+            lbg += [0, 0, 0]
+            ubg += [0, 0, 0]
+
+            # Add inequality constraint for obstacle avoidance
+            for ii in range(len(self.x_obs)): # start here
+                g   += [(Xk[0] - self.x_obs[ii])**2 + (Xk[1] - self.y_obs[ii])**2]
+                lbg += [(self.r_obs[ii] + self.r_drone + self.r_safety)**2]
+                ubg += [+inf]
+
+
+            if k == self.N_mpc - 1:
+                X_final = P_N
+                g += [Xk_end - X_final]
+                lbg += [0, 0, 0]
+                ubg += [0, 0, 0]
+
+        prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
+        solver = nlpsol('solver', 'ipopt', prob);
+
+        # Solve the NLP
+        sol = solver(x0=w0, lbx=lbw, ubx=ubw, lbg=lbg, ubg=ubg)
+        w_opt = sol['x'].full().flatten()
+
+        # Extracting the optimal control inputs
+        v1_opt = []
+        v2_opt = []
+        v3_opt = []
+        v1_opt = w_opt[3::6]
+        v2_opt = w_opt[4::6]
+        v3_opt = w_opt[5::6]
+
+        # Extracting the control inputs to be applied
+        v_opt_i = []
+        v_opt_i += [v1_opt[0]]
+        v_opt_i += [v2_opt[0]]
+        v_opt_i += [v3_opt[0]]
+        self.v_i = np.array(v_opt_i)
+        
+        self.v_desired = self.v_i
+
+        return self.v_desired

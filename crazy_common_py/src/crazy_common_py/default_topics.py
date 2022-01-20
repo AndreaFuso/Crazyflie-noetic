@@ -40,8 +40,6 @@ DEFAULT_DESIRED_MOTOR_CMD_TOPIC = 'desired_motor_command'
 # Topic through which MotionCommanderSim keeps publishing actual desired position to FlightControllerSim:
 DEFAULT_ACTUAL_DESTINATION_TOPIC = 'actual_state_target'
 
-# Topic through which MotionCommanderSim keeps publishing actual desired state to FlightControllerSim, needed for MPC:
-DEFAULT_ACTUAL_MPC_TOPIC = 'target_state_mpc'
 
 # ======================================================================================================================
 #

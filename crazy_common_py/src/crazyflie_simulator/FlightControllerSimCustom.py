@@ -5,7 +5,7 @@ import rospy
 import math
 
 # CUSTOM MODULES
-from crazy_common_py.controllers import PidController, WindupType, WindupInfo, MPCController
+from crazy_common_py.controllers import PidController, WindupType, WindupInfo, MPCController, MPCSingleController
 from crazy_common_py.constants import *
 from crazy_common_py.common_functions import rad2deg, constrain, isSameVector, RotateVector
 from crazy_common_py.dataTypes import Vector3, MovementMode
@@ -51,8 +51,16 @@ class FlightControllerCustom:
                                                      self.__desired_position_sub_callback)
 
         # Subscriber looking for a target to reach by means of the MPC
-        self.mpc_target_sub = rospy.Subscriber('/' + cfName + '/target_mpc', Position,
+        self.mpc_target_sub = rospy.Subscriber('/' + cfName + '/mpc_target', Position,
                                                self.__mpc_target_sub_callback)
+        
+
+        # Subscriber looking for a target to reach by means of the MPC (single integrator)
+        self.mpc_single_sub = rospy.Subscriber('/' + cfName + '/mpc_single', Position,
+                                               self.__mpc_single_sub_callback)
+
+
+
 
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -63,6 +71,15 @@ class FlightControllerCustom:
         self.motor_command_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_DESIRED_MOTOR_CMD_TOPIC,
                                                  Attitude, queue_size=1)
         self.desired_motor_command = Attitude()
+
+
+        # This publisher has to be deleted (only 1 publisher per topic)
+        # Publisher to publish the desired destination (used by desired position subscriber):
+        self.trajectory_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC,
+                                              Position, queue_size=1)
+        self.position_target = Position()
+
+
 
         self.previous_desired_position = Vector3(0.0001, 0.0001, 0.0001)
         self.previous_desired_yaw = 1000.0
@@ -249,41 +266,30 @@ class FlightControllerCustom:
         actual_state = self.actual_state
         desired_position = Vector3(msg.desired_position.x, msg.desired_position.y, msg.desired_position.z)
 
-        # Check if there's a new desired position (MPC):
-        if not isSameVector(self.previous_desired_position, desired_position)
-            # Updating previous desired position:
-            self.previous_desired_position = desired_position
-            self.previous_desired_yaw = msg.desired_yaw
-
-            # Resetting pids:
-            self.PID_position_x.reset()
-            self.PID_position_y.reset()
-            self.PID_position_z.reset()
-
-            self.PID_velocity_x.reset()
-            self.PID_velocity_y.reset()
-            self.PID_velocity_z.reset()
-
-            self.PID_attitude_roll.reset()
-            self.PID_attitude_pitch.reset()
-            self.PID_attitude_yaw.reset()
-
-            self.PID_attitude_roll_rate.reset()
-            self.PID_attitude_pitch_rate.reset()
-            self.PID_attitude_yaw_rate.reset()
-
-            self.OK = True
-            self.OK500 = False
-
         desired_velocity = self.__mpcController(actual_state, desired_position)
 
-        # Calling velocityController to get desired attitude:
-        result = self.__velocityController(desired_velocity, actual_state)
+        self.position_target.desired_velocity.x = desired_velocity.x
+        self.position_target.desired_velocity.y = desired_velocity.y
+        self.position_target.desired_velocity.z = desired_velocity.z
 
-        if self.OK:
-            self.desired_attitude = result[0]
-            self.desired_thrust = result[1]
-            self.OK500 = True
+        # Publishing the desired velocity to '/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, (e.g.: /cf1/actual_state_target)
+        self.trajectory_pub.publish(self.position_target)
+
+
+    def __mpc_single_sub_callback(self,msg):
+
+        # Saving actual state and desired position (MPC):
+        actual_state = self.actual_state
+        desired_position = Vector3(msg.desired_position.x, msg.desired_position.y, msg.desired_position.z)
+
+        desired_velocity = self.__mpcSingleController(actual_state, desired_position)
+
+        self.position_target.desired_velocity.x = desired_velocity.x
+        self.position_target.desired_velocity.y = desired_velocity.y
+        self.position_target.desired_velocity.z = desired_velocity.z
+
+        # Publishing the desired velocity to '/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, (e.g.: /cf1/actual_state_target)
+        self.trajectory_pub.publish(self.position_target)
 
 
 
@@ -497,7 +503,7 @@ class FlightControllerCustom:
 #
 # ------------------------------------------------------------------------------------------------------------------
     def __init_mpc_controller(self):
-        self.MPC_controller = MPCController(x_obs=1, y_obs=0.1, r_obs=0.3, T_mpc=5, N_mpc=20)
+        self.MPC_controller = MPCController(x_obs=[1], y_obs=[0.1], r_obs=[0.3], T_mpc=10, N_mpc=20)
 
 
     def __mpcController(self, actualState=CrazyflieState(), desiredPosition=Vector3()):
@@ -505,11 +511,11 @@ class FlightControllerCustom:
         desired_velocity = Vector3()
 
         # Calculating desired velocities through mpc:
-        desired_velocity.x = self.MPC_controller.updateMPC(self, actualState, desiredPosition)[0]
-        desired_velocity.y = self.MPC_controller.updateMPC(self, actualState, desiredPosition)[1]
-        desired_velocity.z = self.MPC_controller.updateMPC(self, actualState, desiredPosition)[2]
+        desired_velocity.x = self.MPC_controller.updateMPC(actualState, desiredPosition)[0]
+        desired_velocity.y = self.MPC_controller.updateMPC(actualState, desiredPosition)[1]
+        desired_velocity.z = self.MPC_controller.updateMPC(actualState, desiredPosition)[2]
 
-        # Limitating values (to be sure):
+        # Limiting values (to be sure):
         desired_velocity.x = constrain(desired_velocity.x, - MAX_VELOCITY_X, MAX_VELOCITY_X)
         desired_velocity.y = constrain(desired_velocity.y, - MAX_VELOCITY_Y, MAX_VELOCITY_Y)
         desired_velocity.z = constrain(desired_velocity.z, - MAX_VELOCITY_Z, MAX_VELOCITY_Z)
@@ -517,3 +523,27 @@ class FlightControllerCustom:
         return desired_velocity
 
 
+# ------------------------------------------------------------------------------------------------------------------
+#
+#                          M P C    C O N T R O L L E R   ( S I N G L E    I N T E G R A T O R )
+#
+# ------------------------------------------------------------------------------------------------------------------
+    def __init_mpc_single_controller(self):
+        self.MPC_controller = MPCSingleController(x_obs=[1], y_obs=[0.1], r_obs=[0.3], T_mpc=10, N_mpc=20)
+
+
+    def __mpcSingleController(self, actualState=CrazyflieState(), desiredPosition=Vector3()):
+        # Output [vx, vy, vz]:
+        desired_velocity = Vector3()
+
+        # Calculating desired velocities through mpc:
+        desired_velocity.x = self.MPC_controller.updateMPC(actualState, desiredPosition)[0]
+        desired_velocity.y = self.MPC_controller.updateMPC(actualState, desiredPosition)[1]
+        desired_velocity.z = self.MPC_controller.updateMPC(actualState, desiredPosition)[2]
+
+        # Limiting values (to be sure):
+        desired_velocity.x = constrain(desired_velocity.x, - MAX_VELOCITY_X, MAX_VELOCITY_X)
+        desired_velocity.y = constrain(desired_velocity.y, - MAX_VELOCITY_Y, MAX_VELOCITY_Y)
+        desired_velocity.z = constrain(desired_velocity.z, - MAX_VELOCITY_Z, MAX_VELOCITY_Z)
+
+        return desired_velocity
