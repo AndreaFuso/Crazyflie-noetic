@@ -17,8 +17,6 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc):
 
     x_pos = actual_state.position.x
     y_pos = actual_state.position.y
-    vx = actual_state.velocity.x
-    vy = actual_state.velocity.y
 
     # Setting the desired state, in particular position
     
@@ -202,41 +200,62 @@ if __name__ == '__main__':
     r_drone = 0.05
     r_safety = 0.05
 
-    # Publisher initialization:    
+    # Time interval and number of control intervals
+    T_mpc = 4
+    N_mpc = 30
+
+    # Setting the obstacles
+    x_obs=[1]
+    y_obs=[0.1]
+    r_obs=[0.3]
+
+    # Publisher setup:
+    # Publisher to publish the target velocity (output of nlp)
     mpc_velocity = Position()
     mpc_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', Position, queue_size=1)
-    
 
-    # Initializing the mpc_target variable to detect changes
-    mpc_target = Position()
-    mpc_target_old = Position()
-    mpc_target.desired_position.x = 0.0
-    mpc_target.desired_position.y = 0.0
-    mpc_target.desired_position.z = 0.5
-    mpc_target_old.desired_position.x = mpc_target.desired_position.x
-    mpc_target_old.desired_position.y = mpc_target.desired_position.y
-    mpc_target_old.desired_position.z = mpc_target.desired_position.z
+    # # Publisher to publish the target position (when the drone is close to target)
+        # mpc_switch_pub = rospy.Publisher('/cf1/mpc_switch', Position, queue_size=1)
 
-    # Subscribers initialization
+    # Subscribers setup
+    # Subscriber to get the mpc target position
     mpc_target_sub = rospy.Subscriber('/cf1/mpc_target', Position, mpc_target_sub_callback)
+
     # Subscriber to get the actual state of the drone in the simulation:
     state_sub = rospy.Subscriber('/cf1/state', CrazyflieState, state_sub_callback)
     actual_state = CrazyflieState()
+
+
+    # Initializing the mpc_target_init to start the mpc controller only 
+    # when someone publishes on /cf1/mpc_target
+    mpc_target = Position()
+    mpc_target_init = Position()
+    mpc_target.desired_position.x = 0.0
+    mpc_target.desired_position.y = 0.0
+    mpc_target.desired_position.z = 0.5
+    mpc_target_init.desired_position.x = mpc_target.desired_position.x
+    mpc_target_init.desired_position.y = mpc_target.desired_position.y
+    mpc_target_init.desired_position.z = mpc_target.desired_position.z
+
+
     
     # Node initialization:
-    rospy.init_node('node_mpc_5Hz', log_level=rospy.DEBUG)
+    rospy.init_node('node_mpc_2d', log_level=rospy.DEBUG)
 
-    rate = rospy.Rate(4.0)
+    rate = rospy.Rate(N_mpc/T_mpc)
 
     while not rospy.is_shutdown():
-        if (mpc_target.desired_position.x == mpc_target_old.desired_position.x 
-            and mpc_target.desired_position.y == mpc_target_old.desired_position.y 
-            and mpc_target.desired_position.z == mpc_target_old.desired_position.z):
+        if (mpc_target.desired_position.x == mpc_target_init.desired_position.x 
+            and mpc_target.desired_position.y == mpc_target_init.desired_position.y 
+            and mpc_target.desired_position.z == mpc_target_init.desired_position.z):
             pass
-            
+        # elif (abs(mpc_target.desired_position.x - actual_state.position.x)<0.10 and
+        #       abs(mpc_target.desired_position.y - actual_state.position.y)<0.10):
+        #     mpc_switch_pub.publish(mpc_target) 
+        #     break
         else:
             mpc_velocity = nlp_solver_2d(mpc_target, actual_state, 
-                                         x_obs=[1], y_obs=[0.1], r_obs=[0.3], T_mpc=5, N_mpc=20)
+                                         x_obs, y_obs, r_obs, T_mpc, N_mpc)
             mpc_velocity_pub.publish(mpc_velocity)
 
         rate.sleep()
