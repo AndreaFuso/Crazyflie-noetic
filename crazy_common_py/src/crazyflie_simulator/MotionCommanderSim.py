@@ -11,7 +11,7 @@ from crazy_common_py.constants import *
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_500Hz_PACE_TOPIC, \
     DEFAULT_MOTOR_CMD_TOPIC, DEFAULT_DESIRED_MOTOR_CMD_TOPIC, DEFAULT_ACTUAL_DESTINATION_TOPIC
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LAND_ACT_TOPIC, DEFAULT_ABS_POS_TOPIC, \
-    DEFAULT_REL_POS_TOPIC, DEFAULT_ABS_VEL_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_STOP_TOPIC, DEFAULT_FLOCK_TOPIC, DEFAULT_ACTUAL_MPC_TOPIC
+    DEFAULT_REL_POS_TOPIC, DEFAULT_ABS_VEL_TOPIC, DEFAULT_REL_VEL_TOPIC, DEFAULT_STOP_TOPIC, DEFAULT_FLOCK_TOPIC#, DEFAULT_ACTUAL_MPC_TOPIC
 
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_SRV_TOPIC, DEFAULT_LAND_SRV_TOPIC
 
@@ -93,6 +93,14 @@ class MotionCommanderSim:
                                                           Attitude, self.__desired_motor_command_callback)
         self.desired_motor_command = Attitude()
 
+
+        # Subscriber to read the desired velocity computed by the MPC controller
+        self.mpc_velocity_sub = rospy.Subscriber('/' + cfName + '/mpc_velocity',
+                                                          Position, self.__mpc_velocity_callback)
+        self.mpc_velocity = Position()
+
+
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -101,14 +109,14 @@ class MotionCommanderSim:
                                               Position, queue_size=1)
         self.position_target = Position()
 
-        # Publisher to publish the desired destination using MPC (to be sent to FlightControllerSim):
-        self.mpc_target_pub = rospy.Publisher('/' + cfName + '/mpc_target', Position, queue_size=1)
-        self.mpc_target = Position()
+        # # Publisher to publish the desired destination using MPC (to be sent to FlightControllerSim):
+        # self.mpc_target_pub = rospy.Publisher('/' + cfName + '/mpc_target', Position, queue_size=1)
+        # self.mpc_target = Position()
 
 
-        # Publisher to publish the desired destination using MPC (single integrator) (to be sent to FlightControllerSim):
-        self.mpc_single_pub = rospy.Publisher('/' + cfName + '/mpc_single', Position, queue_size=1)
-        self.mpc_single = Position()
+        # # Publisher to publish the desired destination using MPC (single integrator) (to be sent to FlightControllerSim):
+        # self.mpc_single_pub = rospy.Publisher('/' + cfName + '/mpc_single', Position, queue_size=1)
+        # self.mpc_single = Position()
 
 
         #TODO: aggiungere subscriber per traiettoria pubblicata dall'esterno, un'azione blocca la pubblicazione di
@@ -208,16 +216,16 @@ class MotionCommanderSim:
         self.__square_velocity_act.start()
 
 
-        # Use MPC controller to get to a desired state:
-        self.__mpc_target_act = actionlib.SimpleActionServer('/' + cfName + '/mpc_target_act', Destination3DAction, 
-                                                         self.__mpc_target_act_callback, False)
-        self.__mpc_target_act.start()
+        # # Use MPC controller to get to a desired state:
+        # self.__mpc_target_act = actionlib.SimpleActionServer('/' + cfName + '/mpc_target_act', Destination3DAction, 
+        #                                                  self.__mpc_target_act_callback, False)
+        # self.__mpc_target_act.start()
 
 
-        # Use MPC controller to get to a desired state (single integrator):
-        self.__mpc_single_act = actionlib.SimpleActionServer('/' + cfName + '/mpc_single_act', Destination3DAction, 
-                                                         self.__mpc_single_act_callback, False)
-        self.__mpc_single_act.start()
+        # # Use MPC controller to get to a desired state (single integrator):
+        # self.__mpc_single_act = actionlib.SimpleActionServer('/' + cfName + '/mpc_single_act', Destination3DAction, 
+        #                                                  self.__mpc_single_act_callback, False)
+        # self.__mpc_single_act.start()
 
 
 
@@ -292,6 +300,28 @@ class MotionCommanderSim:
         self.actual_state.rotating_speed.x = msg.rotating_speed.x
         self.actual_state.rotating_speed.y = msg.rotating_speed.y
         self.actual_state.rotating_speed.z = msg.rotating_speed.z
+
+
+
+
+   # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __M P C _ V E L O C I T Y _ C A L L B A C K
+    #
+    # This callback gets the desired velocity computed by the mpc controller and sets the velocity target so that
+    # the velocity command is provided to the velocity controller
+    # ------------------------------------------------------------------------------------------------------------------
+    def __mpc_velocity_callback(self, msg):
+                
+        # Setting velocity mode:
+        self.flight_controller.mode = MovementMode.VELOCITY
+        
+        self.position_target.desired_velocity.x = msg.desired_velocity.x
+        self.position_target.desired_velocity.y = msg.desired_velocity.y
+        self.position_target.desired_velocity.z = msg.desired_velocity.z
+
+
+
 
     # ==================================================================================================================
     #
@@ -1089,158 +1119,158 @@ class MotionCommanderSim:
             pass
 
 
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                             __M P C _ T A R G E T _ A C T _ C A L L B A C K
-    #
-    # This action sets the position target of the 3D MPC controller, including obstacle avoidance
-    #
-    # ------------------------------------------------------------------------------------------------------------------
+    # # ------------------------------------------------------------------------------------------------------------------
+    # #
+    # #                             __M P C _ T A R G E T _ A C T _ C A L L B A C K
+    # #
+    # # This action sets the position target of the 3D MPC controller, including obstacle avoidance
+    # #
+    # # ------------------------------------------------------------------------------------------------------------------
 
 
 
 
-    def __mpc_target_act_callback(self, goal):
+    # def __mpc_target_act_callback(self, goal):
 
-        success = True
+    #     success = True
 
-        # Output & feedback:
-        feedback = Destination3DFeedback()
-        result = Destination3DResult()
+    #     # Output & feedback:
+    #     feedback = Destination3DFeedback()
+    #     result = Destination3DResult()
 
-        # Defining update rate in changing desired target:
-        rate = rospy.Rate(100)
+    #     # Defining update rate in changing desired target:
+    #     rate = rospy.Rate(100)
 
-        # Setting up velocity mode (desired velocity is the output of the MPC controller):
-        self.flight_controller.mode = MovementMode.VELOCITY
+    #     # Setting up velocity mode (desired velocity is the output of the MPC controller):
+    #     self.flight_controller.mode = MovementMode.VELOCITY
         
-        # Setting the position target to be reached by the drone
-        self.mpc_target.desired_position.x = goal.destination_info.desired_position.x
-        self.mpc_target.desired_position.y = goal.destination_info.desired_position.y
-        self.mpc_target.desired_position.z = goal.destination_info.desired_position.z
+    #     # Setting the position target to be reached by the drone
+    #     self.mpc_target.desired_position.x = goal.destination_info.desired_position.x
+    #     self.mpc_target.desired_position.y = goal.destination_info.desired_position.y
+    #     self.mpc_target.desired_position.z = goal.destination_info.desired_position.z
 
 
-        # Here we start the loop that allows us to follow the desired velocity
+    #     # Here we start the loop that allows us to follow the desired velocity
 
-        while(True):
-            # Publishing the target on /cf1/mpc_target
-            self.mpc_target_pub.publish(self.mpc_target)
+    #     while(True):
+    #         # Publishing the target on /cf1/mpc_target
+    #         self.mpc_target_pub.publish(self.mpc_target)
 
-            # Updating the position target with the one computed by the mpc controller
-            self.position_target = self.flight_controller.position_target
+    #         # Updating the position target with the one computed by the mpc controller
+    #         self.position_target = self.flight_controller.position_target
 
-            # Check for preemption:
-            if self.__mpc_target_act.is_preempt_requested() or self.stopActions:
-                success = False
-                info_msg = 'MPC motion canceled for ' + self.name
-                rospy.loginfo(info_msg)
-                result.result = False
-                self.__mpc_target_act.set_preempted()
-                break
+    #         # Check for preemption:
+    #         if self.__mpc_target_act.is_preempt_requested() or self.stopActions:
+    #             success = False
+    #             info_msg = 'MPC motion canceled for ' + self.name
+    #             rospy.loginfo(info_msg)
+    #             result.result = False
+    #             self.__mpc_target_act.set_preempted()
+    #             break
 
-            elif (abs(self.actual_state.position.x - self.mpc_target.desired_position.x) < 0.01 and 
-                  abs(self.actual_state.position.y - self.mpc_target.desired_position.y) < 0.01 and 
-                  abs(self.actual_state.position.z - self.mpc_target.desired_position.z) < 0.01):
-                info_msg = 'MPC motion successful for ' + self.name
-                rospy.loginfo(info_msg)
-                break
+    #         elif (abs(self.actual_state.position.x - self.mpc_target.desired_position.x) < 0.01 and 
+    #               abs(self.actual_state.position.y - self.mpc_target.desired_position.y) < 0.01 and 
+    #               abs(self.actual_state.position.z - self.mpc_target.desired_position.z) < 0.01):
+    #             info_msg = 'MPC motion successful for ' + self.name
+    #             rospy.loginfo(info_msg)
+    #             break
 
-            else:
-                pass
+    #         else:
+    #             pass
 
-            rate.sleep()
-
-        
-
-        # Calling stop action:
-        stop_goal = EmptyGoal()
-        self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
-
-        # Send the result:
-        if success:
-            result.result = True
-        else:
-            result.result = False
-
-        self.__mpc_target_act.set_succeeded(result)
-
-
-
-
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                             __M P C _ S I N G L E _ A C T _ C A L L B A C K
-    #
-    # This action sets the position target of the 3D MPC controller, including obstacle avoidance
-    #
-    # ------------------------------------------------------------------------------------------------------------------
-
-
-
-
-    def __mpc_single_act_callback(self, goal):
-
-        success = True
-
-        # Output & feedback:
-        feedback = Destination3DFeedback()
-        result = Destination3DResult()
-
-        # Defining update rate in changing desired target:
-        rate = rospy.Rate(100)
-
-        # Setting up velocity mode (desired velocity is the output of the MPC controller):
-        self.flight_controller.mode = MovementMode.VELOCITY
-        
-        # Setting the position target to be reached by the drone
-        self.mpc_single.desired_position.x = goal.destination_info.desired_position.x
-        self.mpc_single.desired_position.y = goal.destination_info.desired_position.y
-        self.mpc_single.desired_position.z = goal.destination_info.desired_position.z
-
-
-        # Here we start the loop that allows us to follow the desired velocity
-
-        while(True):
-            # Publishing the target on /cf1/mpc_single
-            self.mpc_single_pub.publish(self.mpc_single)
-
-            # Updating the position target with the one computed by the mpc controller
-            self.position_target = self.flight_controller.position_target
-
-            # Check for preemption:
-            if self.__mpc_single_act.is_preempt_requested() or self.stopActions:
-                success = False
-                info_msg = 'MPC motion canceled for ' + self.name
-                rospy.loginfo(info_msg)
-                result.result = False
-                self.__mpc_single_act.set_preempted()
-                break
-
-            elif (abs(self.actual_state.position.x - self.mpc_single.desired_position.x) < 0.01 and 
-                  abs(self.actual_state.position.y - self.mpc_single.desired_position.y) < 0.01 and 
-                  abs(self.actual_state.position.z - self.mpc_single.desired_position.z) < 0.01):
-                info_msg = 'MPC motion successful for ' + self.name
-                rospy.loginfo(info_msg)
-                break
-
-            else:
-                pass
-
-            rate.sleep()
+    #         rate.sleep()
 
         
 
-        # Calling stop action:
-        stop_goal = EmptyGoal()
-        self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
+    #     # Calling stop action:
+    #     stop_goal = EmptyGoal()
+    #     self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
 
-        # Send the result:
-        if success:
-            result.result = True
-        else:
-            result.result = False
+    #     # Send the result:
+    #     if success:
+    #         result.result = True
+    #     else:
+    #         result.result = False
 
-        self.__mpc_target_act.set_succeeded(result)
+    #     self.__mpc_target_act.set_succeeded(result)
+
+
+
+
+    # # ------------------------------------------------------------------------------------------------------------------
+    # #
+    # #                             __M P C _ S I N G L E _ A C T _ C A L L B A C K
+    # #
+    # # This action sets the position target of the 3D MPC controller, including obstacle avoidance
+    # #
+    # # ------------------------------------------------------------------------------------------------------------------
+
+
+
+
+    # def __mpc_single_act_callback(self, goal):
+
+    #     success = True
+
+    #     # Output & feedback:
+    #     feedback = Destination3DFeedback()
+    #     result = Destination3DResult()
+
+    #     # Defining update rate in changing desired target:
+    #     rate = rospy.Rate(100)
+
+    #     # Setting up velocity mode (desired velocity is the output of the MPC controller):
+    #     self.flight_controller.mode = MovementMode.VELOCITY
+        
+    #     # Setting the position target to be reached by the drone
+    #     self.mpc_single.desired_position.x = goal.destination_info.desired_position.x
+    #     self.mpc_single.desired_position.y = goal.destination_info.desired_position.y
+    #     self.mpc_single.desired_position.z = goal.destination_info.desired_position.z
+
+
+    #     # Here we start the loop that allows us to follow the desired velocity
+
+    #     while(True):
+    #         # Publishing the target on /cf1/mpc_single
+    #         self.mpc_single_pub.publish(self.mpc_single)
+
+    #         # Updating the position target with the one computed by the mpc controller
+    #         self.position_target = self.flight_controller.position_target
+
+    #         # Check for preemption:
+    #         if self.__mpc_single_act.is_preempt_requested() or self.stopActions:
+    #             success = False
+    #             info_msg = 'MPC motion canceled for ' + self.name
+    #             rospy.loginfo(info_msg)
+    #             result.result = False
+    #             self.__mpc_single_act.set_preempted()
+    #             break
+
+    #         elif (abs(self.actual_state.position.x - self.mpc_single.desired_position.x) < 0.01 and 
+    #               abs(self.actual_state.position.y - self.mpc_single.desired_position.y) < 0.01 and 
+    #               abs(self.actual_state.position.z - self.mpc_single.desired_position.z) < 0.01):
+    #             info_msg = 'MPC motion successful for ' + self.name
+    #             rospy.loginfo(info_msg)
+    #             break
+
+    #         else:
+    #             pass
+
+    #         rate.sleep()
+
+        
+
+    #     # Calling stop action:
+    #     stop_goal = EmptyGoal()
+    #     self.__stop_act_client.send_goal(stop_goal, feedback_cb=self.__stop_act_client_feedback_cb)
+
+    #     # Send the result:
+    #     if success:
+    #         result.result = True
+    #     else:
+    #         result.result = False
+
+    #     self.__mpc_target_act.set_succeeded(result)
 
 
 
