@@ -7,6 +7,7 @@ from qtwidgets import Toggle
 
 from app_styles import *
 from custom_widgets import MainMenuButton, MyMenuBar, GenericSection, MyButton
+from app_managers import PreviewLaunchManager
 
 def button_pressed():
     print('Button pressed!!')
@@ -87,6 +88,18 @@ def real_toggle_cb():
 
 def cf_number_cb():
     print('Modified')
+
+def add_node():
+    print('New node added')
+
+def add_launch():
+    print('Launch file added')
+
+def generate_launchfile():
+    print('Launch File correctly generated')
+
+def generate_and_launch():
+    print('Launching...')
 
 launchfile_window = QWidget()
 launchfile_window.setWindowTitle('Crazy App - Launch File Generator')
@@ -202,7 +215,7 @@ lf_nodes_label.setStyleSheet(
 lf_nodes_input_label = QLineEdit()
 lf_nodes_input_label.setText('PackageName:NodeName:ScriptName')
 lf_nodes_input_label.setFixedWidth(300)
-lf_nodes_add_btn = MyButton('Add', '5px', menu_button_pressed).Button
+lf_nodes_add_btn = MyButton('Add', '5px', add_node).Button
 lf_nodes_add_btn.setFixedWidth(50)
 
 lf_nodes_h_spacer = QSpacerItem(1000, 20, QSizePolicy.Maximum, QSizePolicy.Expanding)
@@ -221,7 +234,7 @@ lf_add_lfs_label.setStyleSheet(
 lf_add_lfs_input_label = QLineEdit()
 lf_add_lfs_input_label.setText('PackageName:LaunchFileName')
 lf_add_lfs_input_label.setFixedWidth(300)
-lf_add_lfs_add_btn = MyButton('Add', '5px', menu_button_pressed).Button
+lf_add_lfs_add_btn = MyButton('Add', '5px', add_launch).Button
 lf_add_lfs_add_btn.setFixedWidth(50)
 
 lf_add_lfs_h_spacer = QSpacerItem(1000, 20, QSizePolicy.Maximum, QSizePolicy.Expanding)
@@ -256,6 +269,8 @@ launchfile_main_layout.addWidget(lf_parameters_vertical_line)
 # ----------------------------------------------------------------------------------------------------------------------
 #                                               P R E V I E W  S E C T I O N
 # ----------------------------------------------------------------------------------------------------------------------
+lf_preview_manager = PreviewLaunchManager()
+
 lf_preview_group = QGroupBox()
 lf_preview_group.setFixedWidth(480)
 lf_preview_form = QFormLayout()
@@ -276,5 +291,5 @@ vertical_spacer = QSpacerItem(1000, 20, QSizePolicy.Maximum, QSizePolicy.Expandi
 lf_master_layout.addItem(vertical_spacer)
 launchfile_window.setLayout(lf_master_layout)
 
-menu_window.show()
+launchfile_window.show()
 sys.exit(app.exec())
