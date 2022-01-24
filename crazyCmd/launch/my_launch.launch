@@ -26,4 +26,19 @@
 		</node>
 	</group>
 
+    <group ns= "obstacle1">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description -model mrm -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
 </launch>
