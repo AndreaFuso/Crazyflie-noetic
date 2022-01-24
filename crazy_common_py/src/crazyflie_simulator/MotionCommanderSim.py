@@ -99,10 +99,10 @@ class MotionCommanderSim:
                                                           Position, self.__mpc_velocity_callback)
         self.mpc_velocity = Position()
 
-        # # Subscriber to read the desired velocity computed by the MPC controller
-        # self.mpc_switch_sub = rospy.Subscriber('/' + cfName + '/mpc_switch',
-        #                                                   Position, self.__mpc_switch_callback)
-        # self.mpc_switch = Position()
+        # Subscriber to read the desired velocity computed by the MPC controller
+        self.mpc_switch_sub = rospy.Subscriber('/' + cfName + '/mpc_switch',
+                                                          Position, self.__mpc_switch_callback)
+        self.mpc_switch = Position()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
@@ -323,21 +323,21 @@ class MotionCommanderSim:
         self.position_target.desired_velocity.y = msg.desired_velocity.y
         self.position_target.desired_velocity.z = msg.desired_velocity.z
 
-    # # ------------------------------------------------------------------------------------------------------------------
-    # #
-    # #                                  __M P C _ S W I T C H _ C A L L B A C K
-    # #
-    # # This callback switches to a PID position controller when the distance from the mpc target is small (<0.1 in each direction)
-    # # the new position target is set as the mpc target which was originally set
-    # # ------------------------------------------------------------------------------------------------------------------
-    # def __mpc_switch_callback(self, msg):
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                  __M P C _ S W I T C H _ C A L L B A C K
+    #
+    # This callback switches to a PID position controller when the distance from the mpc target is small (<0.1 in each direction)
+    # the new position target is set as the mpc target which was originally set
+    # ------------------------------------------------------------------------------------------------------------------
+    def __mpc_switch_callback(self, msg):
                 
-    #     # Setting velocity mode:
-    #     self.flight_controller.mode = MovementMode.POSITION
+        # Setting velocity mode:
+        self.flight_controller.mode = MovementMode.POSITION
         
-    #     self.position_target.desired_position.x = msg.desired_position.x
-    #     self.position_target.desired_position.y = msg.desired_position.y
-    #     self.position_target.desired_position.z = msg.desired_position.z
+        self.position_target.desired_position.x = msg.desired_position.x
+        self.position_target.desired_position.y = msg.desired_position.y
+        self.position_target.desired_position.z = msg.desired_position.z
 
 
 
