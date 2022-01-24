@@ -131,3 +131,49 @@ class GenericSection():
         title.move(section_background.pos().x() + offsetx,
                    section_background.pos().y() + offsety
                    )
+
+class PreviewWidget:
+    def __init__(self, text):
+        # Background:
+        lf_preview_element_background = QWidget()
+        lf_preview_element_background.setStyleSheet(
+            f"background: #A8DADC;" +
+            f"border-radius: 5px;"
+        )
+        lf_preview_element_background.setFixedHeight(50)
+
+        # Label::
+        preview_label = QLabel(text)
+
+        # Button:
+        delete_btn = QPushButton('Delete')
+        delete_btn.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
+        delete_btn.setFixedHeight(40)
+        delete_btn.setFixedWidth(75)
+        delete_btn.setStyleSheet('''
+            *{
+                border: 4px solid '#FF6B6B';
+                border-radius: 10px;
+                background: #FF6B6B;
+                margin: 0px 0px 7px 0px;
+                padding: 4px 0px 4px 0px;
+                color: #F1FAEE;
+                font-weight: bold;
+            }
+            *:hover{
+                background: #FFB3C1;
+                border: 4px solid '#FFB3C1';
+            }
+        '''
+        )
+        delete_btn.clicked.connect(button_pressed)
+
+        # Layout:
+        preview_layout = QHBoxLayout()
+        #preview_layout.setAlignment(QtCore.Qt.AlignHCenter)
+        preview_layout.addWidget(preview_label)
+        preview_layout.addWidget(delete_btn)
+
+        lf_preview_element_background.setLayout(preview_layout)
+
+        self.widget = lf_preview_element_background

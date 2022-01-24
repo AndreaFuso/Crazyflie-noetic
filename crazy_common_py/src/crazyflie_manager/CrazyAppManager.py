@@ -6,7 +6,7 @@ from PyQt5.QtCore import QSize
 from qtwidgets import Toggle
 
 from app_styles import *
-from custom_widgets import MainMenuButton, MyMenuBar, GenericSection, MyButton
+from custom_widgets import MainMenuButton, MyMenuBar, GenericSection, MyButton, PreviewWidget
 from app_managers import PreviewLaunchManager
 
 def button_pressed():
@@ -271,15 +271,51 @@ launchfile_main_layout.addWidget(lf_parameters_vertical_line)
 # ----------------------------------------------------------------------------------------------------------------------
 lf_preview_manager = PreviewLaunchManager()
 
-lf_preview_group = QGroupBox()
-lf_preview_group.setFixedWidth(480)
-lf_preview_form = QFormLayout()
+lf_preview_scroll = QScrollArea()
+lf_preview_scroll.setFixedWidth(480)
+lf_preview_widget = QWidget()
+lf_preview_vbox = QVBoxLayout()
 
-lf_elements_list = []
-lf_elements_remove_btns = []
-lf_elements_positions = []
+'''for ii in range(1, 50):
+    object = PreviewWidget(f'Text {ii}').widget
+    lf_preview_vbox.addWidget(object)'''
 
-launchfile_main_layout.addWidget(lf_preview_group)
+lf_preview_widget.setLayout(lf_preview_vbox)
+
+lf_preview_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+lf_preview_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+lf_preview_scroll.setWidgetResizable(True)
+lf_preview_scroll.setWidget(lf_preview_widget)
+
+lf_preview_scroll.setStyleSheet('''
+    QScrollBar:vertical {
+        background: #CED4DA;
+        border-radius: 5px;
+    }
+    QScrollBar::handle:vertical {
+        margin: 2px;
+        background: #457B9D;
+        border-radius: 5px;
+        
+    }
+    QScrollBar::add-line:vertical {
+        height: 0px;
+    }
+    
+    QScrollBar::sub-line:vertical {
+        height: 0px;
+    }
+    
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        height: 0px;
+    }
+'''
+
+)
+
+launchfile_main_layout.addWidget(lf_preview_scroll)
+
+
 lf_master_layout.addLayout(launchfile_main_layout)
 # ----------------------------------------------------------------------------------------------------------------------
 #                                               B U T T O N S  S E C T I O N
