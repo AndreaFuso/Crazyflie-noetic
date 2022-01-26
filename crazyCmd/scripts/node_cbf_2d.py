@@ -33,8 +33,7 @@ class CBF_controller():
         v_des = -self.K * (x-self.x_goal)
         if np.linalg.norm(v_des) > self.v_lim:
             v_des = self.v_lim*v_des/np.linalg.norm(v_des)
-        else:
-            pass
+
         return v_des
 
     def get_cbf_v(self,x):
@@ -67,34 +66,12 @@ class Sim():
         x_next = x_old + self.dt*self.f_dyn(x_old,u_old)
         return x_next
 
-    # def step_noise(self,x_old,u_old):
-        
-    #     x_noise = []
-    #     for ii in range(len(x_old)):
-    #         x_noise.append(0.003*np.random.ranf()*(-1)**np.random.randint(0,2))
-    #     x_noise = np.array(x_noise) # adding noise to the propagated state
-    #     x_next = x_old + self.dt*self.f_dyn(x_old,u_old) + x_noise
 
-    #     return x_next
 
 def f_dyn_single_integrator(x, u):
     # Basic single integrator dynamics
     v = u
     return v
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

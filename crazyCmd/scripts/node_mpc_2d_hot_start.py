@@ -41,8 +41,16 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     # Model equations
     xdot = vertcat(v1, v2)
 
+    # Distance to be covered
+    vector = [x_des-x_pos, y_des-y_pos]
+    vector = np.array(vector)
+    distance = np.linalg.norm(vector)
+
+    # Defining weight for position cost
+    k_pos = 0.1*distance**(-1.3)
+
     # Objective term (minimize control effort)
-    L = (v1-vx_des)**2 + (v2-vy_des)**2 + (x1-x_des)**2 + (x2-y_des)**2
+    L = (v1-vx_des)**2 + (v2-vy_des)**2 + k_pos*(x1-x_des)**2 + k_pos*(x2-y_des)**2
 
     # Formulate discrete time dynamics
     if False:
@@ -72,7 +80,6 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     # MPC LOOP
     P_0 = [x_pos, y_pos]
     P_N = [x_des, y_des]
-    # v_ig = [0, 0]
 
     v_ig = [vx_des, vy_des]
     
@@ -109,8 +116,8 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
         w   += [Vk]     
         lbw += [-inf, -inf]
         ubw += [ inf,  inf]
-        # w0  += [v1_opt[k], v2_opt[k]]
         w0  += [v_i[0].__float__(), v_i[1].__float__()]
+
 
         # Integrate till the end of the interval
         Fk = F(x0=Xk, p=Vk)         # we call the integrator
@@ -139,8 +146,8 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
         if k == N_mpc - 1:
             X_final = P_N
             g += [Xk_end - X_final]
-            lbg += [-0.1, -0.1]
-            ubg += [ 0.1,  0.1]
+            lbg += [-1, -1]
+            ubg += [ 1,  1]
 
     prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
     solver = nlpsol('solver', 'ipopt', prob);
@@ -209,7 +216,7 @@ if __name__ == '__main__':
     
     # Safety measures
     r_drone = 0.05
-    r_safety = 0.10
+    r_safety = 0.20
 
     # Time interval and number of control intervals
     T_mpc = 10
@@ -252,12 +259,7 @@ if __name__ == '__main__':
     # Initializing x1_opt, x2_opt to use them as initial guess for each step
     x1_opt_old = np.linspace(actual_state.position.x, mpc_target.desired_position.x, N_mpc+1)
     x2_opt_old = np.linspace(actual_state.position.y, mpc_target.desired_position.y, N_mpc+1)
-    # vx_des = (mpc_target.desired_position.x - actual_state.position.x)/T_mpc
-    # vy_des = (mpc_target.desired_position.y - actual_state.position.y)/T_mpc
 
-    # v1_opt_old = np.ones(N_mpc)*vx_des
-    # v2_opt_old = np.ones(N_mpc)*vy_des
-    
     # Node initialization:
     rospy.init_node('node_mpc_2d', log_level=rospy.DEBUG)
 
@@ -269,12 +271,6 @@ if __name__ == '__main__':
             x1_opt_old = np.linspace(actual_state.position.x, mpc_target.desired_position.x, N_mpc+1)
             x2_opt_old = np.linspace(actual_state.position.y, mpc_target.desired_position.y, N_mpc+1)
 
-            # vx_des = (mpc_target.desired_position.x - actual_state.position.x)/T_mpc
-            # vy_des = (mpc_target.desired_position.y - actual_state.position.y)/T_mpc
-
-            # v1_opt_old = np.ones(N_mpc)*vx_des
-            # v2_opt_old = np.ones(N_mpc)*vy_des
-
         if (mpc_target.desired_position.x == mpc_target_init.desired_position.x 
             and mpc_target.desired_position.y == mpc_target_init.desired_position.y 
             and mpc_target.desired_position.z == mpc_target_init.desired_position.z):
@@ -284,15 +280,13 @@ if __name__ == '__main__':
             mpc_velocity, x1_opt, x2_opt = nlp_solver_2d(mpc_target, actual_state, 
                 x_obs, y_obs, r_obs, T_mpc, N_mpc, r_drone, r_safety, x1_opt_old, x2_opt_old) #, v1_opt_old, v2_opt_old
             mpc_velocity_pub.publish(mpc_velocity)
-            # print('the length of x1_opt is: ', len(x1_opt))
-            # print('x1_opt is: ', x1_opt)
+ 
             # We update this so that we can publish any target we want
             mpc_target_init.desired_position.x = actual_state.position.x
             mpc_target_init.desired_position.y = actual_state.position.y
             mpc_target_init.desired_position.z = actual_state.position.z
 
             x1_opt_old, x2_opt_old = x1_opt, x2_opt
-            # v1_opt_old, v2_opt_old = v1_opt, v2_opt
 
         mpc_target_old = mpc_target
         rate.sleep()
