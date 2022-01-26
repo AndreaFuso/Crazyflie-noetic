@@ -133,7 +133,8 @@ class GenericSection():
                    )
 
 class PreviewWidget:
-    def __init__(self, text):
+    def __init__(self, text, call_back):
+        self.active = True
         # Background:
         lf_preview_element_background = QWidget()
         lf_preview_element_background.setStyleSheet(
@@ -141,6 +142,7 @@ class PreviewWidget:
             f"border-radius: 5px;"
         )
         lf_preview_element_background.setFixedHeight(50)
+        lf_preview_element_background.setFixedWidth(440)
 
         # Label::
         preview_label = QLabel(text)
@@ -166,7 +168,7 @@ class PreviewWidget:
             }
         '''
         )
-        delete_btn.clicked.connect(button_pressed)
+        delete_btn.clicked.connect(self.button_pressed_cb)
 
         # Layout:
         preview_layout = QHBoxLayout()
@@ -177,3 +179,9 @@ class PreviewWidget:
         lf_preview_element_background.setLayout(preview_layout)
 
         self.widget = lf_preview_element_background
+        self.cb = call_back
+
+    def button_pressed_cb(self):
+        self.active = False
+        self.cb()
+

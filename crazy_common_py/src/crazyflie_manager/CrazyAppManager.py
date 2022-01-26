@@ -91,15 +91,37 @@ def cf_number_cb():
 
 def add_node():
     print('New node added')
+    actual_preview_widgets.append(PreviewWidget(lf_nodes_input_label.text(), update_preview))
+    update_preview()
 
 def add_launch():
     print('Launch file added')
+    actual_preview_widgets.append(PreviewWidget(lf_add_lfs_input_label.text(), update_preview))
+    update_preview()
 
 def generate_launchfile():
     print('Launch File correctly generated')
 
 def generate_and_launch():
     print('Launching...')
+
+def update_preview():
+    global actual_preview_widgets
+    for i in reversed(range(lf_preview_vbox.count())):
+        lf_preview_vbox.itemAt(i).widget().setParent(None)
+
+    actual_preview_widgets_cp = actual_preview_widgets[:]
+
+    for ii in range(0, len(actual_preview_widgets)):
+        if not actual_preview_widgets[ii].active:
+            actual_preview_widgets_cp.pop(ii)
+
+    actual_preview_widgets = actual_preview_widgets_cp[:]
+
+    for ii in range(0, len(actual_preview_widgets)):
+        lf_preview_vbox.addWidget(actual_preview_widgets[ii].widget)
+
+    lf_preview_vbox.setAlignment(QtCore.Qt.AlignTop)
 
 launchfile_window = QWidget()
 launchfile_window.setWindowTitle('Crazy App - Launch File Generator')
@@ -276,8 +298,10 @@ lf_preview_scroll.setFixedWidth(480)
 lf_preview_widget = QWidget()
 lf_preview_vbox = QVBoxLayout()
 
+actual_preview_widgets = []
+
 '''for ii in range(1, 50):
-    object = PreviewWidget(f'Text {ii}').widget
+    object = PreviewWidget(f'Text {ii}', button_pressed).widget
     lf_preview_vbox.addWidget(object)'''
 
 lf_preview_widget.setLayout(lf_preview_vbox)
