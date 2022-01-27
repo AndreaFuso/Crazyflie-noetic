@@ -47,7 +47,15 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     distance = np.linalg.norm(vector)
 
     # Defining weight for position cost
-    k_pos = 0.1*distance**(-1.3)
+    a_pos = 0.15
+    b_pos = -1.3
+    d_lb = 0.5
+    d_ub = 3
+    k_pos = a_pos*distance**(b_pos)
+    if distance < d_lb:
+        k_pos = a_pos*d_lb**(b_pos)
+    if distance > d_ub:
+        k_pos = a_pos*d_ub**(b_pos)
 
     # Objective term (minimize control effort)
     L = (v1-vx_des)**2 + (v2-vy_des)**2 + k_pos*(x1-x_des)**2 + k_pos*(x2-y_des)**2
@@ -216,10 +224,10 @@ if __name__ == '__main__':
     
     # Safety measures
     r_drone = 0.05
-    r_safety = 0.20
+    r_safety = 0.15
 
     # Time interval and number of control intervals
-    T_mpc = 10
+    T_mpc = 5
     N_mpc = 20
 
     # Setting the obstacles
