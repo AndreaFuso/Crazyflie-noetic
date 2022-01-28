@@ -224,7 +224,7 @@ if __name__ == '__main__':
     
     # Safety measures
     r_drone = 0.05
-    r_safety = 0.15
+    r_safety = 0.10
 
     # Time interval and number of control intervals
     T_mpc = 5
@@ -270,6 +270,8 @@ if __name__ == '__main__':
 
     # Node initialization:
     rospy.init_node('node_mpc_2d', log_level=rospy.DEBUG)
+
+    # rate = rospy.Rate(10)
 
     rate = rospy.Rate(N_mpc/T_mpc)
 

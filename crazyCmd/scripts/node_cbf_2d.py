@@ -14,36 +14,38 @@ from crazyflie_messages.msg import Position, CrazyflieState, Attitude
 
 class CBF_controller():
 
-    v_lim = 1
+    def __init__(self, v_lim, alpha, x_goal, x, d_lim):
 
-    def __init__(self,K,alpha,x_goal):
-
-        self.K      = K
-        self.alpha  = alpha
         self.x_goal = x_goal
+        distance = np.linalg.norm(x_goal - x)
+        self.K      = v_lim/distance
+        if distance < d_lim:
+            self.K = v_lim/d_lim
+        self.alpha  = alpha
 
-    def set_obstacle(self,x_obs,r_obs):
+
+    def set_obstacle(self, x_obs, r_obs):
 
         self.h = lambda x1,x2 : ((x1-x_obs[0])**2 + (x2-x_obs[1])**2 
                                 - r_obs**2)*0.5
         self.grad_h = lambda x1,x2 : np.array([x1-x_obs[0] , x2-x_obs[1]])
 
-    def get_v_des(self,x):
+    def get_v_des(self, x):
         # Given current state return proportional nominal controller
-        v_des = -self.K * (x-self.x_goal)
-        if np.linalg.norm(v_des) > self.v_lim:
-            v_des = self.v_lim*v_des/np.linalg.norm(v_des)
+        v_des = - self.K * (x - self.x_goal)
+        # if np.linalg.norm(v_des) > self.v_lim:
+        #     v_des = self.v_lim*v_des/np.linalg.norm(v_des)
 
         return v_des
 
-    def get_cbf_v(self,x):
+    def get_cbf_v(self, x):
 
         # Given current state solve pointwise Quadratic Program and get safe 
         # control action (velocity)
 
         v_opt      = cp.Variable(2)
         h_num      = self.h(x[0],x[1])
-        grad_h_num = self.grad_h(x[0],x[1]) 
+        grad_h_num = self.grad_h(x[0],x[1])
         v_des  = self.get_v_des(x)
 
         # Solve QP for u_opt
@@ -53,25 +55,6 @@ class CBF_controller():
         prob.solve()
 
         return v_opt.value
-
-# Simple class to integrate the system
-class Sim():
-
-    def __init__(self,dt,T,f_dyn):
-        self.dt = dt
-        self.T  = T
-        self.f_dyn = f_dyn
-
-    def step(self,x_old,u_old):
-        x_next = x_old + self.dt*self.f_dyn(x_old,u_old)
-        return x_next
-
-
-
-def f_dyn_single_integrator(x, u):
-    # Basic single integrator dynamics
-    v = u
-    return v
 
 
 
@@ -106,26 +89,25 @@ def state_sub_callback(msg):
 if __name__ == '__main__':
     
     # Setting the parameters for the cbf controller and the position goal
-    K = 10
+    v_lim = 0.5
     alpha = 1
+    d_lim = 0.4
 
     # Defining obstacle geometry
     x_obs = np.array([1.0, 0.1])
     r_obs = 0.30
     r_drone = 0.05
-    r_safety = 0.10
+    r_safety = 0.05
     r_tot = r_obs + r_drone + r_safety
-
-    # Time step, Time horizon and Number of control intervals
-    dt = 0.01
-    T = 10
-    N = int(T/dt)
-
 
     # Publisher setup:
     # Publisher to publish the target velocity (output of nlp)
     cbf_velocity = Position()
     cbf_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', Position, queue_size=1)
+
+
+    # Publisher to publish the target position (when the drone is close to target)
+    mpc_switch_pub = rospy.Publisher('/cf1/mpc_switch', Position, queue_size=1)
 
     # Subscribers setup
     # Subscriber to get the mpc target position
@@ -134,7 +116,6 @@ if __name__ == '__main__':
     # Subscriber to get the actual state of the drone in the simulation:
     state_sub = rospy.Subscriber('/cf1/state', CrazyflieState, state_sub_callback)
     actual_state = CrazyflieState()
-
 
     # Initializing the mpc_target_init to start the mpc controller only 
     # when someone publishes on /cf1/mpc_target
@@ -152,7 +133,7 @@ if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('node_cbf_2d', log_level=rospy.DEBUG)
 
-    rate = rospy.Rate(100)
+    rate = rospy.Rate(20)
 
     while not rospy.is_shutdown():
         if (cbf_target.desired_position.x == cbf_target_init.desired_position.x 
@@ -164,39 +145,28 @@ if __name__ == '__main__':
         else:
             # Getting the new goal
             x_goal = np.array([cbf_target.desired_position.x, cbf_target.desired_position.y])
+            # Setting initial position at the current time step
+            x0 = np.array([actual_state.position.x, actual_state.position.y])
             # Creating the instance of the CBF controller
-            cbf_controller = CBF_controller(K, alpha, x_goal)
+            cbf_controller = CBF_controller(v_lim, alpha, x_goal, x0, d_lim)
             # Setting obstacles
             cbf_controller.set_obstacle(x_obs, r_tot)
-            # Integrating the system
-            sim = Sim(dt,T,f_dyn_single_integrator)
-            x0 = np.array([actual_state.position.x, actual_state.position.y])
+            # Getting cbf velocity
+            v = cbf_controller.get_cbf_v(x0)
+            # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
+            cbf_velocity.desired_velocity.x = v[0]
+            cbf_velocity.desired_velocity.y = v[1]
+            cbf_velocity_pub.publish(cbf_velocity)
 
-            x = [x0]
-            v = []
-            vdes = []
+            # We update this so that we can publish any target we want
+            cbf_target_init.desired_position.x = actual_state.position.x
+            cbf_target_init.desired_position.y = actual_state.position.y
+            cbf_target_init.desired_position.z = actual_state.position.z
 
-            for ii in range(N+1):
+            # while (abs(cbf_target.desired_position.x - actual_state.position.x) < 0.3 and 
+            #        abs(cbf_target.desired_position.y - actual_state.position.y) < 0.3):
+            #     mpc_switch_pub.publish(cbf_target)
 
-                vdes.append(cbf_controller.get_v_des(x[ii]))
-                v.append(cbf_controller.get_cbf_v(x[ii]))
-                x.append(sim.step(x[ii],v[ii]))
-
-            x = np.array(x)
-            v = np.array(v)
-            vdes = np.array(vdes)
-
-            for ii in range(N+1):
-                cbf_velocity.desired_velocity.x = v[ii,0]
-                cbf_velocity.desired_velocity.y = v[ii,1]
-
-                cbf_velocity_pub.publish(cbf_velocity)
-                
-                # We update this so that we can publish any target we want
-                cbf_target_init.desired_position.x = actual_state.position.x
-                cbf_target_init.desired_position.y = actual_state.position.y
-                cbf_target_init.desired_position.z = actual_state.position.z
-
-                rate.sleep()
+        rate.sleep()
 
     rospy.spin()
