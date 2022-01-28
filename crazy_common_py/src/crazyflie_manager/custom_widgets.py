@@ -144,6 +144,8 @@ class PreviewWidget:
         lf_preview_element_background.setFixedHeight(50)
         lf_preview_element_background.setFixedWidth(440)
 
+        self.text = text
+
         # Label::
         preview_label = QLabel(text)
 
