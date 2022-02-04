@@ -15,11 +15,12 @@ from crazyflie_messages.msg import Position, CrazyflieState, Attitude
 class CBF_controller():
 
     def __init__(self, v_lim, alpha, x_goal, x, d_lim):
-
+        
+        self.x = x
         self.x_goal = x_goal
-        distance = np.linalg.norm(x_goal - x)
-        self.K      = v_lim/distance
-        if distance < d_lim:
+        self.distance = np.linalg.norm(self.x_goal - self.x)
+        self.K      = v_lim/self.distance
+        if self.distance < d_lim:
             self.K = v_lim/d_lim
         self.alpha  = alpha
 
@@ -33,8 +34,6 @@ class CBF_controller():
     def get_v_des(self, x):
         # Given current state return proportional nominal controller
         v_des = - self.K * (x - self.x_goal)
-        # if np.linalg.norm(v_des) > self.v_lim:
-        #     v_des = self.v_lim*v_des/np.linalg.norm(v_des)
 
         return v_des
 
