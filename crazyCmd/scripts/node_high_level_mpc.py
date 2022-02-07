@@ -7,7 +7,7 @@ from crazyflie_simulator.CrazySim import CrazySim
 from crazyflie_manager.CrazyManager import *
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.common_functions import rad2deg, deg2rad
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty, Int16
 from crazyflie_messages.msg import Position, CrazyflieState, Attitude
 from crazy_common_py.common_functions import standardNameList
 from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
@@ -193,33 +193,391 @@ from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
 
 #     return mpc_velocity, x1_opt, x2_opt
 
+
+
+###################################################################
+
+#                 H I G H    L E V E L    M P C       
+
+###################################################################
+
+
+def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt, 
+                  d_ref, d_neigh, v_ref, w_sep, w_nav, w_dir, N_mid):
+
+    # Calculating the reference direction for the drone in the middle
+    u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
+    u_ref = np.array(u_ref)
+    u_ref = u_ref/np.linalg.norm(u_ref)
+    u_refx = u_ref[0]
+    u_refy = u_ref[1]
+
+    x_pos = P_0[N_mid]
+    y_pos = P_0[N_mid+1]
+
+    x_des = P_N[N_mid]
+    y_des = P_N[N_mid]
+
+
+    # Setting desired velocity
+    vx_des = (x_des-x_pos)/T
+    vy_des = (y_des-y_pos)/T
+    if vx_des > 1:
+        vx_des = 1
+    if vy_des > 1:
+        vy_des = 1
+
+    
+    # Declare model variables
+    x = MX.sym('x', N_cf*2)
+
+    v = MX.sym('v', N_cf*2)
+
+    # Model equations
+    xdot = v
+
+    # Objective term
+    a_sep = 2
+
+
+    list_neighbours_i = range(N_cf)
+
+    L = 0
+
+    for ii in range(N_cf):
+        for kk in list_neighbours_i:
+            # Separation cost
+            if ii != kk:
+                L += w_sep*(x[ii*2]-x[kk*2])**a_sep \
+                    + w_sep*(x[ii*2+1]-x[kk*2+1])**a_sep \
+                    - d_ref**a_sep
+        
+        # Navigation cost
+        L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref**2)
+
+        # Direction cost
+        L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
+            (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)
+
+
+    # Formulate discrete time dynamics
+    if False:
+       # CVODES from the SUNDIALS suite
+       dae = {'x':x, 'p':v, 'ode':xdot, 'quad':L}
+       opts = {'tf':T/N}
+       F = integrator('F', 'cvodes', dae, opts)
+    else:
+       # Fixed step Runge-Kutta 4 integrator
+       M = 4 # RK4 steps per interval
+       DT = T/N/M
+       f = Function('f', [x, v], [xdot, L])
+       X0 = MX.sym('X0', 2*N_cf)
+       U = MX.sym('U', 2*N_cf)
+       X = X0
+       Q = 0
+       for j in range(M):
+           k1, k1_q = f(X, U)
+           k2, k2_q = f(X + DT/2 * k1, U)
+           k3, k3_q = f(X + DT/2 * k2, U)
+           k4, k4_q = f(X + DT * k3, U)
+           X = X + DT/6*(k1 + 2*k2 + 2*k3 + k4)
+           Q = Q + DT/6*(k1_q + 2*k2_q + 2*k3_q + k4_q)
+       F = Function('F', [X0, U], [X, Q], ['x0','p'], ['xf','qf'])
+
+    # Evaluate at a test point
+    # Fk = F(x0=[0.2, 0.3],p=[0.4, 2, 9])
+    # print(Fk['xf'])
+    # print(Fk['qf'])
+
+
+    # -------------------------------------------------------------------
+
+    #           S E T T I N G   U P   T H E   M P C
+
+    # -------------------------------------------------------------------
+    '''
+    We only exploit the first control input within the MPC framework.
+    Hence, we define a casadi function which allows us to get the 
+    control input at the first time step as output, given the initial state
+    as input.
+    '''
+
+    # MPC LOOP
+    P_log = []
+    px_log = []
+    py_log = []
+    V_log = []
+    ux_log = []
+    uy_log = []
+
+    v_ig = []
+    for ii in range(N_cf):
+        v_ig.append(vx_des)
+        v_ig.append(vy_des)
+    P_log = P_0 # initial state
+
+    # Initializing state estimate at time instant i
+    X_i = P_0
+    v_i = v_ig
+
+
+    # Start with an empty NLP at each time step
+    w = []
+    w0 = []
+    lbw = []
+    ubw = []
+    J = 0
+    g = []
+    lbg = []
+    ubg = []
+
+    # "Lift" initial conditions
+    Xk = MX.sym('X0', 2*N_cf)
+    w += [Xk]
+
+    lbw_k = []
+    for ii in range(N_cf):
+        lbw_k.append(X_i[2*ii].__float__())
+        lbw_k.append(X_i[2*ii+1].__float__())
+
+    lbw += lbw_k
+
+    ubw_k = []
+    for ii in range(N_cf):
+        ubw_k.append(X_i[2*ii].__float__())
+        ubw_k.append(X_i[2*ii+1].__float__())
+
+    ubw += ubw_k
+
+    w0_k = []
+    for ii in range(N_cf):
+        w0_k.append(X_i[2*ii].__float__())
+        w0_k.append(X_i[2*ii+1].__float__())
+
+    w0 += w0_k
+
+
+    # Formulate the NLP
+    for k in range(N):
+        # New NLP variable for the control
+        Vk = MX.sym('V_' + str(k), 2*N_cf)  # creating symbolic expression for the 
+                                            # new optimization variable
+        w   += [Vk]
+
+        lbw_k = []
+        for ii in range(N_cf):
+            lbw_k.append(-inf)
+            lbw_k.append(-inf)
+
+        lbw += lbw_k
+
+        ubw_k = []
+        for ii in range(N_cf):
+            ubw_k.append(+inf)
+            ubw_k.append(+inf)
+
+        ubw += ubw_k
+
+        w0_k = []
+        for ii in range(N_cf):
+            w0_k.append(v_opt[2*ii][k].__float__())
+            w0_k.append(v_opt[2*ii+1][k].__float__())
+
+        w0 += w0_k
+
+
+        # Integrate till the end of the interval
+        Fk = F(x0=Xk, p=Vk)         # we call the integrator
+        Xk_end = Fk['xf']
+        J=J+Fk['qf']
+
+        # New NLP variable for state at end of interval
+        Xk = MX.sym('X_' + str(k+1), 2*N_cf)
+        w   += [Xk]
+
+
+        lbw_k = []
+        for ii in range(N_cf):
+            lbw_k.append(-inf)
+            lbw_k.append(-inf)
+        
+        lbw += lbw_k
+
+        ubw_k = []
+        for ii in range(N_cf):
+            ubw_k.append(+inf)
+            ubw_k.append(+inf)
+
+        ubw += ubw_k
+
+        w0_k = []
+        for ii in range(N_cf):
+            w0_k.append(x_opt[2*ii][k+1].__float__())
+            w0_k.append(x_opt[2*ii+1][k+1].__float__())
+
+        w0 += w0_k
+
+
+        # Add equality constraint (continuity constraint for multiple shooting)
+        g   += [Xk_end-Xk]
+
+        lbg_k = []
+        for ii in range(N_cf):
+            lbg_k.append(0)
+            lbg_k.append(0)
+
+        lbg += lbg_k
+
+        ubg_k = []
+        for ii in range(N_cf):
+            ubg_k.append(0)
+            ubg_k.append(0)
+
+        ubg += ubg_k
+
+
+        ################ Final target on line ##########################
+
+        if k == N - 1:
+            X_final = P_N
+            g += [Xk_end - X_final]
+
+            lbg_k = []
+
+            for ii in range(N_cf):
+                lbg_k.append(0)
+                lbg_k.append(0)
+
+            lbg += lbg_k
+
+            ubg_k = []
+
+            for ii in range(N_cf):
+                ubg_k.append(0)
+                ubg_k.append(0)
+
+            ubg += ubg_k
+
+        ################################################################
+
+        ################ Final target on circumference #################
+
+        # if k == N - 1:
+        #     x_final = 2
+        #     y_final = 1
+        #     r_circ = 0.2
+        #     for ii in range(N_cf):
+        #         g += [(Xk[2*ii] - x_final)**2 + (Xk[2*ii+1] - y_final)**2 - r_circ**2]
+
+        #     lbg_k = []
+        #     for ii in range(N_cf):
+        #         lbg_k.append(0)
+
+        #     lbg += lbg_k
+
+        #     ubg_k = []
+        #     for ii in range(N_cf):
+        #         ubg_k.append(0)
+
+        #     ubg += ubg_k
+
+    ####################################################################
+
+
+    # Create an NLP solver
+    prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
+    solver = nlpsol('solver', 'ipopt', prob);
+
+    # Solve the NLP
+    sol = solver(x0=w0, lbx=lbw, ubx=ubw, lbg=lbg, ubg=ubg)
+    w_opt = sol['x'].full().flatten()
+
+
+    # Extracting the optimal state
+    x_opt = []
+    for ii in range(2*N_cf):
+        x_opt.append(w_opt[ii::4*N_cf])
+
+    # Extracting the optimal control input
+    v_opt = []
+    for ii in range(2*N_cf):
+        v_opt.append(w_opt[(ii+2*N_cf)::4*N_cf])
+
+
+    # Extracting only the first optimal control input
+    v_opt_i = []
+    for ii in range(N_cf):
+        v_opt_i.append(v_opt[2*ii][0])
+        v_opt_i.append(v_opt[2*ii+1][0])
+
+
+    v_i = v_opt_i
+
+    mpc_velocity = []
+
+    for ii in range(N_cf):
+        mpc_velocity.append(Position())
+    for ii in range(N_cf):
+        mpc_velocity[ii].desired_velocity.x = v_i[2*ii]
+        mpc_velocity[ii].desired_velocity.y = v_i[2*ii+1]
+    
+    return mpc_velocity, x_opt, v_opt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ################## to be implemented in ROS ###############################
+
+# # we need the actual measurement to build the complete list of neighbours
+
+# # matrix_neighbours = []
+# # list_neighbours_i = []
+
+# # for ii in range(N_cf):
+# #     for kk in range(N_cf):
+# #         if ((x[ii*2]-x[kk*2])**2 + (x[ii*2+1]-x[kk*2+1])**2) < d_neigh**2 \
+# #               and ii != kk:
+# #             list_neighbours_i.append(kk)
+# #     matrix_neighbours.append(list_neighbours_i)
+
+# ###########################################################################
+
+
+
+
+
+
+
+
+
+
+
+########################################################################
+
+########################################################################
+
+
+
+
+
 def mpc_target_sub_callback(msg):
     mpc_target.desired_position.x = msg.desired_position.x
     mpc_target.desired_position.y = msg.desired_position.y
     mpc_target.desired_position.z = msg.desired_position.z
+    sub_mpc_flag.data = 1
     
-    return mpc_target
-
-
-def single_state_sub_callback(msg):
-    actual_state_single.position.x = msg.position.x
-    actual_state_single.position.y = msg.position.y
-    actual_state_single.position.z = msg.position.z
-
-    actual_state_single.velocity.x = msg.velocity.x
-    actual_state_single.velocity.y = msg.velocity.y
-    actual_state_single.velocity.z = msg.velocity.z
-
-    actual_state_single.orientation.roll = rad2deg(msg.orientation.roll)
-    actual_state_single.orientation.pitch = rad2deg(msg.orientation.pitch)
-    actual_state_single.orientation.yaw = rad2deg(msg.orientation.yaw)
-
-    actual_state_single.rotating_speed.x = rad2deg(msg.rotating_speed.x)
-    actual_state_single.rotating_speed.y = rad2deg(msg.rotating_speed.y)
-    actual_state_single.rotating_speed.z = rad2deg(msg.rotating_speed.z)
-
-    return actual_state_single
-
 
 # class mpcHighLevel:
 
@@ -237,18 +595,11 @@ def make_mpc_velocity_publishers():
         mpc_velocity_publishers.append(mpc_velocity_pub)
 
 
-def swarm_mpc_velocity_pub():
+def swarm_mpc_velocity_pub(mpc_velocity):
     index = 0
     for index, mpc_velocity_pub in enumerate(mpc_velocity_publishers):
         mpc_velocity_pub.publish(mpc_velocity[index])
 
-
-def make_actual_state_subscribers():
-    index = 0
-    for index,cf_name in enumerate(cf_names):
-        state_sub = rospy.Subscriber('/' + cf_name + '/state', 
-                                     CrazyflieState, single_state_sub_callback)
-        actual_state_subscribers.append(state_sub)
 
 
 
@@ -273,6 +624,24 @@ if __name__ == '__main__':
     T_mpc = 5
     N_mpc = 5
 
+    # Some constants
+    d_ref = 0.3 # reference distance between agents
+    d_neigh = 0.8 # neighbour distance
+    v_ref = 0.5 # reference velocity
+
+    # Weights for objective function
+    w_sep = 0.01*number_of_cfs**-1.7
+    w_nav = 1
+    w_dir = 1
+
+    # Number of the drone in the middle
+    N_mid = int(number_of_cfs/2)
+    if N_mid % 2 != 0:
+        N_mid = int((number_of_cfs-1)/2)
+
+
+
+
 
     ###############################################################################
 
@@ -282,11 +651,11 @@ if __name__ == '__main__':
 
     # Publisher to publish the target velocity (output of nlp)
 
-    mpc_velocity_single = Position()
+    # mpc_velocity_single = Position()
     mpc_velocity = []
 
     for ii in range(number_of_cfs):
-        mpc_velocity.append(mpc_velocity_single)
+        mpc_velocity.append(Position())
 
     # List of mpc_velocity Publishers
     mpc_velocity_publishers = []
@@ -303,68 +672,89 @@ if __name__ == '__main__':
     mpc_target_sub = rospy.Subscriber('/swarm/mpc_target', Position, mpc_target_sub_callback)
     mpc_target = Position()
 
-    # Subscriber to get the actual state of the drones in the simulation:
-    actual_state_single = CrazyflieState()
-    actual_state = []
+    ###############################################################################
+    # Flag for the subscriber
+    sub_mpc_flag = Int16()
+    sub_mpc_flag.data = 0
 
-    for ii in range(number_of_cfs):
-        actual_state.append(actual_state_single)
-    
-    # List of Subscribers
-    actual_state_subscribers = []
-    make_actual_state_subscribers()
-    
-    
-    # state_sub = rospy.Subscriber('/cf1/state', CrazyflieState, state_sub_callback)
-    # actual_state = CrazyflieState()
+    # Initializing mpc_target, mpc_target_init and mpc_target_old
+    mpc_target = Position()
+    mpc_target.desired_position.x = 0
+    mpc_target.desired_position.y = 0
 
+    mpc_target_init = Position()
+    mpc_target_init.desired_position.x = 0
+    mpc_target_init.desired_position.y = 0
 
-    # # Initializing the mpc_target_init to start the mpc controller only 
-    # # when someone publishes on /cf1/mpc_target
-    # mpc_target = Position()
-    # mpc_target_init = Position()
-    # mpc_target.desired_position.x = actual_state.position.x
-    # mpc_target.desired_position.y = actual_state.position.y
-    # mpc_target.desired_position.z = actual_state.position.z
-    # mpc_target_old = mpc_target
-    # mpc_target_init.desired_position.x = mpc_target.desired_position.x
-    # mpc_target_init.desired_position.y = mpc_target.desired_position.y
-    # mpc_target_init.desired_position.z = mpc_target.desired_position.z
-
-    # # Initializing x1_opt, x2_opt to use them as initial guess for each step
-    # x1_opt_old = np.linspace(actual_state.position.x, mpc_target.desired_position.x, N_mpc+1)
-    # x2_opt_old = np.linspace(actual_state.position.y, mpc_target.desired_position.y, N_mpc+1)
+    mpc_target_old = Position()
+    mpc_target_old.desired_position.x = 0
+    mpc_target_old.desired_position.y = 0
 
 
-    # # rate = rospy.Rate(10)
+    rate = rospy.Rate(10)
 
-    rate = rospy.Rate(N_mpc/T_mpc)
+    # rate = rospy.Rate(N_mpc/T_mpc)
 
-    # while not rospy.is_shutdown():
+    while not rospy.is_shutdown():
+
+        # Initializing the initial position of agents at each step
+        P_0 = []
+        for ii in range(number_of_cfs):
+            P_0.append(swarm.states[ii].position.x)
+            P_0.append(swarm.states[ii].position.y)
+
+        # print('P_0 is: ', P_0)
         
-    #     if (mpc_target_old != mpc_target):
-    #         x1_opt_old = np.linspace(actual_state.position.x, mpc_target.desired_position.x, N_mpc+1)
-    #         x2_opt_old = np.linspace(actual_state.position.y, mpc_target.desired_position.y, N_mpc+1)
+        if sub_mpc_flag.data == 0:
+            P_N = []
+            # Initializing the target position of agents
+            for ii in range(number_of_cfs):
+                P_N.append(0)
+                P_N.append(0)
+            # print('P_N is equal to the initial position: ', P_N)
+            print('No target has been set or the target is the origin... ')
+            print('sub_mpc_flag: ', sub_mpc_flag.data)
 
-    #     if (mpc_target.desired_position.x == mpc_target_init.desired_position.x 
-    #         and mpc_target.desired_position.y == mpc_target_init.desired_position.y 
-    #         and mpc_target.desired_position.z == mpc_target_init.desired_position.z):
-    #         # This is needed to wait for the mpc_target to be published
-    #         pass
-    #     else:
-    #         mpc_velocity, x1_opt, x2_opt = nlp_solver_2d(mpc_target, actual_state, 
-    #             x_obs, y_obs, r_obs, T_mpc, N_mpc, r_drone, r_safety, x1_opt_old, x2_opt_old) #, v1_opt_old, v2_opt_old
-    #         mpc_velocity_pub.publish(mpc_velocity)
- 
-    #         # We update this so that we can publish any target we want
-    #         mpc_target_init.desired_position.x = actual_state.position.x
-    #         mpc_target_init.desired_position.y = actual_state.position.y
-    #         mpc_target_init.desired_position.z = actual_state.position.z
+        elif sub_mpc_flag.data == 1:  # in case a new target is set
+            
+            P_N = []
+            for ii in range(number_of_cfs):
+                P_N.append(mpc_target.desired_position.x + (ii - N_mid)*d_ref)
+                P_N.append(mpc_target.desired_position.y)
+                
+                # print('P_N is equal to the mpc target: ', P_N)
+            
 
-    #         x1_opt_old, x2_opt_old = x1_opt, x2_opt
+            # Initializing the optimal velocity of agents to use it 
+            # for the hot start initial guess
+            v_opt_old = []
+            for ii in range(2*number_of_cfs):
+                v_opt_old.append(np.linspace(0, 0, N_mpc+1))
 
-    #     mpc_target_old = mpc_target
-    #     rate.sleep()
-    rate.sleep()
+            # Initializing optimal positions to use them as initial guess 
+            # for the hot start initial guess
+            x_opt_old = []
+            for ii in range(2*number_of_cfs):
+                x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
+                # print('x_opt is: ', x_opt)
 
-    rospy.spin()
+            print('sub_mpc_flag: ', sub_mpc_flag.data)
+
+            sub_mpc_flag.data = 2
+            print('A new target has been set... ')
+
+        else:
+            print('No new target has been sent')
+            print('sub_mpc_flag: ', sub_mpc_flag.data)
+
+            mpc_velocity, x_opt, v_opt = nlp_solver_2d(number_of_cfs, P_N, P_0, T_mpc, 
+                                                       N_mpc, x_opt_old, v_opt_old,
+                                                       d_ref, d_neigh, v_ref,
+                                                       w_sep, w_nav, w_dir, N_mid)
+            
+            swarm_mpc_velocity_pub(mpc_velocity)
+
+            x_opt_old, v_opt_old = x_opt, v_opt
+
+        rate.sleep()
+
