@@ -50,11 +50,11 @@
 # ----------------------------------------------------------------------------------------------------------------------
 # ======================================================================================================================
 spawn_formation: grid
-    number_of_cfs: 2
-    cfs_x_side: 2
-    cfs_y_side: 1
-    x_offset: 1.0
-    y_offset: 1.0
+    number_of_cfs: 9
+    cfs_x_side: 3
+    cfs_y_side: 3
+    x_offset: 0.5
+    y_offset: 0.5
     spawn_altitude: 0.2
 #spawn_formation: pyramid
 #    levels: 2

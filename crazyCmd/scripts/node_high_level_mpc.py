@@ -499,15 +499,15 @@ if __name__ == '__main__':
         # print('P_0 is: ', P_0)
         
         if sub_mpc_flag.data == 0:
-            P_N = []
-            # Initializing the target position of agents
-            for ii in range(number_of_cfs):
-                P_N.append(0)
-                P_N.append(0)
-            # print('P_N is equal to the initial position: ', P_N)
-            # print('No target has been set or the target is the origin... ')
-            # print('sub_mpc_flag: ', sub_mpc_flag.data)
-            # pass
+            # P_N = []
+            # # Initializing the target position of agents
+            # for ii in range(number_of_cfs):
+            #     P_N.append(0)
+            #     P_N.append(0)
+            # # print('P_N is equal to the initial position: ', P_N)
+            # # print('No target has been set or the target is the origin... ')
+            # # print('sub_mpc_flag: ', sub_mpc_flag.data)
+            pass
 
         elif sub_mpc_flag.data == 1:  # in case a new target is set
             
