@@ -22,7 +22,7 @@
 	<group ns = "cf2">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf2</rosparam>
-			<rosparam param="initial_position">[1.0, 0.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
