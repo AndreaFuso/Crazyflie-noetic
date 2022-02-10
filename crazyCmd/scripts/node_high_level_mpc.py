@@ -68,15 +68,14 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
             if ii != kk:
                 L += w_sep*((x[ii*2]-x[kk*2])**2 \
                     + (x[ii*2+1]-x[kk*2+1])**2\
-                    - d_ref**2)
+                    - d_ref**2)**2
         
         # Navigation cost
-        L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref**2)
+        L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref**2)**2
 
         # Direction cost
         L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
-            (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)
-
+            (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)**2
 
     # Formulate discrete time dynamics
     if False:
@@ -421,14 +420,14 @@ if __name__ == '__main__':
     N_mpc = 5
 
     # Some constants
-    d_ref = 0.3 # reference distance between agents
+    d_ref = 0.5 # reference distance between agents
     d_neigh = 0.8 # neighbour distance
     v_ref = 0.5 # reference velocity
 
     # Weights for objective function
-    w_sep = 0.01*number_of_cfs**-1.7
-    w_nav = 1
-    w_dir = 1
+    w_sep = 0.01*number_of_cfs**-1
+    w_nav = 100
+    w_dir = 100000
 
     # Number of the drone in the middle
     N_mid = int(number_of_cfs/2)
