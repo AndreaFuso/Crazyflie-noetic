@@ -6,12 +6,12 @@ from crazyflie_simulator.CrazySim import CrazySim
 from crazyflie_manager.CrazyManager import *
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.common_functions import rad2deg, deg2rad
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty, Int16
 from crazyflie_messages.msg import Position, CrazyflieState, Attitude
 
 
 def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc, 
-                    r_drone, r_safety, x1_opt, x2_opt): #, v1_opt, v2_opt
+                    r_drone, r_safety, x1_opt, x2_opt):
 
     # Getting the actual position to set the initial condition
     x_pos = actual_state.position.x
@@ -94,12 +94,10 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     # Initializing state estimate at time instant i
     X_i = P_0
     v_i = v_ig
-    # print('X_i: ', X_i)
 
 
     # Start with an empty NLP at each time step
     w = []
-    # print('w: ', w)
     w0 = []
     lbw = []
     ubw = []
@@ -145,7 +143,7 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
         ubg += [0, 0]
 
         # Add inequality constraint for obstacle avoidance
-        for ii in range(len(x_obs)): # start here
+        for ii in range(len(x_obs)):
             g   += [(Xk[0] - x_obs[ii])**2 + (Xk[1] - y_obs[ii])**2]
             lbg += [(r_obs[ii] + r_drone + r_safety)**2]
             ubg += [+inf]
@@ -190,13 +188,20 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
 
     return mpc_velocity, x1_opt, x2_opt
 
+
+
+###############################################################################
+
+#                  S U B S C R I B E R     C A L L B A C K S
+
+###############################################################################
+
 def mpc_target_sub_callback(msg):
     mpc_target.desired_position.x = msg.desired_position.x
     mpc_target.desired_position.y = msg.desired_position.y
     mpc_target.desired_position.z = msg.desired_position.z
     
-    return mpc_target
-
+    sub_mpc_flag.data = 1   
 
 def state_sub_callback(msg):
     actual_state.position.x = msg.position.x
@@ -215,10 +220,13 @@ def state_sub_callback(msg):
     actual_state.rotating_speed.y = rad2deg(msg.rotating_speed.y)
     actual_state.rotating_speed.z = rad2deg(msg.rotating_speed.z)
 
-    return actual_state
 
 
+###########################################################################
 
+#                                M A I N
+
+###########################################################################
 
 if __name__ == '__main__':
     
@@ -235,15 +243,24 @@ if __name__ == '__main__':
     y_obs=[0.1]
     r_obs=[0.3]
 
-    # Publisher setup:
+
+    ###############################################################################
+
+    #                     P U B L I S H E R S   S E T U P
+
+    ###############################################################################
+
     # Publisher to publish the target velocity (output of nlp)
     mpc_velocity = Position()
     mpc_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', Position, queue_size=1)
 
-    # Publisher to publish the target position (when the drone is close to target)
-    mpc_switch_pub = rospy.Publisher('/cf1/mpc_switch', Position, queue_size=1)
 
-    # Subscribers setup
+    ###############################################################################
+
+    #                     S U B S C R I B E R S   S E T U P
+
+    ###############################################################################
+
     # Subscriber to get the mpc target position
     mpc_target_sub = rospy.Subscriber('/cf1/mpc_target', Position, mpc_target_sub_callback)
 
@@ -251,18 +268,16 @@ if __name__ == '__main__':
     state_sub = rospy.Subscriber('/cf1/state', CrazyflieState, state_sub_callback)
     actual_state = CrazyflieState()
 
+    ###############################################################################
 
-    # Initializing the mpc_target_init to start the mpc controller only 
-    # when someone publishes on /cf1/mpc_target
+    # Flag for the mpc target subscriber
+    sub_mpc_flag = Int16()
+    sub_mpc_flag.data = 0  
+
+    # Initializing the mpc target
     mpc_target = Position()
-    mpc_target_init = Position()
-    mpc_target.desired_position.x = actual_state.position.x
-    mpc_target.desired_position.y = actual_state.position.y
-    mpc_target.desired_position.z = actual_state.position.z
-    mpc_target_old = mpc_target
-    mpc_target_init.desired_position.x = mpc_target.desired_position.x
-    mpc_target_init.desired_position.y = mpc_target.desired_position.y
-    mpc_target_init.desired_position.z = mpc_target.desired_position.z
+    mpc_target.desired_position.x = 0
+    mpc_target.desired_position.y = 0
 
     # Initializing x1_opt, x2_opt to use them as initial guess for each step
     x1_opt_old = np.linspace(actual_state.position.x, mpc_target.desired_position.x, N_mpc+1)
@@ -271,34 +286,31 @@ if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('node_mpc_2d', log_level=rospy.DEBUG)
 
-    # rate = rospy.Rate(10)
+    rate = rospy.Rate(100)
 
-    rate = rospy.Rate(N_mpc/T_mpc)
+    # rate = rospy.Rate(N_mpc/T_mpc)
 
     while not rospy.is_shutdown():
         
-        if (mpc_target_old != mpc_target):
+        if sub_mpc_flag.data == 0:
+            # nothing is executed if no mpc target has been published
+            pass
+
+        elif sub_mpc_flag.data == 1:
+            # When a new target is set, we give the following trajectories as initial guesses
             x1_opt_old = np.linspace(actual_state.position.x, mpc_target.desired_position.x, N_mpc+1)
             x2_opt_old = np.linspace(actual_state.position.y, mpc_target.desired_position.y, N_mpc+1)
+            
+            sub_mpc_flag.data = 2
 
-        if (mpc_target.desired_position.x == mpc_target_init.desired_position.x 
-            and mpc_target.desired_position.y == mpc_target_init.desired_position.y 
-            and mpc_target.desired_position.z == mpc_target_init.desired_position.z):
-            # This is needed to wait for the mpc_target to be published
-            pass
         else:
+            # If the mpc target remains the same, the nlp solver is called      
             mpc_velocity, x1_opt, x2_opt = nlp_solver_2d(mpc_target, actual_state, 
                 x_obs, y_obs, r_obs, T_mpc, N_mpc, r_drone, r_safety, x1_opt_old, x2_opt_old) #, v1_opt_old, v2_opt_old
+            
+            # The mpc velocity is published
             mpc_velocity_pub.publish(mpc_velocity)
- 
-            # We update this so that we can publish any target we want
-            mpc_target_init.desired_position.x = actual_state.position.x
-            mpc_target_init.desired_position.y = actual_state.position.y
-            mpc_target_init.desired_position.z = actual_state.position.z
 
             x1_opt_old, x2_opt_old = x1_opt, x2_opt
 
-        mpc_target_old = mpc_target
         rate.sleep()
-
-    rospy.spin()

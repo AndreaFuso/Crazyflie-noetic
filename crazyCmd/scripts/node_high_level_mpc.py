@@ -444,9 +444,8 @@ if __name__ == '__main__':
 
     # Publisher to publish the target velocity (output of nlp)
 
-    # mpc_velocity_single = Position()
+    # List of velocities used to collect the output of the nlp solver
     mpc_velocity = []
-
     for ii in range(number_of_cfs):
         mpc_velocity.append(Position())
 
@@ -466,22 +465,13 @@ if __name__ == '__main__':
     mpc_target = Position()
 
     ###############################################################################
-    # Flag for the subscriber
+    # Flag for the mpc target subscriber
     sub_mpc_flag = Int16()
     sub_mpc_flag.data = 0
 
     # Initializing mpc_target, mpc_target_init and mpc_target_old
-    mpc_target = Position()
     mpc_target.desired_position.x = 0
     mpc_target.desired_position.y = 0
-
-    mpc_target_init = Position()
-    mpc_target_init.desired_position.x = 0
-    mpc_target_init.desired_position.y = 0
-
-    mpc_target_old = Position()
-    mpc_target_old.desired_position.x = 0
-    mpc_target_old.desired_position.y = 0
 
 
     rate = rospy.Rate(10)
@@ -499,25 +489,17 @@ if __name__ == '__main__':
         # print('P_0 is: ', P_0)
         
         if sub_mpc_flag.data == 0:
-            # P_N = []
-            # # Initializing the target position of agents
-            # for ii in range(number_of_cfs):
-            #     P_N.append(0)
-            #     P_N.append(0)
-            # # print('P_N is equal to the initial position: ', P_N)
-            # # print('No target has been set or the target is the origin... ')
-            # # print('sub_mpc_flag: ', sub_mpc_flag.data)
+            # nothing is executed if no mpc target has been published
             pass
 
         elif sub_mpc_flag.data == 1:  # in case a new target is set
             
+            # Initializing the target position for each drone starting from
+            # mpc target
             P_N = []
             for ii in range(number_of_cfs):
                 P_N.append(mpc_target.desired_position.x + (ii - N_mid)*d_ref)
-                P_N.append(mpc_target.desired_position.y)
-                
-                # print('P_N is equal to the mpc target: ', P_N)
-            
+                P_N.append(mpc_target.desired_position.y)            
 
             # Initializing the optimal velocity of agents to use it 
             # for the hot start initial guess
@@ -530,17 +512,12 @@ if __name__ == '__main__':
             x_opt_old = []
             for ii in range(2*number_of_cfs):
                 x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
-                # print('x_opt is: ', x_opt)
-
-            # print('sub_mpc_flag: ', sub_mpc_flag.data)
 
             sub_mpc_flag.data = 2
-            # print('A new target has been set... ')
 
         else:
-            # print('No new target has been sent')
-            # print('sub_mpc_flag: ', sub_mpc_flag.data)
-
+            # Once the flag is set to 2, the nlp solver is called at each iteration
+            # until a new mpc target is set and the 
             mpc_velocity, x_opt, v_opt = nlp_solver_2d(number_of_cfs, P_N, P_0, T_mpc, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,

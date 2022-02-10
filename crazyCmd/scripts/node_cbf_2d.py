@@ -8,9 +8,16 @@ from crazyflie_simulator.CrazySim import CrazySim
 from crazyflie_manager.CrazyManager import *
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.common_functions import rad2deg, deg2rad
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty, Int16
 from crazyflie_messages.msg import Position, CrazyflieState, Attitude
 
+
+
+###################################################################
+
+#                 C B F     C O N T R O L L E R      
+
+###################################################################
 
 class CBF_controller():
 
@@ -62,7 +69,7 @@ def cbf_target_sub_callback(msg):
     cbf_target.desired_position.y = msg.desired_position.y
     cbf_target.desired_position.z = msg.desired_position.z
 
-    return cbf_target
+    sub_mpc_flag.data = 1   
 
 def state_sub_callback(msg):
     actual_state.position.x = msg.position.x
@@ -81,12 +88,20 @@ def state_sub_callback(msg):
     actual_state.rotating_speed.y = rad2deg(msg.rotating_speed.y)
     actual_state.rotating_speed.z = rad2deg(msg.rotating_speed.z)
 
-    return actual_state
 
 
+
+###########################################################################
+
+#                                M A I N
+
+###########################################################################
 
 if __name__ == '__main__':
     
+    # Node initialization:
+    rospy.init_node('node_cbf_2d', log_level=rospy.DEBUG)
+
     # Setting the parameters for the cbf controller and the position goal
     v_lim = 0.5
     alpha = 1
@@ -99,16 +114,24 @@ if __name__ == '__main__':
     r_safety = 0.05
     r_tot = r_obs + r_drone + r_safety
 
-    # Publisher setup:
+
+    ###############################################################################
+
+    #                     P U B L I S H E R S   S E T U P
+
+    ###############################################################################
+
     # Publisher to publish the target velocity (output of nlp)
     cbf_velocity = Position()
     cbf_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', Position, queue_size=1)
 
 
-    # Publisher to publish the target position (when the drone is close to target)
-    mpc_switch_pub = rospy.Publisher('/cf1/mpc_switch', Position, queue_size=1)
+    ###############################################################################
 
-    # Subscribers setup
+    #                     S U B S C R I B E R S   S E T U P
+
+    ###############################################################################
+
     # Subscriber to get the mpc target position
     cbf_target_sub = rospy.Subscriber('/cf1/cbf_target', Position, cbf_target_sub_callback)
 
@@ -116,29 +139,24 @@ if __name__ == '__main__':
     state_sub = rospy.Subscriber('/cf1/state', CrazyflieState, state_sub_callback)
     actual_state = CrazyflieState()
 
-    # Initializing the mpc_target_init to start the mpc controller only 
-    # when someone publishes on /cf1/mpc_target
+
+    ###############################################################################
+
+    # Flag for the cbf target subscriber
+    sub_mpc_flag = Int16()
+    sub_mpc_flag.data = 0   
+
+    # Initializing the cbf_target
     cbf_target = Position()
-    cbf_target_init = Position()
-    cbf_target.desired_position.x = actual_state.position.x
-    cbf_target.desired_position.y = actual_state.position.y
-    cbf_target.desired_position.z = actual_state.position.z
-    cbf_target_init.desired_position.x = cbf_target.desired_position.x
-    cbf_target_init.desired_position.y = cbf_target.desired_position.y
-    cbf_target_init.desired_position.z = cbf_target.desired_position.z
+    cbf_target.desired_position.x = 0
+    cbf_target.desired_position.y = 0
 
-
-    
-    # Node initialization:
-    rospy.init_node('node_cbf_2d', log_level=rospy.DEBUG)
 
     rate = rospy.Rate(20)
 
     while not rospy.is_shutdown():
-        if (cbf_target.desired_position.x == cbf_target_init.desired_position.x 
-            and cbf_target.desired_position.y == cbf_target_init.desired_position.y 
-            and cbf_target.desired_position.z == cbf_target_init.desired_position.z):
-            # This is needed to wait for the cbf_target to be published
+        if sub_mpc_flag.data == 0:
+            # nothing is executed if no cbf target has been published
             pass
 
         else:
@@ -157,15 +175,5 @@ if __name__ == '__main__':
             cbf_velocity.desired_velocity.y = v[1]
             cbf_velocity_pub.publish(cbf_velocity)
 
-            # We update this so that we can publish any target we want
-            cbf_target_init.desired_position.x = actual_state.position.x
-            cbf_target_init.desired_position.y = actual_state.position.y
-            cbf_target_init.desired_position.z = actual_state.position.z
-
-            # while (abs(cbf_target.desired_position.x - actual_state.position.x) < 0.3 and 
-            #        abs(cbf_target.desired_position.y - actual_state.position.y) < 0.3):
-            #     mpc_switch_pub.publish(cbf_target)
-
         rate.sleep()
 
-    rospy.spin()
