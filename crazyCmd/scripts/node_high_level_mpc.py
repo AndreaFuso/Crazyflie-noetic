@@ -66,9 +66,9 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         for kk in list_neighbours_i:
             # Separation cost
             if ii != kk:
-                L += w_sep*(x[ii*2]-x[kk*2])**a_sep \
-                    + w_sep*(x[ii*2+1]-x[kk*2+1])**a_sep \
-                    - d_ref**a_sep
+                L += w_sep*((x[ii*2]-x[kk*2])**2 \
+                    + (x[ii*2+1]-x[kk*2+1])**2\
+                    - d_ref**2)
         
         # Navigation cost
         L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref**2)

@@ -63,13 +63,18 @@ class CBF_controller():
         return v_opt.value
 
 
+###############################################################################
+
+#                  S U B S C R I B E R     C A L L B A C K S
+
+###############################################################################
 
 def cbf_target_sub_callback(msg):
     cbf_target.desired_position.x = msg.desired_position.x
     cbf_target.desired_position.y = msg.desired_position.y
     cbf_target.desired_position.z = msg.desired_position.z
 
-    sub_mpc_flag.data = 1   
+    sub_cbf_flag.data = 1   
 
 def state_sub_callback(msg):
     actual_state.position.x = msg.position.x
@@ -143,8 +148,8 @@ if __name__ == '__main__':
     ###############################################################################
 
     # Flag for the cbf target subscriber
-    sub_mpc_flag = Int16()
-    sub_mpc_flag.data = 0   
+    sub_cbf_flag = Int16()
+    sub_cbf_flag.data = 0   
 
     # Initializing the cbf_target
     cbf_target = Position()
@@ -155,7 +160,7 @@ if __name__ == '__main__':
     rate = rospy.Rate(20)
 
     while not rospy.is_shutdown():
-        if sub_mpc_flag.data == 0:
+        if sub_cbf_flag.data == 0:
             # nothing is executed if no cbf target has been published
             pass
 
