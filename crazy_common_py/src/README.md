@@ -44,9 +44,15 @@ both a simulated and real crazyflie, properly setting up all topics, actions and
 
 ### CrazyAppManager.py (WIP)
 This script contains the definition of the GUI application to control real/simulated crazyflie.
-
+<br/>The application uses PyQt5 framework, so in order to use it, following installations are required:
+```bat
+pip3 install pyqt5
+pip3 install qtwidgets
+```
+the second module is used for a particular widget.
 ### CrazyManager.py (WIP)
 This script contains the definition of all classes used to control one real/simulated crazyflie.
+
 
 ### SwarmMaganer.py (WIP)
 This script contains the definition of all classes used to control one swarm of real/simulated crazyflies.

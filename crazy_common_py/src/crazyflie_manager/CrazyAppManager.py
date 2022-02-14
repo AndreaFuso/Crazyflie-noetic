@@ -127,14 +127,25 @@ def generate_launchfile():
     for ii in range(0, len(actual_preview_widgets)):
         lf_preview_manager.addElementByString(actual_preview_widgets[ii].text)
 
+    param = [[lf_pyramid_swarm_levels_spinner.value(),
+                                                           float(lf_pyramid_swarm_distance_input.text()),
+                                                           float(lf_pyramid_swarm_vdistance_input.text()),
+                                                           float(lf_pyramid_swarm_z0_input.text())],
+                                                          [lf_grid_swarm_cfx_spinner.value(),
+                                                           lf_grid_swarm_cfy_spinner.value(),
+                                                           float(lf_grid_swarm_xoff_input.text()),
+                                                           float(lf_grid_swarm_yoff_input.text()),
+                                                           float(lf_grid_swarm_z0_input.text())]]
     if lf_sim_toggle.checkState() != 0:
         lf_preview_manager.setSwarmProperties(cfs_number=lf_cf_number_spinner.value(), cf_type=CrazyflieType.SIMULATED,
-                                              swarm_type=string2type(lf_swarm_type_list.currentText()))
-        print(f'Simulated, {lf_cf_number_spinner.value()} cfs, {string2type(lf_swarm_type_list.currentText())} swarm')
+                                              swarm_type=string2type(lf_swarm_type_list.currentText()),
+                                              parameters=param[:])
+        print(f'Filename: {lf_name_input_label.text()}; Simulated, {lf_cf_number_spinner.value()} cfs, {string2type(lf_swarm_type_list.currentText())} swarm')
     else:
         lf_preview_manager.setSwarmProperties(cfs_number=lf_cf_number_spinner.value(), cf_type=CrazyflieType.REAL,
-                                              swarm_type=string2type(lf_swarm_type_list.currentText()))
-        print(f'Real, {lf_cf_number_spinner.value()} cfs, {string2type(lf_swarm_type_list.currentText())} swarm')
+                                              swarm_type=string2type(lf_swarm_type_list.currentText()),
+                                              parameters=param[:])
+        print(f'Filename: {lf_name_input_label.text()}; Real, {lf_cf_number_spinner.value()} cfs, {string2type(lf_swarm_type_list.currentText())} swarm')
 
 
     lf_preview_manager.generateFile(lf_name_input_label.text())
