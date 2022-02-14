@@ -21,14 +21,15 @@ from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
 
 
 def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt, 
-                  d_ref, d_neigh, v_ref, w_sep, w_nav, w_dir, N_mid):
+                  d_ref, d_neigh, v_ref, w_sep, w_nav, w_dir, N_mid, 
+                  w_final, w_vel, d_final_lim):
 
     # Calculating the reference direction for the drone in the middle
-    u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
-    u_ref = np.array(u_ref)
-    u_ref = u_ref/np.linalg.norm(u_ref)
-    u_refx = u_ref[0]
-    u_refy = u_ref[1]
+    # u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
+    # u_ref = np.array(u_ref)
+    # u_ref = u_ref/np.linalg.norm(u_ref)
+    # u_refx = u_ref[0]
+    # u_refy = u_ref[1]
 
     x_pos = P_0[N_mid]
     y_pos = P_0[N_mid+1]
@@ -36,15 +37,34 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     x_des = P_N[N_mid]
     y_des = P_N[N_mid]
 
+    # # Computing distance to mid target
+    # p_rel = [x_des-x_pos, y_des-y_pos]
+    # p_rel = np.array(p_rel)
+    # d_rel = np.linalg.norm(p_rel)
+
+    w_final_new = w_final #*d_rel**4
+    
+    # if w_final_new > w_final:
+    #     w_final_new = w_final
+
+    w_sep_new = w_sep #*d_rel**-4
+    
+    # if w_sep_new < w_sep:
+    #     w_sep_new = w_sep
 
     # Setting desired velocity
     vx_des = (x_des-x_pos)/T
     vy_des = (y_des-y_pos)/T
+
     if vx_des > 1:
         vx_des = 1
+    if vx_des < -1:
+        vx_des = -1
+
     if vy_des > 1:
         vy_des = 1
-
+    if vy_des < -1:
+        vy_des = -1
     
     # Declare model variables
     x = MX.sym('x', N_cf*2)
@@ -54,52 +74,92 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     # Model equations
     xdot = v
 
-    # Objective term
-    a_sep = 2
+    # Building Adjacency Matrix
+    A_neigh = np.zeros((N_cf,N_cf))
+
+    for ii in range(N_cf-1):
+        for jj in range(ii + 1, N_cf):
+            p_rel = [P_0[2*ii] - P_0[2*jj], P_0[2*ii+1] - P_0[2*jj+1]]
+            p_rel = np.array(p_rel)
+
+            if np.linalg.norm(p_rel) < d_neigh:
+                A_neigh[ii,jj], A_neigh[jj,ii] = 1, 1 
 
 
     list_neighbours_i = range(N_cf)
 
     L = 0
+    x_cm = 0
+    y_cm = 0
 
     for ii in range(N_cf):
         for kk in list_neighbours_i:
             # Separation cost
             if ii != kk:
-                L += w_sep*((x[ii*2]-x[kk*2])**2 \
+                L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                     + (x[ii*2+1]-x[kk*2+1])**2\
                     - d_ref**2)**2
         
-        # Navigation cost
-        L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref**2)**2
+        # # Navigation cost
+        # L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref**2)**2
 
-        # Direction cost
-        L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
-            (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)**2
+        # # Final Position cost
+        # L += w_final_new*((x[ii*2] - P_N[ii*2])**2 + (x[ii*2+1] - P_N[ii*2+1])**2)
+
+        # Control input cost
+        L += w_vel*(v[ii*2]**2 + v[ii*2+1]**2)
+
+        # # Direction cost
+        # L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
+        #     (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)**2
+
+        x_cm += x[ii*2]
+        y_cm += x[ii*2+1]
+    
+    x_cm = x_cm/N_cf
+    y_cm = y_cm/N_cf
+
+    # Final Position cost
+    L += w_final_new*(P_N[0] - x_cm)**2
+    L += w_final_new*(P_N[1] - y_cm)**2
 
     # Formulate discrete time dynamics
     if False:
-       # CVODES from the SUNDIALS suite
-       dae = {'x':x, 'p':v, 'ode':xdot, 'quad':L}
-       opts = {'tf':T/N}
-       F = integrator('F', 'cvodes', dae, opts)
+        # CVODES from the SUNDIALS suite
+        dae = {'x':x, 'p':v, 'ode':xdot, 'quad':L}
+        opts = {'tf':T/N}
+        F = integrator('F', 'cvodes', dae, opts)
+    
+    elif False:
+        # Fixed step Runge-Kutta 4 integrator
+        M = 4 # RK4 steps per interval
+        DT = T/N/M
+        f = Function('f', [x, v], [xdot, L])
+        X0 = MX.sym('X0', 2*N_cf)
+        U = MX.sym('U', 2*N_cf)
+        X = X0
+        Q = 0
+        for j in range(M):
+            k1, k1_q = f(X, U)
+            k2, k2_q = f(X + DT/2 * k1, U)
+            k3, k3_q = f(X + DT/2 * k2, U)
+            k4, k4_q = f(X + DT * k3, U)
+            X = X + DT/6*(k1 + 2*k2 + 2*k3 + k4)
+            Q = Q + DT/6*(k1_q + 2*k2_q + 2*k3_q + k4_q)
+        F = Function('F', [X0, U], [X, Q], ['x0','p'], ['xf','qf'])
+    
     else:
-       # Fixed step Runge-Kutta 4 integrator
-       M = 4 # RK4 steps per interval
-       DT = T/N/M
-       f = Function('f', [x, v], [xdot, L])
-       X0 = MX.sym('X0', 2*N_cf)
-       U = MX.sym('U', 2*N_cf)
-       X = X0
-       Q = 0
-       for j in range(M):
-           k1, k1_q = f(X, U)
-           k2, k2_q = f(X + DT/2 * k1, U)
-           k3, k3_q = f(X + DT/2 * k2, U)
-           k4, k4_q = f(X + DT * k3, U)
-           X = X + DT/6*(k1 + 2*k2 + 2*k3 + k4)
-           Q = Q + DT/6*(k1_q + 2*k2_q + 2*k3_q + k4_q)
-       F = Function('F', [X0, U], [X, Q], ['x0','p'], ['xf','qf'])
+        # Forward Euler
+        DT = T/N
+        f = Function('f', [x, v], [xdot, L])
+        X0 = MX.sym('X0', 2*N_cf)
+        U = MX.sym('U', 2*N_cf)
+        X = X0
+        Q = 0
+        k, k_q = f(X,U)
+        X = X + k*DT
+        Q = Q + k_q*DT
+        F  = Function('F', [X0, U], [X, Q], ['x0','p'], ['xf','qf'])
 
     # Evaluate at a test point
     # Fk = F(x0=[0.2, 0.3],p=[0.4, 2, 9])
@@ -253,29 +313,52 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         ubg += ubg_k
 
 
-        ################ Final target on line ##########################
+        ################ Center of mass in final target ##########################
 
         if k == N - 1:
-            X_final = P_N
-            g += [Xk_end - X_final]
 
-            lbg_k = []
-
-            for ii in range(N_cf):
-                lbg_k.append(0)
-                lbg_k.append(0)
-
-            lbg += lbg_k
-
-            ubg_k = []
+            x_cm_end = 0
+            y_cm_end = 0
 
             for ii in range(N_cf):
-                ubg_k.append(0)
-                ubg_k.append(0)
+                x_cm_end += Xk_end[2*ii]
+                y_cm_end += Xk_end[2*ii+1]
 
-            ubg += ubg_k
+            x_cm_end = x_cm_end/N_cf
+            y_cm_end = y_cm_end/N_cf
+
+            g += [P_N[0] - x_cm_end, P_N[1] - y_cm_end]
+
+            lbg += [0, 0]
+            ubg += [0, 0]
 
         ################################################################
+
+
+        ################ Final target on line ##########################
+
+        # if k == N - 1:
+        #     X_final = P_N
+        #     g += [Xk_end - X_final]
+
+        #     lbg_k = []
+
+        #     for ii in range(N_cf):
+        #         lbg_k.append(0)
+        #         lbg_k.append(0)
+
+        #     lbg += lbg_k
+
+        #     ubg_k = []
+
+        #     for ii in range(N_cf):
+        #         ubg_k.append(0)
+        #         ubg_k.append(0)
+
+        #     ubg += ubg_k
+
+        ################################################################
+
 
         ################ Final target on circumference #################
 
@@ -284,7 +367,8 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         #     y_final = 1
         #     r_circ = 0.2
         #     for ii in range(N_cf):
-        #         g += [(Xk[2*ii] - x_final)**2 + (Xk[2*ii+1] - y_final)**2 - r_circ**2]
+        #         g += [(Xk[2*ii] - P_N[N_mid])**2 + \
+        #               (Xk[2*ii+1] - P_N[N_mid+1])**2 - r_circ**2]
 
         #     lbg_k = []
         #     for ii in range(N_cf):
@@ -302,8 +386,12 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
 
     # Create an NLP solver
+    # NLP solver options
+    opts = {}
+    opts["max_iter_eig"] = 5
+    
     prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
-    solver = nlpsol('solver', 'ipopt', prob);
+    solver = nlpsol('solver', 'ipopt', prob, opts);
 
     # Solve the NLP
     sol = solver(x0=w0, lbx=lbw, ubx=ubw, lbg=lbg, ubg=ubg)
@@ -416,18 +504,21 @@ if __name__ == '__main__':
 
 
     # Time interval and number of control intervals for the MPC
-    T_mpc = 5
-    N_mpc = 5
+    T_mpc = 10
+    N_mpc = 10
 
     # Some constants
-    d_ref = 0.5 # reference distance between agents
-    d_neigh = 0.8 # neighbour distance
+    d_ref = 0.15*number_of_cfs # reference distance between agents
+    d_neigh = 1.1 # neighbour distance
     v_ref = 0.5 # reference velocity
+    d_final_lim = 0.01
 
     # Weights for objective function
-    w_sep = 0.01*number_of_cfs**-1
-    w_nav = 100
-    w_dir = 100000
+    w_sep = 1 #0.01*number_of_cfs**-1
+    w_nav = 0 #100
+    w_dir = 0
+    w_final = 10
+    w_vel = 10
 
     # Number of the drone in the middle
     N_mid = int(number_of_cfs/2)
@@ -497,9 +588,9 @@ if __name__ == '__main__':
             # mpc target
             P_N = []
             for ii in range(number_of_cfs):
-                P_N.append(mpc_target.desired_position.x + (ii - N_mid)*d_ref)
+                P_N.append(mpc_target.desired_position.x)
                 P_N.append(mpc_target.desired_position.y)            
-
+            print('P_N is: ', P_N)
             # Initializing the optimal velocity of agents to use it 
             # for the hot start initial guess
             v_opt_old = []
@@ -520,7 +611,8 @@ if __name__ == '__main__':
             mpc_velocity, x_opt, v_opt = nlp_solver_2d(number_of_cfs, P_N, P_0, T_mpc, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,
-                                                       w_sep, w_nav, w_dir, N_mid)
+                                                       w_sep, w_nav, w_dir, N_mid, 
+                                                       w_final, w_vel, d_final_lim)
             
             swarm_mpc_velocity_pub(mpc_velocity)
 

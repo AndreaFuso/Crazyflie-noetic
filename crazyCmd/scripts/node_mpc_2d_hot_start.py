@@ -24,10 +24,9 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     # Setting desired velocity
     vx_des = (x_des-x_pos)/T_mpc
     vy_des = (y_des-y_pos)/T_mpc
-    if vx_des > 0.5:
-        vx_des = 0.5
-    if vy_des > 0.5:
-        vy_des = 0.5
+    v_des = (vx_des**2 + vy_des**2)**0.5
+    if v_des > 0.75:
+        v_des = 0.75
 
     # Declare model variables
     x1 = MX.sym('x1')
@@ -46,19 +45,23 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     vector = np.array(vector)
     distance = np.linalg.norm(vector)
 
-    # Defining weight for position cost
+    # Defining weights for position cost
     a_pos = 0.15
     b_pos = -1.3
     d_lb = 0.5
     d_ub = 3
-    k_pos = a_pos*distance**(b_pos)
+    w_pos = a_pos*distance**(b_pos)
     if distance < d_lb:
-        k_pos = a_pos*d_lb**(b_pos)
+        w_pos = a_pos*d_lb**(b_pos)
     if distance > d_ub:
-        k_pos = a_pos*d_ub**(b_pos)
+        w_pos = a_pos*d_ub**(b_pos)
+
+    # Defining weights for velocity cost
+    w_vel = 0.1
 
     # Objective term (minimize control effort)
-    L = (v1-vx_des)**2 + (v2-vy_des)**2 + k_pos*(x1-x_des)**2 + k_pos*(x2-y_des)**2
+    L = (v1**2 + v2**2 - v_des**2)**2 + w_vel*v1**2 + w_vel*v2**2 +\
+        w_pos*(x1-x_des)**2 + w_pos*(x2-y_des)**2
 
     # Formulate discrete time dynamics
     if False:
@@ -66,7 +69,8 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
         dae = {'x':x, 'p':u, 'ode':xdot, 'quad':L}
         opts = {'tf':T/N}
         F = integrator('F', 'cvodes', dae, opts)
-    else:
+
+    elif False:
         # Fixed step Runge-Kutta 4 integrator
         M = 4 # RK4 steps per interval
         DT = T_mpc/N_mpc/M
@@ -83,6 +87,19 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
             X = X + DT/6*(k1 + 2*k2 + 2*k3 + k4)
             Q = Q + DT/6*(k1_q + 2*k2_q + 2*k3_q + k4_q)
         F = Function('F', [X0, U], [X, Q],['x0','p'],['xf','qf'])
+
+    else:
+        # Forward Euler
+        DT = T_mpc/N_mpc
+        f = Function('f', [x, v], [xdot, L])
+        X0 = MX.sym('X0', 2)
+        U = MX.sym('U', 2)
+        X = X0
+        Q = 0
+        k, k_q = f(X,U)
+        X = X + k*DT
+        Q = Q + k_q*DT
+        F  = Function('F', [X0, U], [X, Q], ['x0','p'], ['xf','qf'])
         
         
     # MPC LOOP
@@ -232,11 +249,11 @@ if __name__ == '__main__':
     
     # Safety measures
     r_drone = 0.05
-    r_safety = 0.10
+    r_safety = 0.05
 
     # Time interval and number of control intervals
     T_mpc = 5
-    N_mpc = 20
+    N_mpc = 10
 
     # Setting the obstacles
     x_obs=[1]
