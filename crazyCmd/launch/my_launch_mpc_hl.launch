@@ -22,49 +22,49 @@
 	<group ns = "cf2">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf2</rosparam>
-			<rosparam param="initial_position">[1.0, 0.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf3">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf3</rosparam>
-			<rosparam param="initial_position">[0.0, 1.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.0, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf4">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf4</rosparam>
-			<rosparam param="initial_position">[1.0, 1.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf5">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf5</rosparam>
-			<rosparam param="initial_position">[2.0, 0.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.0, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf6">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf6</rosparam>
-			<rosparam param="initial_position">[2.0, 1.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[1.0, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf7">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf7</rosparam>
-			<rosparam param="initial_position">[0.0, 2.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.0, 1.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf8">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf8</rosparam>
-			<rosparam param="initial_position">[1.0, 2.0, 0.2]</rosparam>
+			<rosparam param="initial_position">[0.5, 1.0, 0.2]</rosparam>
 		</node>
 	</group>
 

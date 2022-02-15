@@ -149,17 +149,40 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
     # Building Objective Function
 
-    for ii in range(N_cf-1):
-        jj = 0
-        for kk in list_list_neighbours[ii]:
-            # jj += 1
-            # Separation cost
-            
-            # d_ref_sep = d_ref*(1 + list_list_weights[ii][jj-1]) 
-            # L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
-            #     + (x[ii*2+1]-x[kk*2+1])**2\
-            #     - d_ref_sep**2)**2
+    # 1
+    for ii in range(N_cf):
+        for kk in range(N_cf):
+            if ii != kk:
+                # Separation cost
+                n_neigh = A_neigh[ii].sum()
+                
+                d_ref_sep = d_ref*(1 + 0.3*n_neigh)
+                L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                    + (x[ii*2+1]-x[kk*2+1])**2\
+                    - d_ref_sep**2)**2
+        print('n_neigh is: ', n_neigh)
 
+
+    # # 2
+    # for ii in range(N_cf-1):
+    #     jj = 0
+    #     for kk in list_list_neighbours[ii]:
+    #         jj += 1
+    #         # Separation cost
+    #         d_ref_sep = d_ref*(1 + list_list_weights[ii][jj-1]) 
+    #         L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+    #             + (x[ii*2+1]-x[kk*2+1])**2\
+    #             - d_ref_sep**2)**2
+
+
+    # # 3
+    # for ii in range(N_cf-1):
+    #     for kk in list_list_neighbours[ii]:
+    #         # Separation cost
+    #         d_ref_sep = d_ref
+    #         L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+    #             + (x[ii*2+1]-x[kk*2+1])**2\
+    #             - d_ref_sep**2)**2
 
     for ii in range(N_cf):
 
@@ -571,8 +594,8 @@ if __name__ == '__main__':
     N_mpc = 10
 
     # Some constants
-    d_neigh = 1.2 # neighbour distance
-    d_ref = d_neigh/3  #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    d_neigh = 0.7 # neighbour distance
+    d_ref = 0.4  #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
