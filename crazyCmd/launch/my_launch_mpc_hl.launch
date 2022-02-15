@@ -70,7 +70,7 @@
 
 	<group ns = "swarm">
 		<rosparam param="cfs_number">8</rosparam>
-		<node pkg="crazyCmd" type="node_high_level_mpc.py" name="swarm_node" output="screen">
+		<node pkg="crazyCmd" type="node_high_level_mpc_concentric.py" name="swarm_node" output="screen">
 			<rosparam param="cfs_number">8</rosparam>
 		</node>
 	</group>

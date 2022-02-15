@@ -25,33 +25,17 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
                   d_ref, d_neigh, v_ref, w_sep, w_nav, w_dir, N_mid, 
                   w_final, w_vel, d_final_lim):
 
-    # Calculating the reference direction for the drone in the middle
-    # u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
-    # u_ref = np.array(u_ref)
-    # u_ref = u_ref/np.linalg.norm(u_ref)
-    # u_refx = u_ref[0]
-    # u_refy = u_ref[1]
-
     x_pos = P_0[N_mid]
     y_pos = P_0[N_mid+1]
 
     x_des = P_N[N_mid]
     y_des = P_N[N_mid]
 
-    # # Computing distance to mid target
-    # p_rel = [x_des-x_pos, y_des-y_pos]
-    # p_rel = np.array(p_rel)
-    # d_rel = np.linalg.norm(p_rel)
 
-    w_final_new = w_final #*d_rel**4
-    
-    # if w_final_new > w_final:
-    #     w_final_new = w_final
+    w_final_new = w_final
 
-    w_sep_new = w_sep #*d_rel**-4
-    
-    # if w_sep_new < w_sep:
-    #     w_sep_new = w_sep
+    w_sep_new = w_sep
+
 
     # Setting desired velocity
     vx_des = (x_des-x_pos)/T
@@ -96,8 +80,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
         # Getting the sorted indices of list_p_rel to set the order of neighbours
         index_neigh.append((np.argsort(list_p_rel)+ii+1).tolist())
-    print('index_neigh is: ', index_neigh)
-    print('A_neigh is: ', A_neigh)
+
 
 
     # list_neighbours_i = range(N_cf)
@@ -108,9 +91,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
 
     ###################### Ordered list of neighbours ############################
-    list_list_neighbours = []
-    lisrgijd = []
-    
+    list_list_neighbours = []    
     
     for ii in range(N_cf-1):
 
@@ -123,12 +104,8 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
                 neigh_count += 1
 
         list_neighbours_i = index_neigh[ii][:neigh_count]
-        print('list_neighbours_i is: ', list_neighbours_i)
 
         list_list_neighbours.append(list_neighbours_i)
-    # list_neighbours_i = [list_neighbours_i for ii in index_neigh[jj]]
-    print('list_list_neighbours is: ', list_list_neighbours)
-    # list_neighbours_i = [x for _, x in sorted(list_neighbours_i,)]
 
     ############## Weights for the distances in separation cost ##################
     list_list_weights = []
@@ -150,15 +127,35 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     # Building Objective Function
 
     for ii in range(N_cf-1):
-        jj = 0
-        for kk in list_list_neighbours[ii]:
-            # jj += 1
+        for kk in range(ii+1,N_cf):
+            if ii == 0:
+                if kk < 4:
+                    d_ref_sep = d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+                if kk >= 4 and kk < 10:
+                    d_ref_sep = 2*d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+            elif ii != 0 and ii < 4:
+                if kk < 4:
+                    d_ref_sep = 2.5*d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+            elif ii >= 4 and ii < 10:
+                if kk >=4:
+                    d_ref_sep = 4*d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+
             # Separation cost
-            
-            # d_ref_sep = d_ref*(1 + list_list_weights[ii][jj-1]) 
-            # L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
-            #     + (x[ii*2+1]-x[kk*2+1])**2\
-            #     - d_ref_sep**2)**2
+            L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                + (x[ii*2+1]-x[kk*2+1])**2\
+                - d_ref_sep**2)**2
 
 
     for ii in range(N_cf):
