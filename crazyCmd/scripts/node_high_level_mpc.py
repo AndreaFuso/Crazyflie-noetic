@@ -156,7 +156,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
                 # Separation cost
                 n_neigh = A_neigh[ii].sum()
                 
-                d_ref_sep = d_ref*(1 + 0.3*n_neigh)
+                d_ref_sep = d_ref*(1 + 0.2*n_neigh)
                 L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                     + (x[ii*2+1]-x[kk*2+1])**2\
                     - d_ref_sep**2)**2
@@ -420,6 +420,12 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
         ################################################################
 
+        ########## Leader on target ####################################
+
+        # if k == N - 1:
+        #     g += [P_N[0] - Xk_end[0], P_N[1] - Xk_end[1]]
+        #     lbg += [0, 0]
+        #     ubg += [0, 0]
 
         ################ Final target on line ##########################
 
@@ -594,8 +600,8 @@ if __name__ == '__main__':
     N_mpc = 10
 
     # Some constants
-    d_neigh = 0.7 # neighbour distance
-    d_ref = 0.4  #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    d_neigh = 1.5 # neighbour distance
+    d_ref = 0.5  #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01

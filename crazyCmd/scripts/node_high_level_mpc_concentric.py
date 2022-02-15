@@ -129,24 +129,24 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     for ii in range(N_cf-1):
         for kk in range(ii+1,N_cf):
             if ii == 0:
-                if kk < 4:
-                    d_ref_sep = d_ref
+                if kk < 5:
+                    d_ref_sep = 1.5*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
                          - d_ref_sep**2)**2
-                if kk >= 4 and kk < 10:
-                    d_ref_sep = 2*d_ref
+                if kk >= 5 and kk < 10:
+                    d_ref_sep = 3*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
                          - d_ref_sep**2)**2
-            elif ii != 0 and ii < 4:
-                if kk < 4:
+            elif ii >= 1 and ii < 5:
+                if kk < 5:
                     d_ref_sep = 2.5*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
                          - d_ref_sep**2)**2
-            elif ii >= 4 and ii < 10:
-                if kk >=4:
+            elif ii >= 5 and ii < 10:
+                if kk >= 5:
                     d_ref_sep = 4*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
@@ -394,7 +394,6 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
         ################################################################
 
-
         ################ Final target on line ##########################
 
         # if k == N - 1:
@@ -568,8 +567,8 @@ if __name__ == '__main__':
     N_mpc = 10
 
     # Some constants
-    d_neigh = 1.2 # neighbour distance
-    d_ref = d_neigh/3  #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    d_neigh = 1.5 # neighbour distance
+    d_ref = 0.4  #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
