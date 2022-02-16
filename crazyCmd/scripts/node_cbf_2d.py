@@ -26,14 +26,20 @@ class CBF_controller():
         self.x = x
         self.x_goal = x_goal
         self.distance = np.linalg.norm(self.x_goal - self.x)
-        self.K      = v_lim/self.distance
+        self.K      = v_lim/self.distance # we define K so that we get the
+                                          # desired velocity equal to the limit
+                                          # velocity
+        # if the distance is smaller than the limit distance, K is kept at a fixed
+        # value so that K does not increase indefinitely and the drone decelerates
+        # smoothly
         if self.distance < d_lim:
             self.K = v_lim/d_lim
         self.alpha  = alpha
 
 
     def set_obstacle(self, x_obs, r_obs):
-
+        
+        # Defining the h function for the known obstacle
         self.h = lambda x1,x2 : ((x1-x_obs[0])**2 + (x2-x_obs[1])**2 
                                 - r_obs**2)*0.5
         self.grad_h = lambda x1,x2 : np.array([x1-x_obs[0] , x2-x_obs[1]])
