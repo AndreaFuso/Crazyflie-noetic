@@ -39,7 +39,7 @@
 			<rosparam param="initial_position">[0.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
-
+<!-- 
 	<group ns = "cf5">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf5</rosparam>
@@ -54,14 +54,14 @@
 			<rosparam param="name">cf6</rosparam>
 			<rosparam param="initial_position">[1.0, 0.5, 0.2]</rosparam>
 		</node>
-	</group>
+	</group> -->
 
 
 
 	<group ns = "swarm">
-		<rosparam param="cfs_number">6</rosparam>
+		<rosparam param="cfs_number">4</rosparam>
 		<node pkg="crazyCmd" type="node_cbf_ll_mpc_hl.py" name="swarm_node" output="screen">
-			<rosparam param="cfs_number">6</rosparam>
+			<rosparam param="cfs_number">4</rosparam>
 		</node>
 	</group>
 

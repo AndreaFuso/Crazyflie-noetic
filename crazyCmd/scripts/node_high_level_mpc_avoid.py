@@ -4,8 +4,6 @@ import rospy
 import time
 from casadi import *
 import numpy as np
-import cvxpy as cp      # cvxpy is a toolbox for convex optimization in python, 
-                        # we need to solve a convex QP
 from crazyflie_simulator.CrazySim import CrazySim
 from crazyflie_manager.CrazyManager import *
 from crazy_common_py.dataTypes import Vector3
@@ -14,52 +12,6 @@ from std_msgs.msg import Empty, Int16
 from crazyflie_messages.msg import Position, CrazyflieState, Attitude
 from crazy_common_py.common_functions import standardNameList
 from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
-
-
-
-
-
-
-###################################################################
-
-#      L O W     L E V E L    C B F     C O N T R O L L E R      
-
-###################################################################
-
-class CBF_controller():
-
-    def __init__(self, v_mpc, alpha, x):
-        
-        self.x = x
-        self.v_mpc = v_mpc
-        self.alpha  = alpha
-
-    def set_obstacle(self, x_obs, r_obs):
-        
-        # Defining the h function for the known obstacle
-        self.h = lambda x1,x2 : ((x1-x_obs[0])**2 + (x2-x_obs[1])**2 
-                                - r_obs**2)*0.5
-        self.grad_h = lambda x1,x2 : np.array([x1-x_obs[0] , x2-x_obs[1]])
-
-    def get_cbf_v(self, x):
-
-        # Given current state solve pointwise Quadratic Program and get safe 
-        # control action (velocity)
-
-        v_opt      = cp.Variable(2)
-        h_num      = self.h(x[0],x[1])
-        grad_h_num = self.grad_h(x[0],x[1])
-        v_des      = self.v_mpc
-
-        # Solve QP for u_opt
-        obj         = cp.Minimize((1/2)*cp.quad_form(v_opt-v_des,np.eye(2)))
-        constraints = [grad_h_num.T @ v_opt >= -self.alpha*h_num ] 
-        prob = cp.Problem(obj,constraints)
-        prob.solve()
-
-        return v_opt.value
-
-
 
 
 ###################################################################
@@ -71,28 +23,12 @@ class CBF_controller():
 
 def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt, 
                   d_ref, d_neigh, v_ref, w_sep, w_nav, w_dir, N_mid, 
-                  w_final, w_vel, d_final_lim):
-
-    # Getting center of mass of swarm
-    x_cm = np.array(P_0[0::2]).sum()/N_cf
-    y_cm = np.array(P_0[1::2]).sum()/N_cf
+                  w_final, w_vel, d_final_lim, r_drone):
 
     # Calculating the reference direction for the drone in the middle
-    # u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
-    u_ref = [P_N[0]-x_cm, P_N[1]-y_cm]
+    u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
     u_ref = np.array(u_ref)
-    u_norm = np.linalg.norm(u_ref)
-    T = u_norm/v_ref
-    if T < 2:
-        T = 2
-
-    v_ref_new = v_ref
-    
-    if u_norm < 2:
-        v_ref_new = 0
-
     u_ref = u_ref/np.linalg.norm(u_ref)
-
     u_refx = u_ref[0]
     u_refy = u_ref[1]
 
@@ -250,16 +186,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     for ii in range(N_cf):
 
         # # Navigation cost
-        # L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref_new**2)**2
-
-        # # Conditional final position cost
-        # p_rel_final = [x_des - P_0[2*ii], y_des - P_0[2*ii+1]]
-        # p_rel_final = np.array(p_rel_final)
-        # d_final = np.linalg.norm(p_rel_final)
-
-        # if d_final > 1.5:
-        #     L += w_final_new*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
-
+        # L += w_nav*(v[ii*2]**2 + v[ii*2+1]**2 - v_ref**2)**2
 
         # # Final Position cost
         # L += w_final_new*((x[ii*2] - P_N[ii*2])**2 + (x[ii*2+1] - P_N[ii*2+1])**2)
@@ -267,9 +194,9 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         # Control input cost
         L += w_vel*(v[ii*2]**2 + v[ii*2+1]**2)
 
-        # # Direction cost
-        # L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
-        #     (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)**2
+        # Direction cost
+        L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
+            (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)**2
 
         x_cm += x[ii*2]
         y_cm += x[ii*2+1]
@@ -471,13 +398,13 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         ubg += ubg_k
 
 
-        # Add inequality constraint for obstacle avoidance between drones
-        if k > 1:
-            for ii in range(N_cf):
-                for jj in range(ii+1,N_cf):
-                    g   += [(Xk[2*ii] - Xk[2*jj])**2 + (Xk[2*ii+1] - Xk[2*jj+1])**2]
-                    lbg += [(7*r_drone)**2]
-                    ubg += [+inf]
+        # Add inequality constraint for obstacle avoidance
+        for ii in range(N_cf):
+            for jj in range(ii+1,N_cf):
+                g   += [(Xk[2*ii] - Xk[2*jj])**2 + (Xk[2*ii+1] - Xk[2*jj+1])**2]
+                lbg += [(3*r_drone)**2]
+                ubg += [+inf]
+
 
 
         ################ Center of mass in final target ##########################
@@ -675,45 +602,33 @@ if __name__ == '__main__':
     # Instantiate a swarm:
     swarm = CrazySwarmSim(cf_names)
 
-
-    #++++++++++++++++++++++ MPC PARAMETERS +++++++++++++++++++++++++++++++++++++
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Time interval and number of control intervals for the MPC
-    T_mpc = 5
+    T_mpc = 10
     N_mpc = 10
 
     # Some constants
-    d_neigh = 1 # + 1.25*number_of_cfs # neighbour distance
-    d_ref = 0.8 #+ 0.1*number_of_cfs #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    d_neigh = 0.8 # + 1.25*number_of_cfs # neighbour distance
+    d_ref = 0.4 + 0.05*number_of_cfs #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
 
+    r_drone = 0.07
+
     # Weights for objective function
     w_sep = 1 #0.01*number_of_cfs**-1
-    w_nav = 10 #100
+    w_nav = 0 #100
     w_dir = 1
-    w_final = 100
-    w_vel = 100
+    w_final = 10
+    w_vel = 10
 
     # Number of the drone in the middle
     N_mid = int(number_of_cfs/2)
     if N_mid % 2 != 0:
         N_mid = int((number_of_cfs-1)/2)
 
-    #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
-
-    # Setting the parameters for the cbf controller and the position goal
-    v_lim = 0.5
-    alpha = 1.0
-    d_lim = 0.4
-
-    # Defining obstacle geometry
-    x_obs = np.array([2.0, 2.5])
-    r_obs = 0.30
-    r_drone = 0.07
-    r_safety = 0.10
-    r_tot = r_obs + r_drone + r_safety
 
     ###############################################################################
 
@@ -797,44 +712,15 @@ if __name__ == '__main__':
         else:
             # Once the flag is set to 2, the nlp solver is called at each iteration
             # until a new mpc target is set and the 
-            
-            #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
-
             mpc_velocity, x_opt, v_opt = nlp_solver_2d(number_of_cfs, P_N, P_0, T_mpc, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,
                                                        w_sep, w_nav, w_dir, N_mid, 
-                                                       w_final, w_vel, d_final_lim)
+                                                       w_final, w_vel, d_final_lim, r_drone)
             
-            x_opt_old, v_opt_old = x_opt, v_opt
-            
-            
-            #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
-                        
-            # Getting the new goal
-            x_goal = np.array([mpc_target.desired_position.x, mpc_target.desired_position.y])
-
-            for ii in range(number_of_cfs):
-                # Extracting the mpc velocities from mpc_velocity list
-                v_mpc_x = mpc_velocity[ii].desired_velocity.x
-                v_mpc_y = mpc_velocity[ii].desired_velocity.y
-                v_mpc = np.array([v_mpc_x, v_mpc_y])
-
-                # Setting initial position at the current time step
-                x0 = np.array([P_0[2*ii], P_0[2*ii+1]])
-                # Creating the instance of the CBF controller
-                cbf_controller = CBF_controller(v_mpc, alpha, x0)
-                # Setting obstacles
-                cbf_controller.set_obstacle(x_obs, r_tot)
-                # Getting cbf velocity
-                v = cbf_controller.get_cbf_v(x0)
-                # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
-                mpc_velocity[ii].desired_velocity.x = v[0]
-                mpc_velocity[ii].desired_velocity.y = v[1]
-            
-                        
             swarm_mpc_velocity_pub(mpc_velocity)
 
+            x_opt_old, v_opt_old = x_opt, v_opt
 
         rate.sleep()
 
