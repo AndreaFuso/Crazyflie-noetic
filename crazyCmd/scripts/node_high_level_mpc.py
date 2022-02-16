@@ -26,11 +26,11 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
                   w_final, w_vel, d_final_lim):
 
     # Calculating the reference direction for the drone in the middle
-    # u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
-    # u_ref = np.array(u_ref)
-    # u_ref = u_ref/np.linalg.norm(u_ref)
-    # u_refx = u_ref[0]
-    # u_refy = u_ref[1]
+    u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
+    u_ref = np.array(u_ref)
+    u_ref = u_ref/np.linalg.norm(u_ref)
+    u_refx = u_ref[0]
+    u_refy = u_ref[1]
 
     x_pos = P_0[N_mid]
     y_pos = P_0[N_mid+1]
@@ -109,7 +109,6 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
     ###################### Ordered list of neighbours ############################
     list_list_neighbours = []
-    lisrgijd = []
     
     
     for ii in range(N_cf-1):
@@ -156,7 +155,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
                 # Separation cost
                 n_neigh = A_neigh[ii].sum()
                 
-                d_ref_sep = d_ref*(1 + 0.2*n_neigh)
+                d_ref_sep = d_ref #*(1 + 0.2*n_neigh)
                 L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                     + (x[ii*2+1]-x[kk*2+1])**2\
                     - d_ref_sep**2)**2
@@ -195,9 +194,9 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         # Control input cost
         L += w_vel*(v[ii*2]**2 + v[ii*2+1]**2)
 
-        # # Direction cost
-        # L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
-        #     (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)**2
+        # Direction cost
+        L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
+            (v[ii*2]*u_refx + v[ii*2+1]*u_refy)**2)**2
 
         x_cm += x[ii*2]
         y_cm += x[ii*2+1]
@@ -600,8 +599,8 @@ if __name__ == '__main__':
     N_mpc = 10
 
     # Some constants
-    d_neigh = 1.5 # neighbour distance
-    d_ref = 0.5  #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    d_neigh = 0.8 # + 1.25*number_of_cfs # neighbour distance
+    d_ref = 0.4 + 0.05*number_of_cfs #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01

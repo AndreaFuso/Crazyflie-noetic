@@ -90,34 +90,34 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     y_cm = 0
 
 
-    ###################### Ordered list of neighbours ############################
-    list_list_neighbours = []    
+    # ###################### Ordered list of neighbours ############################
+    # list_list_neighbours = []    
     
-    for ii in range(N_cf-1):
+    # for ii in range(N_cf-1):
 
-        neigh_count = 0
+    #     neigh_count = 0
 
-        list_neighbours_i = []
+    #     list_neighbours_i = []
 
-        for jj in range(N_cf):
-            if A_neigh[ii,jj] == 1 and jj > ii:
-                neigh_count += 1
+    #     for jj in range(N_cf):
+    #         if A_neigh[ii,jj] == 1 and jj > ii:
+    #             neigh_count += 1
 
-        list_neighbours_i = index_neigh[ii][:neigh_count]
+    #     list_neighbours_i = index_neigh[ii][:neigh_count]
 
-        list_list_neighbours.append(list_neighbours_i)
+    #     list_list_neighbours.append(list_neighbours_i)
 
-    ############## Weights for the distances in separation cost ##################
-    list_list_weights = []
-    for ii in range(N_cf-1):
-        list_weights_i = []
-        ll = len(list_list_neighbours[ii])
-        for jj in range(ll):
-            kk = floor(jj/2)
-            list_weights_i.append(kk)
-        list_list_weights.append(list_weights_i)
+    # ############## Weights for the distances in separation cost ##################
+    # list_list_weights = []
+    # for ii in range(N_cf-1):
+    #     list_weights_i = []
+    #     ll = len(list_list_neighbours[ii])
+    #     for jj in range(ll):
+    #         kk = floor(jj/2)
+    #         list_weights_i.append(kk)
+    #     list_list_weights.append(list_weights_i)
 
-    print('list_list_weights is: ', list_list_weights)
+    # print('list_list_weights is: ', list_list_weights)
 
 
 
@@ -129,24 +129,24 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     for ii in range(N_cf-1):
         for kk in range(ii+1,N_cf):
             if ii == 0:
-                if kk < 5:
+                if kk < 4:
                     d_ref_sep = 1.5*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
                          - d_ref_sep**2)**2
-                if kk >= 5 and kk < 10:
+                if kk >= 4 and kk < 10:
                     d_ref_sep = 3*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
                          - d_ref_sep**2)**2
-            elif ii >= 1 and ii < 5:
-                if kk < 5:
-                    d_ref_sep = 2.5*d_ref
+            elif ii >= 1 and ii < 4:
+                if kk < 4:
+                    d_ref_sep = 3*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
                          - d_ref_sep**2)**2
-            elif ii >= 5 and ii < 10:
-                if kk >= 5:
+            elif ii >= 4 and ii < 10:
+                if kk >= 4:
                     d_ref_sep = 4*d_ref
                     L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                          + (x[ii*2+1]-x[kk*2+1])**2\
