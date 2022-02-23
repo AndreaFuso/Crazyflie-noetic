@@ -83,8 +83,8 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     u_ref = np.array(u_ref)
     u_norm = np.linalg.norm(u_ref)
     T = u_norm/v_ref
-    if T < 1.0:
-        T = 1.0
+    if T < 2:
+        T = 2
 
     v_ref_new = v_ref
     
@@ -189,7 +189,6 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         print('list_neighbours_i is: ', list_neighbours_i)
 
         list_list_neighbours.append(list_neighbours_i)
-
     # list_neighbours_i = [list_neighbours_i for ii in index_neigh[jj]]
     print('list_list_neighbours is: ', list_list_neighbours)
     # list_neighbours_i = [x for _, x in sorted(list_neighbours_i,)]
@@ -211,42 +210,40 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
     ##############################################################################
 
+
     # Building Objective Function
 
-    # 1
     for ii in range(N_cf-1):
-        for kk in range(ii+1, N_cf):
-            # if ii != kk:
+        for kk in range(ii+1,N_cf):
+            if ii == 0:
+                if kk < 4:
+                    d_ref_sep = 1.5*d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+                if kk >= 4 and kk < 10:
+                    d_ref_sep = 3*d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+            elif ii >= 1 and ii < 4:
+                if kk < 4:
+                    d_ref_sep = 3*d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+            elif ii >= 4 and ii < 10:
+                if kk >= 4:
+                    d_ref_sep = 4*d_ref
+                    L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+                         + (x[ii*2+1]-x[kk*2+1])**2\
+                         - d_ref_sep**2)**2
+
             # Separation cost
-            n_neigh = A_neigh[ii].sum()
-            
-            d_ref_sep = d_ref #*(1 + 0.2*n_neigh)
             L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
                 + (x[ii*2+1]-x[kk*2+1])**2\
                 - d_ref_sep**2)**2
-        print('n_neigh is: ', n_neigh)
 
-
-    # # 2
-    # for ii in range(N_cf-1):
-    #     jj = 0
-    #     for kk in list_list_neighbours[ii]:
-    #         jj += 1
-    #         # Separation cost
-    #         d_ref_sep = d_ref*(1 + list_list_weights[ii][jj-1]) 
-    #         L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
-    #             + (x[ii*2+1]-x[kk*2+1])**2\
-    #             - d_ref_sep**2)**2
-
-
-    # # 3
-    # for ii in range(N_cf-1):
-    #     for kk in list_list_neighbours[ii]:
-    #         # Separation cost
-    #         d_ref_sep = d_ref
-    #         L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
-    #             + (x[ii*2+1]-x[kk*2+1])**2\
-    #             - d_ref_sep**2)**2
 
     for ii in range(N_cf):
 
@@ -262,8 +259,8 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         #     L += w_final_new*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
 
 
-        # Final Position cost
-        L += 0.02*w_final_new*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
+        # # Final Position cost
+        # L += w_final_new*((x[ii*2] - P_N[ii*2])**2 + (x[ii*2+1] - P_N[ii*2+1])**2)
 
         # Control input cost
         L += w_vel*(v[ii*2]**2 + v[ii*2+1]**2)
@@ -278,9 +275,9 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     x_cm = x_cm/N_cf
     y_cm = y_cm/N_cf
 
-    # # Final Position cost
-    # L += w_final_new*(P_N[0] - x_cm)**2
-    # L += w_final_new*(P_N[1] - y_cm)**2
+    # Final Position cost
+    L += w_final_new*(P_N[0] - x_cm)**2
+    L += w_final_new*(P_N[1] - y_cm)**2
 
     # Formulate discrete time dynamics
     if False:
@@ -473,14 +470,12 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
 
 
         # Add inequality constraint for obstacle avoidance between drones
-        # if k > 1:
-        # if k > 0:
-        for ii in range(N_cf-1):
-            for jj in range(ii+1,N_cf):
-                g   += [(Xk_end[2*ii] - Xk_end[2*jj])**2 + 
-                        (Xk_end[2*ii+1] - Xk_end[2*jj+1])**2]
-                lbg += [(5*r_drone)**2]
-                ubg += [+inf]
+        if k > 1:
+            for ii in range(N_cf):
+                for jj in range(ii+1,N_cf):
+                    g   += [(Xk[2*ii] - Xk[2*jj])**2 + (Xk[2*ii+1] - Xk[2*jj+1])**2]
+                    lbg += [(7*r_drone)**2]
+                    ubg += [+inf]
 
 
         ################ Center of mass in final target ##########################
@@ -683,20 +678,20 @@ if __name__ == '__main__':
 
     # Time interval and number of control intervals for the MPC
     T_mpc = 5
-    # N_mpc = 10
-    N_mpc = 5
+    N_mpc = 2
+
     # Some constants
-    d_neigh = 3 # + 1.25*number_of_cfs # neighbour distance
-    d_ref = 1 #+ 0.1*number_of_cfs #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    d_neigh = 1 # + 1.25*number_of_cfs # neighbour distance
+    d_ref = 0.3 #+ 0.1*number_of_cfs #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
 
     # Weights for objective function
-    w_sep = 4 #0.01*number_of_cfs**-1
+    w_sep = 1 #0.01*number_of_cfs**-1
     w_nav = 10 #100
     w_dir = 1
-    w_final = 200
+    w_final = 100
     w_vel = 100
 
     # Number of the drone in the middle
@@ -757,8 +752,6 @@ if __name__ == '__main__':
 
 
     rate = rospy.Rate(100)
-
-    # rate = rospy.Rate(100)
 
     # rate = rospy.Rate(N_mpc/T_mpc)
 
