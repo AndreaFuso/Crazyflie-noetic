@@ -69,58 +69,43 @@ class CBF_controller():
 ###################################################################
 
 
-def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt, 
-                  d_ref, d_neigh, v_ref, w_sep, w_nav, w_dir, N_mid, 
-                  w_final, w_vel, d_final_lim):
+def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt, 
+                  d_ref, d_neigh, v_ref, w_sep, 
+                  w_final, w_vel):
 
-    # Getting center of mass of swarm
+    # Getting center of mass of the swarm
     x_cm = np.array(P_0[0::2]).sum()/N_cf
     y_cm = np.array(P_0[1::2]).sum()/N_cf
 
-    # Calculating the reference direction for the drone in the middle
-    # u_ref = [P_N[N_mid] - P_0[N_mid], P_N[N_mid+1] - P_0[N_mid+1]]
-    u_ref = [P_N[0]-x_cm, P_N[1]-y_cm]
+    # Desired posittions
+    x_des = P_N[0]
+    y_des = P_N[1]
+
+    # Calculating the reference direction for the drone swarm    
+    u_ref = [x_des-x_cm, y_des-y_cm]
     u_ref = np.array(u_ref)
     u_norm = np.linalg.norm(u_ref)
+
+    # Calculating the time horizon for the MPC
     T = u_norm/v_ref
+
+    # Threshold on time horizon, otherwise the swarm oscillates
     if T < 1.0:
         T = 1.0
 
-    v_ref_new = v_ref
-    
-    if u_norm < 2:
-        v_ref_new = 0
 
-    u_ref = u_ref/np.linalg.norm(u_ref)
+
+    # Versor for the reference direction
+    u_ref = u_ref/u_norm
 
     u_refx = u_ref[0]
     u_refy = u_ref[1]
 
-    x_pos = P_0[N_mid]
-    y_pos = P_0[N_mid+1]
-
-    x_des = P_N[N_mid]
-    y_des = P_N[N_mid]
-
-    # # Computing distance to mid target
-    # p_rel = [x_des-x_pos, y_des-y_pos]
-    # p_rel = np.array(p_rel)
-    # d_rel = np.linalg.norm(p_rel)
-
-    w_final_new = w_final #*d_rel**4
-    
-    # if w_final_new > w_final:
-    #     w_final_new = w_final
-
-    w_sep_new = w_sep #*d_rel**-4
-    
-    # if w_sep_new < w_sep:
-    #     w_sep_new = w_sep
-
     # Setting desired velocity
-    vx_des = (x_des-x_pos)/T
-    vy_des = (y_des-y_pos)/T
+    vx_des = (x_des-x_cm)/T
+    vy_des = (y_des-y_cm)/T
 
+    # Saturation on desired velocity
     if vx_des > 1:
         vx_des = 1
     if vx_des < -1:
@@ -221,7 +206,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
             n_neigh = A_neigh[ii].sum()
             
             d_ref_sep = d_ref #*(1 + 0.2*n_neigh)
-            L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+            L += w_sep*((x[ii*2]-x[kk*2])**2 \
                 + (x[ii*2+1]-x[kk*2+1])**2\
                 - d_ref_sep**2)**2
         print('n_neigh is: ', n_neigh)
@@ -234,7 +219,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     #         jj += 1
     #         # Separation cost
     #         d_ref_sep = d_ref*(1 + list_list_weights[ii][jj-1]) 
-    #         L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+    #         L += w_sep*((x[ii*2]-x[kk*2])**2 \
     #             + (x[ii*2+1]-x[kk*2+1])**2\
     #             - d_ref_sep**2)**2
 
@@ -244,7 +229,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     #     for kk in list_list_neighbours[ii]:
     #         # Separation cost
     #         d_ref_sep = d_ref
-    #         L += w_sep_new*((x[ii*2]-x[kk*2])**2 \
+    #         L += w_sep*((x[ii*2]-x[kk*2])**2 \
     #             + (x[ii*2+1]-x[kk*2+1])**2\
     #             - d_ref_sep**2)**2
 
@@ -259,11 +244,11 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
         # d_final = np.linalg.norm(p_rel_final)
 
         # if d_final > 1.5:
-        #     L += w_final_new*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
+        #     L += w_final*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
 
 
         # Final Position cost
-        L += 0.02*w_final_new*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
+        L += 0.02*w_final*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
 
         # Control input cost
         L += w_vel*(v[ii*2]**2 + v[ii*2+1]**2)
@@ -278,9 +263,9 @@ def nlp_solver_2d(N_cf, P_N, P_0, T, N, x_opt, v_opt,
     x_cm = x_cm/N_cf
     y_cm = y_cm/N_cf
 
-    # # Final Position cost
-    # L += w_final_new*(P_N[0] - x_cm)**2
-    # L += w_final_new*(P_N[1] - y_cm)**2
+    # # Final Position cost for center of mass
+    # L += w_final*(P_N[0] - x_cm)**2
+    # L += w_final*(P_N[1] - y_cm)**2
 
     # Formulate discrete time dynamics
     if False:
@@ -699,11 +684,6 @@ if __name__ == '__main__':
     w_final = 200
     w_vel = 100
 
-    # Number of the drone in the middle
-    N_mid = int(number_of_cfs/2)
-    if N_mid % 2 != 0:
-        N_mid = int((number_of_cfs-1)/2)
-
     #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
 
     # Setting the parameters for the cbf controller and the position goal
@@ -805,11 +785,10 @@ if __name__ == '__main__':
             
             #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
 
-            mpc_velocity, x_opt, v_opt = nlp_solver_2d(number_of_cfs, P_N, P_0, T_mpc, 
+            mpc_velocity, x_opt, v_opt = nlp_solver_2d(number_of_cfs, P_N, P_0, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,
-                                                       w_sep, w_nav, w_dir, N_mid, 
-                                                       w_final, w_vel, d_final_lim)
+                                                       w_sep, w_final, w_vel)
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
