@@ -464,7 +464,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
             for jj in range(ii+1,N_cf):
                 g   += [(Xk_end[2*ii] - Xk_end[2*jj])**2 + 
                         (Xk_end[2*ii+1] - Xk_end[2*jj+1])**2]
-                lbg += [(5*r_drone)**2]
+                lbg += [(6*r_drone)**2]
                 ubg += [+inf]
 
 
@@ -653,11 +653,11 @@ if __name__ == '__main__':
     rospy.init_node('node_high_level_mpc', log_level=rospy.DEBUG)
 
     # Extracting rosparam informations (to understand the number of crazyflies):
-    number_of_cfs = rospy.get_param('swarm_node/cfs_number')
-    print(number_of_cfs)
+    N_cf = rospy.get_param('swarm_node/cfs_number')
+    print(N_cf)
 
     # Generate a standard list of names:
-    cf_names = standardNameList(number_of_cfs)
+    cf_names = standardNameList(N_cf)
     print(cf_names)
 
     # Instantiate a swarm:
@@ -708,7 +708,7 @@ if __name__ == '__main__':
 
     # List of velocities used to collect the output of the nlp solver
     mpc_velocity = []
-    for ii in range(number_of_cfs):
+    for ii in range(N_cf):
         mpc_velocity.append(Position())
 
     # List of mpc_velocity Publishers
@@ -746,7 +746,7 @@ if __name__ == '__main__':
 
         # Initializing the initial position of agents at each step
         P_0 = []
-        for ii in range(number_of_cfs):
+        for ii in range(N_cf):
             P_0.append(swarm.states[ii].position.x)
             P_0.append(swarm.states[ii].position.y)
 
@@ -761,20 +761,20 @@ if __name__ == '__main__':
             # Initializing the target position for each drone starting from
             # mpc target
             P_N = []
-            for ii in range(number_of_cfs):
+            for ii in range(N_cf):
                 P_N.append(mpc_target.desired_position.x)
                 P_N.append(mpc_target.desired_position.y)            
             print('P_N is: ', P_N)
             # Initializing the optimal velocity of agents to use it 
             # for the hot start initial guess
             v_opt_old = []
-            for ii in range(2*number_of_cfs):
+            for ii in range(2*N_cf):
                 v_opt_old.append(np.linspace(0, 0, N_mpc+1))
 
             # Initializing optimal positions to use them as initial guess 
             # for the hot start initial guess
             x_opt_old = []
-            for ii in range(2*number_of_cfs):
+            for ii in range(2*N_cf):
                 x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
 
             sub_mpc_flag.data = 2
@@ -785,7 +785,7 @@ if __name__ == '__main__':
             
             #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
 
-            mpc_velocity, x_opt, v_opt = nlp_solver_2d(number_of_cfs, P_N, P_0, 
+            mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, P_0, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,
                                                        w_sep, w_final, w_vel)
@@ -798,7 +798,7 @@ if __name__ == '__main__':
             # Getting the new goal
             x_goal = np.array([mpc_target.desired_position.x, mpc_target.desired_position.y])
 
-            for ii in range(number_of_cfs):
+            for ii in range(N_cf):
                 # Extracting the mpc velocities from mpc_velocity list
                 v_mpc_x = mpc_velocity[ii].desired_velocity.x
                 v_mpc_y = mpc_velocity[ii].desired_velocity.y
