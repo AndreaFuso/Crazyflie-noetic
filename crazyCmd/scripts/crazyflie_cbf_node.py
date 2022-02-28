@@ -63,18 +63,56 @@ class CBF_controller():
 def mpc2cbf_sub_callback(msg):
     mpc_velocity.desired_velocity.x = msg.desired_velocity.x
     mpc_velocity.desired_velocity.y = msg.desired_velocity.y
-    print('mpc_velocity is: ', mpc_velocity)
+    # print('mpc_velocity is: ', mpc_velocity)
 
     cf_state.position.x = msg.desired_position.x
     cf_state.position.y = msg.desired_position.y
     print('cf_state is: ', cf_state)
 
-    sub_cbf_flag.data = 1
 
-# def state_sub_callback(msg):
-#     cf_state.position.x = msg.position.x
-#     cf_state.position.y = msg.position.y
-#     print('cf_state is: ', cf_state)
+    # sub_cbf_flag.data = 1
+
+    print('starting cbf...')    
+    #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
+    
+    # Getting position of crazyflie
+    P_0 = []
+    P_0.append(cf_state.position.x)
+    P_0.append(cf_state.position.y)
+
+    print('P_0 is: ', P_0)
+
+    # Extracting the mpc velocities from mpc_velocity
+    v_mpc = []
+    v_mpc.append(mpc_velocity.desired_velocity.x)
+    v_mpc.append(mpc_velocity.desired_velocity.y)
+
+    v_mpc = np.array(v_mpc)
+    print('v_mpc is: ' , v_mpc)
+
+    # Setting initial position at the current time step
+    x0 = np.array(P_0)
+
+    # Creating the instance of the CBF controller
+    cbf_controller = CBF_controller(v_mpc, alpha, x0)
+
+    # Setting obstacles
+    cbf_controller.set_obstacle(x_obs, r_tot)
+
+    # Getting cbf velocity
+    v = cbf_controller.get_cbf_v(x0)
+
+    # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
+    mpc_velocity.desired_velocity.x = v[0]
+    mpc_velocity.desired_velocity.y = v[1]
+
+    print('mpc_velocity is: ', mpc_velocity)
+
+    mpc_velocity_pub.publish(mpc_velocity)
+
+
+
+
 
 
 
@@ -148,64 +186,64 @@ if __name__ == '__main__':
     #                                CrazyflieState, state_sub_callback)
     
 
-
+    rospy.spin()
 
 
     ###############################################################################
 
 
 
-    rate = rospy.Rate(5)
+    # rate = rospy.Rate(5)
 
 
-    while not rospy.is_shutdown():
+    # while not rospy.is_shutdown():
 
-        if sub_cbf_flag.data == 0:
-            print('No mpc velocity...') 
-            pass
+    #     if sub_cbf_flag.data == 0:
+    #         print('No mpc velocity...') 
+    #         pass
 
 
-        else:
-            print('starting cbf...')    
-            #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
+    #     else:
+    #         print('starting cbf...')    
+    #         #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
             
-            # Getting position of crazyflie
-            P_0 = []
-            P_0.append(cf_state.position.x)
-            P_0.append(cf_state.position.y)
+    #         # Getting position of crazyflie
+    #         P_0 = []
+    #         P_0.append(cf_state.position.x)
+    #         P_0.append(cf_state.position.y)
 
-            print('P_0 is: ', P_0)
+    #         print('P_0 is: ', P_0)
 
-            # Extracting the mpc velocities from mpc_velocity
-            v_mpc = []
-            v_mpc.append(mpc_velocity.desired_velocity.x)
-            v_mpc.append(mpc_velocity.desired_velocity.y)
+    #         # Extracting the mpc velocities from mpc_velocity
+    #         v_mpc = []
+    #         v_mpc.append(mpc_velocity.desired_velocity.x)
+    #         v_mpc.append(mpc_velocity.desired_velocity.y)
 
-            v_mpc = np.array(v_mpc)
-            print('v_mpc is: ' , v_mpc)
+    #         v_mpc = np.array(v_mpc)
+    #         print('v_mpc is: ' , v_mpc)
 
-            # Setting initial position at the current time step
-            x0 = np.array(P_0)
+    #         # Setting initial position at the current time step
+    #         x0 = np.array(P_0)
 
-            # Creating the instance of the CBF controller
-            cbf_controller = CBF_controller(v_mpc, alpha, x0)
+    #         # Creating the instance of the CBF controller
+    #         cbf_controller = CBF_controller(v_mpc, alpha, x0)
 
-            # Setting obstacles
-            cbf_controller.set_obstacle(x_obs, r_tot)
+    #         # Setting obstacles
+    #         cbf_controller.set_obstacle(x_obs, r_tot)
 
-            # Getting cbf velocity
-            v = cbf_controller.get_cbf_v(x0)
+    #         # Getting cbf velocity
+    #         v = cbf_controller.get_cbf_v(x0)
 
-            # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
-            mpc_velocity.desired_velocity.x = v[0]
-            mpc_velocity.desired_velocity.y = v[1]
+    #         # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
+    #         mpc_velocity.desired_velocity.x = v[0]
+    #         mpc_velocity.desired_velocity.y = v[1]
 
-            print('mpc_velocity is: ', mpc_velocity)
+    #         print('mpc_velocity is: ', mpc_velocity)
 
-            mpc_velocity_pub.publish(mpc_velocity)
+    #         mpc_velocity_pub.publish(mpc_velocity)
 
             
-        rate.sleep()
+    #     rate.sleep()
 
 
 

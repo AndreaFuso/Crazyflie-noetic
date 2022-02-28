@@ -673,7 +673,7 @@ if __name__ == '__main__':
     mpc_target.desired_position.y = 0
 
 
-    rate = rospy.Rate(5)
+    rate = rospy.Rate(10)
 
 
     while not rospy.is_shutdown():
@@ -733,6 +733,7 @@ if __name__ == '__main__':
                 mpc_velocity[ii].desired_position.y = swarm.states[ii].position.y
 
             swarm_mpc_velocity_pub(mpc_velocity)
+            print('N_cf is: ', N_cf)
 
 
         rate.sleep()
