@@ -673,7 +673,7 @@ if __name__ == '__main__':
     mpc_target.desired_position.y = 0
 
 
-    rate = rospy.Rate(5)
+    rate = rospy.Rate(10)
 
 
     while not rospy.is_shutdown():
@@ -688,7 +688,7 @@ if __name__ == '__main__':
         
         if sub_mpc_flag.data == 0:
             # nothing is executed if no mpc target has been published
-            # print('no mpc target')
+            print('no mpc target')
             pass
 
         elif sub_mpc_flag.data == 1:  # in case a new target is set
@@ -716,7 +716,7 @@ if __name__ == '__main__':
 
         else:
             # Once the flag is set to 2, the nlp solver is called at each iteration
-            # until a new mpc target is set
+            # until a new mpc target is set and the 
             
             #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
 

@@ -19,6 +19,90 @@ from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
 
 
 
+
+###################################################################
+
+#      L O W     L E V E L    C B F     C O N T R O L L E R      
+
+###################################################################
+
+class CBF_controller():
+
+    def __init__(self, v_mpc, alpha, x):
+        
+        self.x = x
+        self.v_mpc = v_mpc
+        self.alpha  = alpha
+
+    def set_obstacle(self, N_obs, x_obs, r_obs):
+        
+        # # Defining the h function for the known obstacle
+        # self.h = lambda x1,x2 : ((x1-x_obs[0])**2 + (x2-x_obs[1])**2 
+        #                         - r_obs**2)*0.5
+        # self.grad_h = lambda x1,x2 : np.array([x1-x_obs[0] , x2-x_obs[1]])
+
+
+        self.h1 = lambda x1,x2 : ((x1-x_obs[0][0])**2 + (x2-x_obs[0][1])**2 \
+                                        - r_obs[0]**2)*0.5
+        self.grad_h1 = lambda x1,x2 : np.array([x1-x_obs[0][0] , x2-x_obs[0][1]])
+
+
+        self.h2 = lambda x1,x2 : ((x1-x_obs[1][0])**2 + (x2-x_obs[1][1])**2 
+                                        - r_obs[1]**2)*0.5
+        self.grad_h2 = lambda x1,x2 : np.array([x1-x_obs[1][0] , x2-x_obs[1][1]])
+
+
+        self.h3 = lambda x1,x2 : ((x1-x_obs[2][0])**2 + (x2-x_obs[2][1])**2 
+                                        - r_obs[2]**2)*0.5
+        self.grad_h3 = lambda x1,x2 : np.array([x1-x_obs[2][0] , x2-x_obs[2][1]])
+
+
+
+
+    def get_cbf_v(self, x):
+
+        # Given current state solve pointwise Quadratic Program and get safe 
+        # control action (velocity)
+
+        v_opt      = cp.Variable(2)
+
+
+        # h_num      = self.h(x[0],x[1])
+        # grad_h_num = self.grad_h(x[0],x[1])
+
+
+
+        h_num1 = self.h1(x[0],x[1])
+        grad_h_num1 = self.grad_h1(x[0],x[1])
+
+        h_num2 = self.h2(x[0],x[1])
+        grad_h_num2 = self.grad_h2(x[0],x[1])
+
+
+        h_num3 = self.h3(x[0],x[1])
+        grad_h_num3 = self.grad_h3(x[0],x[1])
+
+
+        v_des      = self.v_mpc
+
+        # Solve QP for u_opt
+        obj         = cp.Minimize((1/2)*cp.quad_form(v_opt-v_des,np.eye(2)))
+
+
+        # constraints = [grad_h_num.T @ v_opt >= -self.alpha*h_num ] 
+
+        constraints = [grad_h_num1.T @ v_opt >= -self.alpha*h_num1,
+                       grad_h_num2.T @ v_opt >= -self.alpha*h_num2,
+                       grad_h_num3.T @ v_opt >= -self.alpha*h_num3]
+
+        prob = cp.Problem(obj,constraints)
+        prob.solve()
+
+        return v_opt.value
+
+
+
+
 ###################################################################
 
 #                 H I G H    L E V E L    M P C       
@@ -102,6 +186,8 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
 
         # Getting the sorted indices of list_p_rel to set the order of neighbours
         index_neigh.append((np.argsort(list_p_rel)+ii+1).tolist())
+    print('index_neigh is: ', index_neigh)
+    print('A_neigh is: ', A_neigh)
 
 
     # list_neighbours_i = range(N_cf)
@@ -126,9 +212,13 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
                 neigh_count += 1
 
         list_neighbours_i = index_neigh[ii][:neigh_count]
+        print('list_neighbours_i is: ', list_neighbours_i)
 
         list_list_neighbours.append(list_neighbours_i)
 
+    # list_neighbours_i = [list_neighbours_i for ii in index_neigh[jj]]
+    print('list_list_neighbours is: ', list_list_neighbours)
+    # list_neighbours_i = [x for _, x in sorted(list_neighbours_i,)]
 
     ############## Weights for the distances in separation cost ##################
     list_list_weights = []
@@ -140,6 +230,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
             list_weights_i.append(kk)
         list_list_weights.append(list_weights_i)
 
+    print('list_list_weights is: ', list_list_weights)
 
 
 
@@ -148,7 +239,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
 
     # Building Objective Function
 
-    # 1
+    # 1 All neighbours
     for ii in range(N_cf-1):
         for kk in range(ii+1, N_cf):
             # if ii != kk:
@@ -159,6 +250,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
             L += w_sep*((x[ii*2]-x[kk*2])**2 \
                 + (x[ii*2+1]-x[kk*2+1])**2\
                 - d_ref_sep**2)**2
+        print('n_neigh is: ', n_neigh)
 
 
     # # 2
@@ -173,13 +265,20 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     #             - d_ref_sep**2)**2
 
 
-    # # 3
+    # # 3 With neighbours
     # for ii in range(N_cf-1):
     #     for kk in list_list_neighbours[ii]:
     #         # Separation cost
     #         d_ref_sep = d_ref
     #         L += w_sep*((x[ii*2]-x[kk*2])**2 \
     #             + (x[ii*2+1]-x[kk*2+1])**2\
+    #             - d_ref_sep**2)**2
+    #     # to attract drones far away
+    #     if len(list_list_neighbours[ii]) == 0:
+    #         # Separation cost
+    #         d_ref_sep = d_ref
+    #         L += w_sep*((x[ii*2]-x[0])**2 \
+    #             + (x[ii*2+1]-x[1])**2\
     #             - d_ref_sep**2)**2
 
     for ii in range(N_cf):
@@ -579,7 +678,7 @@ def mpc_target_sub_callback(msg):
 
 def make_mpc_velocity_publishers():
     for cf_name in cf_names:
-        mpc_velocity_pub = rospy.Publisher('/' + cf_name + '/mpc2cbf_velocity', 
+        mpc_velocity_pub = rospy.Publisher('/' + cf_name + '/mpc_velocity', 
                                             Position, queue_size=1)
         mpc_velocity_publishers.append(mpc_velocity_pub)
 
@@ -620,10 +719,9 @@ if __name__ == '__main__':
     # N_mpc = 10
     N_mpc = 5
     # Some constants
-    d_neigh = 3 # + 1.25*number_of_cfs # neighbour distance
+    d_neigh = 1.5 # + 1.25*number_of_cfs # neighbour distance
     d_ref = 1 #+ 0.1*number_of_cfs #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     
-    r_drone = 0.07
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
 
@@ -631,8 +729,51 @@ if __name__ == '__main__':
     w_sep = 4 #0.01*number_of_cfs**-1
     w_nav = 10 #100
     w_dir = 1
-    w_final = 200
+    w_final = 300
     w_vel = 100
+
+    #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
+
+    # Setting the parameters for the cbf controller and the position goal
+    v_lim = 0.5
+    alpha = 1.0
+    d_lim = 0.4
+
+    # # Defining obstacle geometry
+    # x_obs = np.array([2.0, 2.5])
+    # r_obs = 0.30
+    # r_drone = 0.07
+    # r_safety = 0.10
+    # r_tot = r_obs + r_drone + r_safety
+    
+    # Defining obstacles geometry
+
+    N_obs = 3
+
+    x_obs = []
+
+    x_obs_1 = np.array([2.0, 2.5])
+    x_obs.append(x_obs_1)
+    x_obs_2 = np.array([1.0, 2.5])
+    x_obs.append(x_obs_2)
+    x_obs_3 = np.array([2.0, 4.0])
+    x_obs.append(x_obs_3)
+    print('x_obs is: ', x_obs)
+    
+
+
+    r_drone = 0.07
+    r_safety = 0.10
+
+    r_obs = []
+
+    r_obs_1 = 0.30 + r_drone + r_safety
+    r_obs.append(r_obs_1)
+    r_obs_2 = 0.20 + r_drone + r_safety
+    r_obs.append(r_obs_2)
+    r_obs_3 = 0.40 + r_drone + r_safety
+    r_obs.append(r_obs_3)
+    print('r_obs is: ', r_obs)
 
 
     ###############################################################################
@@ -668,13 +809,16 @@ if __name__ == '__main__':
     sub_mpc_flag = Int16()
     sub_mpc_flag.data = 0
 
-    # Initializing mpc_target
+    # Initializing mpc_target, mpc_target_init and mpc_target_old
     mpc_target.desired_position.x = 0
     mpc_target.desired_position.y = 0
 
 
-    rate = rospy.Rate(5)
+    rate = rospy.Rate(100)
 
+    # rate = rospy.Rate(100)
+
+    # rate = rospy.Rate(N_mpc/T_mpc)
 
     while not rospy.is_shutdown():
 
@@ -688,7 +832,6 @@ if __name__ == '__main__':
         
         if sub_mpc_flag.data == 0:
             # nothing is executed if no mpc target has been published
-            # print('no mpc target')
             pass
 
         elif sub_mpc_flag.data == 1:  # in case a new target is set
@@ -716,7 +859,7 @@ if __name__ == '__main__':
 
         else:
             # Once the flag is set to 2, the nlp solver is called at each iteration
-            # until a new mpc target is set
+            # until a new mpc target is set and the 
             
             #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
 
@@ -727,13 +870,32 @@ if __name__ == '__main__':
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
+            
+            #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
+                        
+            # Getting the new goal
+            x_goal = np.array([mpc_target.desired_position.x, mpc_target.desired_position.y])
 
             for ii in range(N_cf):
-                mpc_velocity[ii].desired_position.x = swarm.states[ii].position.x
-                mpc_velocity[ii].desired_position.y = swarm.states[ii].position.y
+                # Extracting the mpc velocities from mpc_velocity list
+                v_mpc_x = mpc_velocity[ii].desired_velocity.x
+                v_mpc_y = mpc_velocity[ii].desired_velocity.y
+                v_mpc = np.array([v_mpc_x, v_mpc_y])
 
+                # Setting initial position at the current time step
+                x0 = np.array([P_0[2*ii], P_0[2*ii+1]])
+                # Creating the instance of the CBF controller
+                cbf_controller = CBF_controller(v_mpc, alpha, x0)
+                # Setting obstacles
+                cbf_controller.set_obstacle(N_obs, x_obs, r_obs)
+                # Getting cbf velocity
+                v = cbf_controller.get_cbf_v(x0)
+                # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
+                mpc_velocity[ii].desired_velocity.x = v[0]
+                mpc_velocity[ii].desired_velocity.y = v[1]
+            
+                        
             swarm_mpc_velocity_pub(mpc_velocity)
-            print('N_cf is: ', N_cf)
 
 
         rate.sleep()

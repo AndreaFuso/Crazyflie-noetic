@@ -39,6 +39,8 @@
 			<rosparam param="initial_position">[0.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
+
+
 <!-- 
 	<group ns = "cf5">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
@@ -47,46 +49,69 @@
 		</node>
 	</group>
 
+
 	<group ns = "cf6">
 		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf6</rosparam>
 			<rosparam param="initial_position">[1.0, 0.5, 0.2]</rosparam>
 		</node>
-	</group>
+	</group>   -->
 
-	<group ns = "cf7">
-		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
-			<rosparam param="name">cf7</rosparam>
-			<rosparam param="initial_position">[0.0, 1.0, 0.2]</rosparam>
-		</node>
-	</group>
 
-	<group ns = "cf8">
-		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
-			<rosparam param="name">cf8</rosparam>
-			<rosparam param="initial_position">[0.5, 1.0, 0.2]</rosparam>
-		</node>
-	</group>
-
-	<group ns = "cf9">
-		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
-			<rosparam param="name">cf9</rosparam>
-			<rosparam param="initial_position">[1.0, 1.0, 0.2]</rosparam>
-		</node>
-	</group>
-
-	<group ns = "cf10">
-		<node pkg="crazyCmd" type="crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
-			<rosparam param="name">cf10</rosparam>
-			<rosparam param="initial_position">[1.5, 1.0, 0.2]</rosparam>
-		</node>
-	</group>  -->
 
 	<group ns = "swarm">
 		<rosparam param="cfs_number">4</rosparam>
-		<node pkg="crazyCmd" type="node_high_level_mpc.py" name="swarm_node" output="screen">
+		<node pkg="crazyCmd" type="node_cbf_ll_mpc_hl_multi_obs.py" name="swarm_node" output="screen">
 			<rosparam param="cfs_number">4</rosparam>
 		</node>
 	</group>
+
+
+    <group ns= "obstacle1">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description -model mrm -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
+    <group ns= "obstacle2">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description_2" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc_2.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn_2" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description_2 -model mrm2 -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
+
+    <group ns= "obstacle3">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description_3" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc_3.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn_3" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description_3 -model mrm3 -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
 
 </launch>

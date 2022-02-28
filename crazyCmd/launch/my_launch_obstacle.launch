@@ -41,4 +41,39 @@
 
     </group>
 
+    <group ns= "obstacle2">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description_2" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc_2.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn_2" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description_2 -model mrm2 -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
+
+    <group ns= "obstacle3">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description_3" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc_3.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn_3" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description_3 -model mrm3 -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
+
+
+
+
 </launch>
