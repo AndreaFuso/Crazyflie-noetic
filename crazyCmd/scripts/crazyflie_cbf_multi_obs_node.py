@@ -26,32 +26,37 @@ class CBF_controller():
         self.alpha  = alpha
 
     def set_obstacle(self, N_obs, x_obs, r_obs):
-        print('x_obs is: ', x_obs)
 
-        # self.h = []
-        # self.grad_h = []
+        ########################################################################################
+
 
         # for ii in range(N_obs):
 
-        #     # Defining the h function for the known obstacles
+        # Defining the h function for the known obstacles
+        self.h = lambda x1,x2,x_o,r_o : ((x1-x_o[0])**2 + (x2-x_o[1])**2 
+                                    - r_o**2)*0.5
 
-        #     self.h.append(lambda x1,x2 : ((x1-x_obs[ii][0])**2 + (x2-x_obs[ii][1])**2 
-        #                                 - r_obs[ii]**2)*0.5)
-        #     self.grad_h.append(lambda x1,x2 : np.array([x1-x_obs[ii][0] , x2-x_obs[ii][1]])) 
-
-        self.h1 = lambda x1,x2 : ((x1-x_obs[0][0])**2 + (x2-x_obs[0][1])**2 \
-                                        - r_obs[0]**2)*0.5
-        self.grad_h1 = lambda x1,x2 : np.array([x1-x_obs[0][0] , x2-x_obs[0][1]])
+        self.grad_h = lambda x1,x2,x_o,r_o : np.array([x1-x_o[0] , x2-x_o[1]])
 
 
-        self.h2 = lambda x1,x2 : ((x1-x_obs[1][0])**2 + (x2-x_obs[1][1])**2 
-                                        - r_obs[1]**2)*0.5
-        self.grad_h2 = lambda x1,x2 : np.array([x1-x_obs[1][0] , x2-x_obs[1][1]])
+        ########################################################################################
+
+        # self.h1 = lambda x1,x2 : ((x1-x_obs[0][0])**2 + (x2-x_obs[0][1])**2 \
+        #                                 - r_obs[0]**2)*0.5
+        # self.grad_h1 = lambda x1,x2 : np.array([x1-x_obs[0][0] , x2-x_obs[0][1]])
 
 
-        self.h3 = lambda x1,x2 : ((x1-x_obs[2][0])**2 + (x2-x_obs[2][1])**2 
-                                        - r_obs[2]**2)*0.5
-        self.grad_h3 = lambda x1,x2 : np.array([x1-x_obs[2][0] , x2-x_obs[2][1]])
+        # self.h2 = lambda x1,x2 : ((x1-x_obs[1][0])**2 + (x2-x_obs[1][1])**2 
+        #                                 - r_obs[1]**2)*0.5
+        # self.grad_h2 = lambda x1,x2 : np.array([x1-x_obs[1][0] , x2-x_obs[1][1]])
+
+
+        # self.h3 = lambda x1,x2 : ((x1-x_obs[2][0])**2 + (x2-x_obs[2][1])**2 
+        #                                 - r_obs[2]**2)*0.5
+        # self.grad_h3 = lambda x1,x2 : np.array([x1-x_obs[2][0] , x2-x_obs[2][1]])
+
+
+        ########################################################################################
 
     def get_cbf_v(self, x):
 
@@ -60,35 +65,49 @@ class CBF_controller():
 
         v_opt      = cp.Variable(2)
 
-        # h_num = []
-        # grad_h_num = []
+        ########################################################################################
+        
+        h_num = []
+        grad_h_num = []
 
-        # for ii in range(N_obs):
-        #     h_num.append(self.h[ii](x[0],x[1])) 
-        #     grad_h_num.append(self.grad_h[ii](x[0],x[1]))
+        for ii in range(N_obs):
+            h_num.append(self.h(x[0], x[1], x_obs[ii], r_obs[ii])) 
+            grad_h_num.append(self.grad_h(x[0], x[1], x_obs[ii], r_obs[ii]))
 
-        h_num1 = self.h1(x[0],x[1])
-        grad_h_num1 = self.grad_h1(x[0],x[1])
+        ########################################################################################
 
-        h_num2 = self.h2(x[0],x[1])
-        grad_h_num2 = self.grad_h2(x[0],x[1])
+        # h_num1 = self.h1(x[0],x[1])
+        # grad_h_num1 = self.grad_h1(x[0],x[1])
 
+        # h_num2 = self.h2(x[0],x[1])
+        # grad_h_num2 = self.grad_h2(x[0],x[1])
 
-        h_num3 = self.h3(x[0],x[1])
-        grad_h_num3 = self.grad_h3(x[0],x[1])
+        # h_num3 = self.h3(x[0],x[1])
+        # grad_h_num3 = self.grad_h3(x[0],x[1])
+
+        ########################################################################################
 
         v_des      = self.v_mpc
 
         # Solve QP for u_opt
         obj         = cp.Minimize((1/2)*cp.quad_form(v_opt-v_des,np.eye(2)))
 
-        # constraints = []
-        # for ii in range(N_obs):
-        #     constraints.append(grad_h_num[ii].T @ v_opt >= -self.alpha*h_num[ii])
+        ########################################################################################
 
-        constraints = [grad_h_num1.T @ v_opt >= -self.alpha*h_num1,
-                       grad_h_num2.T @ v_opt >= -self.alpha*h_num2,
-                       grad_h_num3.T @ v_opt >= -self.alpha*h_num3]
+        constraints = []
+        for ii in range(N_obs):
+            obs_distance = np.linalg.norm(np.array([x[0]-x_obs[ii][0],
+                                                    x[1]-x_obs[ii][1]]))
+            if obs_distance < 5*r_obs[ii]:
+                constraints.append(grad_h_num[ii].T @ v_opt >= -self.alpha*h_num[ii])
+
+        ########################################################################################
+
+        # constraints = [grad_h_num1.T @ v_opt >= -self.alpha*h_num1,
+        #                grad_h_num2.T @ v_opt >= -self.alpha*h_num2,
+        #                grad_h_num3.T @ v_opt >= -self.alpha*h_num3]
+
+        ########################################################################################
 
         prob = cp.Problem(obj,constraints)
         prob.solve()

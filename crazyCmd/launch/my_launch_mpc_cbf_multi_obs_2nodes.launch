@@ -35,21 +35,21 @@
 	</group>
 <!-- 
 	<group ns = "cf4">
-		<node pkg="crazyCmd" type="crazyflie_cbf_node.py" name="crazyflie_spawner_node" output="screen">
+		<node pkg="crazyCmd" type="crazyflie_cbf_multi_obs_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf4</rosparam>
 			<rosparam param="initial_position">[0.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf5">
-		<node pkg="crazyCmd" type="crazyflie_cbf_node.py" name="crazyflie_spawner_node" output="screen">
+		<node pkg="crazyCmd" type="crazyflie_cbf_multi_obs_nodee.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf5</rosparam>
 			<rosparam param="initial_position">[1.0, 0.0, 0.2]</rosparam>
 		</node>
 	</group>
 
 	<group ns = "cf6">
-		<node pkg="crazyCmd" type="crazyflie_cbf_node.py" name="crazyflie_spawner_node" output="screen">
+		<node pkg="crazyCmd" type="crazyflie_cbf_multi_obs_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf6</rosparam>
 			<rosparam param="initial_position">[1.0, 0.5, 0.2]</rosparam>
 		</node>
