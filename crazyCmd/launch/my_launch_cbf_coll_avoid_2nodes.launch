@@ -34,7 +34,7 @@
 		</node>
 	</group>
 
-<!-- 
+<!--
 	<group ns = "cf4">
 		<node pkg="crazyCmd" type="crazyflie_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf4</rosparam>

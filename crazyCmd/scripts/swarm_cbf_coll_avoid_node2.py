@@ -656,6 +656,7 @@ if __name__ == '__main__':
     n_cf_pub = rospy.Publisher('/swarm/n_cf', Int16, queue_size=1)
     number_cf = Int16()
     number_cf.data = N_cf
+    print('publishing number of crazyflies')
     n_cf_pub.publish(number_cf)
 
     ###############################################################################
@@ -669,7 +670,8 @@ if __name__ == '__main__':
     sub_mpc_flag.data = 0
 
     # Subscriber to get the mpc target position
-    mpc_target_sub = rospy.Subscriber('/swarm/mpc_target', Position, mpc_target_sub_callback)
+    mpc_target_sub = rospy.Subscriber('/swarm/mpc_target', Position, 
+                                      mpc_target_sub_callback)
     mpc_target = Position()
 
     ###############################################################################
@@ -680,7 +682,7 @@ if __name__ == '__main__':
     mpc_target.desired_position.y = 0
 
 
-    rate = rospy.Rate(8)
+    rate = rospy.Rate(5)
 
 
     while not rospy.is_shutdown():
@@ -706,7 +708,7 @@ if __name__ == '__main__':
             for ii in range(N_cf):
                 P_N.append(mpc_target.desired_position.x)
                 P_N.append(mpc_target.desired_position.y)            
-            print('P_N is: ', P_N)
+            # print('P_N is: ', P_N)
             # Initializing the optimal velocity of agents to use it 
             # for the hot start initial guess
             v_opt_old = []
@@ -740,7 +742,7 @@ if __name__ == '__main__':
                 mpc_velocity[ii].desired_position.y = swarm.states[ii].position.y
 
             swarm_mpc_velocity_pub(mpc_velocity)
-            print('N_cf is: ', N_cf)
+            # print('N_cf is: ', N_cf)
 
 
         rate.sleep()

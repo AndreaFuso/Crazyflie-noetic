@@ -147,7 +147,7 @@ def mpc2cbf_sub_callback(msg):
     P_0.append(cf_state.position.x)
     P_0.append(cf_state.position.y)
 
-    print('P_0 is: ', P_0)
+    # print('P_0 is: ', P_0)
 
 
     # Getting positions of other crazyflies and put it into a list of arrays
@@ -155,6 +155,8 @@ def mpc2cbf_sub_callback(msg):
     for ii in range(N_cf.data):
         P_crazy.append(np.array([cf_state_neigh_list[ii].position.x,
                                  cf_state_neigh_list[ii].position.y]))
+
+    # print('P_crazy is: ', P_crazy)
 
     x_obs = []
     x_obs.append(x_obs_1)
@@ -173,6 +175,9 @@ def mpc2cbf_sub_callback(msg):
         x_obs.append(x_crazy)
         r_obs.append(2*r_drone)
 
+    # print('x_obs is: ', x_obs)
+
+    # print('r_obs is: ', r_obs)
 
     # Extracting the mpc velocities from mpc_velocity
     v_mpc = []
@@ -181,6 +186,9 @@ def mpc2cbf_sub_callback(msg):
 
     v_mpc = np.array(v_mpc)
     # print('v_mpc is: ' , v_mpc)
+
+    # Setting number of obstacles
+    N_obs = 3 + N_cf.data
 
     # Setting initial position at the current time step
     x0 = np.array(P_0)
@@ -206,16 +214,19 @@ def mpc2cbf_sub_callback(msg):
 
 def state_sub_callback(msg):
 
+    # print('the state callback has been called')
+
     # Getting id:
-    ID = extractCfNumber(msg.name)
+    crazy_name = msg.name
+    ID = int(crazy_name.lstrip('cf'))
 
     # Update state vector:
     cf_state_neigh_list[ID - 1] = msg
-    print(cf_state_neigh_list)
+    # print(cf_state_neigh_list)
 
 def n_cf_sub_callback(msg):
     N_cf.data = msg.data
-    print('Received N_cf', N_cf.data)
+    # print('Received N_cf', N_cf.data)
 
 
 if __name__ == '__main__':
@@ -307,22 +318,28 @@ if __name__ == '__main__':
     cf_state_neigh_list = []    
     cf_state_sub_list = []
 
-    print('it is working')
+    # print('it is working')
+
+    N_cf.data = 3
+    # print('numebr of crazyflies is: ', N_cf.data)
 
     for ii in range(N_cf.data):
+        # print('ii is: ', ii)
         cf_name_i = 'cf' + str(ii+1)
+        # print('cf_name_i is: ', cf_name_i)
             
         cf_state_neigh_i = CrazyflieState()
         cf_state_neigh_list.append(cf_state_neigh_i)
 
         cf_state_sub = rospy.Subscriber('/'+ cf_name_i + '/state', 
-                                CrazyflieState, state_sub_callback)
+                                        CrazyflieState, state_sub_callback)
         cf_state_sub_list.append(cf_state_sub)
         
     
     #################################################################################
 
-    N_obs = 3 + N_cf.data
+    N_obs = 3
+
 
     rospy.spin()
 
