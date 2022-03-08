@@ -124,7 +124,7 @@ class CBF_controller():
         for ii in range(N_obs):
             obs_distance = np.linalg.norm(np.array([x[0]-x_obs[ii][0],
                                                     x[1]-x_obs[ii][1]]))
-            if obs_distance < 7*r_obs[ii]:
+            if obs_distance < (r_obs[ii]+1.5):
                 constraints.append(grad_h_num[ii].T @ v_opt >= -self.alpha*h_num[ii])
 
         ########################################################################################
@@ -373,10 +373,11 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
 
 
         # Final Position cost
-        L += 0.02*w_final*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
+        L += w_final*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
 
-        # Control input cost
-        L += w_vel*(v[ii*2]**2 + v[ii*2+1]**2)
+        # # Control input cost
+        # w_vel_i = w_vel
+        # L += w_vel_i*(v[ii*2]**2 + v[ii*2+1]**2)
 
         # # Direction cost
         # L += w_dir*(v[ii*2]**2 + v[ii*2+1]**2 - \
@@ -387,6 +388,18 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     
     x_cm = x_cm/N_cf
     y_cm = y_cm/N_cf
+
+
+    for ii in range(N_cf):
+
+        # Control input cost
+
+        if abs(P_0[2*ii] - x_des) < 1 and abs(P_0[2*ii+1] - y_des) < 1: 
+            w_vel_i = 10*w_vel
+        else:
+            w_vel_i = w_vel
+
+        L += w_vel_i*(v[ii*2]**2 + v[ii*2+1]**2)
 
     # # Final Position cost for center of mass
     # L += 0.02*w_final*(P_N[0] - x_cm)**2
@@ -798,7 +811,7 @@ if __name__ == '__main__':
     N_mpc = 5
     # Some constants
     d_neigh = 1.5 # + 1.25*number_of_cfs # neighbour distance
-    d_ref = 0.4 + 0.06*N_cf #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    d_ref = 0.4 + 0.075*N_cf #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
     # d_ref = 0.6
 
     v_ref = 0.5 # reference velocity
@@ -807,11 +820,11 @@ if __name__ == '__main__':
     N_neigh = 2
 
     # Weights for objective function
-    w_sep = 5 #0.01*number_of_cfs**-1
+    w_sep = 10 #0.01*number_of_cfs**-1
     w_nav = 10 #100
     w_dir = 1
-    w_final = 300
-    w_vel = 100
+    w_final = 10
+    w_vel = 50
 
     #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
 
