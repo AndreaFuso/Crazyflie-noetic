@@ -92,7 +92,7 @@ class CBF_controller():
         v_des      = self.v_mpc
 
         # Solve QP for u_opt
-        obj         = cp.Minimize((1/2)*cp.quad_form(v_opt-v_des,np.eye(2)))
+        obj         = cp.Minimize((1/2)*cp.quad_form(v_opt-v_des, np.eye(2)))
 
         ########################################################################################
 
@@ -320,7 +320,7 @@ if __name__ == '__main__':
 
     # print('it is working')
 
-    N_cf.data = 3
+    N_cf.data = 4
     # print('numebr of crazyflies is: ', N_cf.data)
 
     for ii in range(N_cf.data):

@@ -154,7 +154,7 @@ class CBF_controller():
 
 def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt, 
                   d_ref, d_neigh, v_ref, w_sep, 
-                  w_final, w_vel):
+                  w_final, w_vel, N_neigh):
 
     # Getting center of mass of the swarm
     x_cm = np.array(P_0[0::2]).sum()/N_cf
@@ -207,73 +207,111 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     # Model equations
     xdot = v
 
-    # Building Adjacency Matrix
-    A_neigh = np.zeros((N_cf, N_cf))
+
+
+
+    ###############################################################################
+
+    # # Building Adjacency Matrix
+    # A_neigh = np.zeros((N_cf, N_cf))
+    
+    # index_neigh = []
+
+    # for ii in range(N_cf-1):
+    #     list_p_rel = []
+    #     for jj in range(ii + 1, N_cf):
+    #         p_rel = [P_0[2*ii] - P_0[2*jj], P_0[2*ii+1] - P_0[2*jj+1]]
+    #         p_rel = np.array(p_rel)
+    #         # Storing p_rel in a list
+    #         list_p_rel.append(np.linalg.norm(p_rel))
+
+    #         # Filling Adjacency Matrix
+    #         if np.linalg.norm(p_rel) < d_neigh:
+    #             A_neigh[ii,jj], A_neigh[jj,ii] = 1, 1
+        
+
+
+    #     # Getting the sorted indices of list_p_rel to set the order of neighbours
+    #     index_neigh.append((np.argsort(list_p_rel)+ii+1).tolist())
+    # print('index_neigh is: ', index_neigh)
+    # print('A_neigh is: ', A_neigh)
+
+
+    # # list_neighbours_i = range(N_cf)
+
+    # ###################### Ordered list of neighbours ############################
+    # list_list_neighbours = []
+    
+    
+    # for ii in range(N_cf-1):
+
+    #     neigh_count = 0
+
+    #     list_neighbours_i = []
+
+    #     for jj in range(N_cf):
+    #         if A_neigh[ii,jj] == 1 and jj > ii:
+    #             neigh_count += 1
+
+    #     list_neighbours_i = index_neigh[ii][:neigh_count]
+    #     print('list_neighbours_i is: ', list_neighbours_i)
+
+    #     list_list_neighbours.append(list_neighbours_i)
+
+    # # list_neighbours_i = [list_neighbours_i for ii in index_neigh[jj]]
+    # print('list_list_neighbours is: ', list_list_neighbours)
+    # # list_neighbours_i = [x for _, x in sorted(list_neighbours_i,)]
+
+    # ############## Weights for the distances in separation cost ##################
+    # list_list_weights = []
+    # for ii in range(N_cf-1):
+    #     list_weights_i = []
+    #     ll = len(list_list_neighbours[ii])
+    #     for jj in range(ll):
+    #         kk = floor(jj/2)
+    #         list_weights_i.append(kk)
+    #     list_list_weights.append(list_weights_i)
+
+    # print('list_list_weights is: ', list_list_weights)
+
+
+
+    ##############################################################################
+
+    # Building Ordered list of 3 closest neighbors for each drone
     
     index_neigh = []
 
-    for ii in range(N_cf-1):
+    for ii in range(N_cf):
         list_p_rel = []
-        for jj in range(ii + 1, N_cf):
+        for jj in range(N_cf):
             p_rel = [P_0[2*ii] - P_0[2*jj], P_0[2*ii+1] - P_0[2*jj+1]]
             p_rel = np.array(p_rel)
             # Storing p_rel in a list
             list_p_rel.append(np.linalg.norm(p_rel))
-
-            # Filling Adjacency Matrix
-            if np.linalg.norm(p_rel) < d_neigh:
-                A_neigh[ii,jj], A_neigh[jj,ii] = 1, 1
-        
-
+        print('list_p_rel is: ', list_p_rel)
 
         # Getting the sorted indices of list_p_rel to set the order of neighbours
-        index_neigh.append((np.argsort(list_p_rel)+ii+1).tolist())
+        index_neigh_i = (np.argsort(list_p_rel)).tolist()
+        index_neigh_i.pop()
+        index_neigh.append(index_neigh_i)
     print('index_neigh is: ', index_neigh)
-    print('A_neigh is: ', A_neigh)
-
-
-    # list_neighbours_i = range(N_cf)
-
-    L = 0
-    x_cm = 0
-    y_cm = 0
 
 
     ###################### Ordered list of neighbours ############################
     list_list_neighbours = []
     
     
-    for ii in range(N_cf-1):
-
-        neigh_count = 0
-
-        list_neighbours_i = []
-
-        for jj in range(N_cf):
-            if A_neigh[ii,jj] == 1 and jj > ii:
-                neigh_count += 1
-
-        list_neighbours_i = index_neigh[ii][:neigh_count]
+    for ii in range(N_cf):
+        if N_cf > N_neigh:
+            list_neighbours_i = index_neigh[ii][:N_neigh]
+        else:
+            list_neighbours_i = index_neigh[ii][:(N_cf-1)]
+        list_list_neighbours.append(list_neighbours_i)
         print('list_neighbours_i is: ', list_neighbours_i)
 
-        list_list_neighbours.append(list_neighbours_i)
-
-    # list_neighbours_i = [list_neighbours_i for ii in index_neigh[jj]]
+    
     print('list_list_neighbours is: ', list_list_neighbours)
-    # list_neighbours_i = [x for _, x in sorted(list_neighbours_i,)]
-
-    ############## Weights for the distances in separation cost ##################
-    list_list_weights = []
-    for ii in range(N_cf-1):
-        list_weights_i = []
-        ll = len(list_list_neighbours[ii])
-        for jj in range(ll):
-            kk = floor(jj/2)
-            list_weights_i.append(kk)
-        list_list_weights.append(list_weights_i)
-
-    print('list_list_weights is: ', list_list_weights)
-
 
 
 
@@ -281,18 +319,22 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
 
     # Building Objective Function
 
-    # 1 All neighbours
-    for ii in range(N_cf-1):
-        for kk in range(ii+1, N_cf):
-            # if ii != kk:
-            # Separation cost
-            n_neigh = A_neigh[ii].sum()
+    L = 0
+    x_cm = 0
+    y_cm = 0
+
+    # # 1 All neighbours
+    # for ii in range(N_cf-1):
+    #     for kk in range(ii+1, N_cf):
+    #         # if ii != kk:
+    #         # Separation cost
+    #         n_neigh = A_neigh[ii].sum()
             
-            d_ref_sep = d_ref #*(1 + 0.2*n_neigh)
-            L += w_sep*((x[ii*2]-x[kk*2])**2 \
-                + (x[ii*2+1]-x[kk*2+1])**2\
-                - d_ref_sep**2)**2
-        print('n_neigh is: ', n_neigh)
+    #         d_ref_sep = d_ref #*(1 + 0.2*n_neigh)
+    #         L += w_sep*((x[ii*2]-x[kk*2])**2 \
+    #             + (x[ii*2+1]-x[kk*2+1])**2\
+    #             - d_ref_sep**2)**2
+    #     print('n_neigh is: ', n_neigh)
 
 
     # # 2
@@ -307,21 +349,14 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     #             - d_ref_sep**2)**2
 
 
-    # # 3 With neighbours
-    # for ii in range(N_cf-1):
-    #     for kk in list_list_neighbours[ii]:
-    #         # Separation cost
-    #         d_ref_sep = d_ref
-    #         L += w_sep*((x[ii*2]-x[kk*2])**2 \
-    #             + (x[ii*2+1]-x[kk*2+1])**2\
-    #             - d_ref_sep**2)**2
-    #     # to attract drones far away
-    #     if len(list_list_neighbours[ii]) == 0:
-    #         # Separation cost
-    #         d_ref_sep = d_ref
-    #         L += w_sep*((x[ii*2]-x[0])**2 \
-    #             + (x[ii*2+1]-x[1])**2\
-    #             - d_ref_sep**2)**2
+    # 3
+    for ii in range(N_cf):
+        for kk in list_list_neighbours[ii]:
+            # Separation cost
+            d_ref_sep = d_ref
+            L += w_sep*((x[ii*2]-x[kk*2])**2 \
+                + (x[ii*2+1]-x[kk*2+1])**2\
+                - d_ref_sep**2)**2
 
     for ii in range(N_cf):
 
@@ -354,8 +389,8 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     y_cm = y_cm/N_cf
 
     # # Final Position cost for center of mass
-    # L += w_final*(P_N[0] - x_cm)**2
-    # L += w_final*(P_N[1] - y_cm)**2
+    # L += 0.02*w_final*(P_N[0] - x_cm)**2
+    # L += 0.02*w_final*(P_N[1] - y_cm)**2
 
     # Formulate discrete time dynamics
     if False:
@@ -763,13 +798,16 @@ if __name__ == '__main__':
     N_mpc = 5
     # Some constants
     d_neigh = 1.5 # + 1.25*number_of_cfs # neighbour distance
-    d_ref = 1 #+ 0.1*number_of_cfs #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
-    
+    d_ref = 0.4 + 0.06*N_cf #+ 0.05*number_of_cfs # 0.15*number_of_cfs # reference distance between agents
+    # d_ref = 0.6
+
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
 
+    N_neigh = 2
+
     # Weights for objective function
-    w_sep = 4 #0.01*number_of_cfs**-1
+    w_sep = 5 #0.01*number_of_cfs**-1
     w_nav = 10 #100
     w_dir = 1
     w_final = 300
@@ -860,7 +898,7 @@ if __name__ == '__main__':
     mpc_target.desired_position.y = 0
 
 
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(20)
 
     # rate = rospy.Rate(100)
 
@@ -912,7 +950,7 @@ if __name__ == '__main__':
             mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, P_0, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,
-                                                       w_sep, w_final, w_vel)
+                                                       w_sep, w_final, w_vel, N_neigh)
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
@@ -939,7 +977,7 @@ if __name__ == '__main__':
                         x_crazy = np.array([P_0[2*jj], P_0[2*jj+1]])
                         x_obs.append(x_crazy)
                         # print('x_obs is: ', x_obs)
-                        r_obs.append(2*r_drone)
+                        r_obs.append(3*r_drone)
                         # print('r_obs is: ', r_obs)
                 
 

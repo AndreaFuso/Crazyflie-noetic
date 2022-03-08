@@ -81,64 +81,126 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     # Model equations
     xdot = v
 
-    # Building Adjacency Matrix
-    A_neigh = np.zeros((N_cf, N_cf))
+
+
+    # ##############################################################################
+
+    # # Building Adjacency Matrix
+    # A_neigh = np.zeros((N_cf, N_cf))
+    
+    # index_neigh = []
+
+    # for ii in range(N_cf-1):
+    #     list_p_rel = []
+    #     for jj in range(ii + 1, N_cf):
+    #         p_rel = [P_0[2*ii] - P_0[2*jj], P_0[2*ii+1] - P_0[2*jj+1]]
+    #         p_rel = np.array(p_rel)
+    #         # Storing p_rel in a list
+    #         list_p_rel.append(np.linalg.norm(p_rel))
+
+    #         # Filling Adjacency Matrix
+    #         if np.linalg.norm(p_rel) < d_neigh:
+    #             A_neigh[ii,jj], A_neigh[jj,ii] = 1, 1
+        
+
+
+    #     # Getting the sorted indices of list_p_rel to set the order of neighbours
+    #     index_neigh.append((np.argsort(list_p_rel)+ii+1).tolist())
+
+
+    # # list_neighbours_i = range(N_cf)
+
+
+
+
+    # ###################### Ordered list of neighbours ############################
+    # list_list_neighbours = []
+    
+    
+    # for ii in range(N_cf-1):
+
+    #     neigh_count = 0
+
+    #     list_neighbours_i = []
+
+    #     for jj in range(N_cf):
+    #         if A_neigh[ii,jj] == 1 and jj > ii:
+    #             neigh_count += 1
+
+    #     list_neighbours_i = index_neigh[ii][:neigh_count]
+
+    #     list_list_neighbours.append(list_neighbours_i)
+
+
+    # ############## Weights for the distances in separation cost ##################
+    # list_list_weights = []
+    # for ii in range(N_cf-1):
+    #     list_weights_i = []
+    #     ll = len(list_list_neighbours[ii])
+    #     for jj in range(ll):
+    #         kk = floor(jj/2)
+    #         list_weights_i.append(kk)
+    #     list_list_weights.append(list_weights_i)
+
+
+    ##############################################################################
+
+    # Building Ordered list of 3 closest neighbors for each drone
     
     index_neigh = []
 
-    for ii in range(N_cf-1):
+    for ii in range(N_cf):
         list_p_rel = []
-        for jj in range(ii + 1, N_cf):
+        for jj in range(N_cf):
             p_rel = [P_0[2*ii] - P_0[2*jj], P_0[2*ii+1] - P_0[2*jj+1]]
             p_rel = np.array(p_rel)
             # Storing p_rel in a list
             list_p_rel.append(np.linalg.norm(p_rel))
-
-            # Filling Adjacency Matrix
-            if np.linalg.norm(p_rel) < d_neigh:
-                A_neigh[ii,jj], A_neigh[jj,ii] = 1, 1
-        
-
+        print('list_p_rel is: ', list_p_rel)
 
         # Getting the sorted indices of list_p_rel to set the order of neighbours
-        index_neigh.append((np.argsort(list_p_rel)+ii+1).tolist())
-
-
-    # list_neighbours_i = range(N_cf)
-
-    L = 0
-    x_cm = 0
-    y_cm = 0
+        index_neigh_i = (np.argsort(list_p_rel)).tolist()
+        index_neigh_i.pop()
+        index_neigh.append(index_neigh_i)
+    print('index_neigh is: ', index_neigh)
 
 
     ###################### Ordered list of neighbours ############################
     list_list_neighbours = []
     
     
-    for ii in range(N_cf-1):
-
-        neigh_count = 0
-
-        list_neighbours_i = []
-
-        for jj in range(N_cf):
-            if A_neigh[ii,jj] == 1 and jj > ii:
-                neigh_count += 1
-
-        list_neighbours_i = index_neigh[ii][:neigh_count]
-
+    for ii in range(N_cf):
+        if N_cf > 3:
+            list_neighbours_i = index_neigh[ii][:3]
+        else:
+            list_neighbours_i = index_neigh[ii][:(N_cf-1)]
         list_list_neighbours.append(list_neighbours_i)
+        print('list_neighbours_i is: ', list_neighbours_i)
+
+    
+    print('list_list_neighbours is: ', list_list_neighbours)
 
 
-    ############## Weights for the distances in separation cost ##################
-    list_list_weights = []
-    for ii in range(N_cf-1):
-        list_weights_i = []
-        ll = len(list_list_neighbours[ii])
-        for jj in range(ll):
-            kk = floor(jj/2)
-            list_weights_i.append(kk)
-        list_list_weights.append(list_weights_i)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -148,17 +210,21 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
 
     # Building Objective Function
 
-    # 1
-    for ii in range(N_cf-1):
-        for kk in range(ii+1, N_cf):
-            # if ii != kk:
-            # Separation cost
-            n_neigh = A_neigh[ii].sum()
+    L = 0
+    x_cm = 0
+    y_cm = 0
+
+    # # 1
+    # for ii in range(N_cf-1):
+    #     for kk in range(ii+1, N_cf):
+    #         # if ii != kk:
+    #         # Separation cost
+    #         n_neigh = A_neigh[ii].sum()
             
-            d_ref_sep = d_ref #*(1 + 0.2*n_neigh)
-            L += w_sep*((x[ii*2]-x[kk*2])**2 \
-                + (x[ii*2+1]-x[kk*2+1])**2\
-                - d_ref_sep**2)**2
+    #         d_ref_sep = d_ref #*(1 + 0.2*n_neigh)
+    #         L += w_sep*((x[ii*2]-x[kk*2])**2 \
+    #             + (x[ii*2+1]-x[kk*2+1])**2\
+    #             - d_ref_sep**2)**2
 
 
     # # 2
@@ -173,14 +239,14 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     #             - d_ref_sep**2)**2
 
 
-    # # 3
-    # for ii in range(N_cf-1):
-    #     for kk in list_list_neighbours[ii]:
-    #         # Separation cost
-    #         d_ref_sep = d_ref
-    #         L += w_sep*((x[ii*2]-x[kk*2])**2 \
-    #             + (x[ii*2+1]-x[kk*2+1])**2\
-    #             - d_ref_sep**2)**2
+    # 3
+    for ii in range(N_cf):
+        for kk in list_list_neighbours[ii]:
+            # Separation cost
+            d_ref_sep = d_ref
+            L += w_sep*((x[ii*2]-x[kk*2])**2 \
+                + (x[ii*2+1]-x[kk*2+1])**2\
+                - d_ref_sep**2)**2
 
     for ii in range(N_cf):
 
@@ -406,7 +472,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
         ubg += ubg_k
 
 
-        # Add inequality constraint for obstacle avoidance between drones
+        # Add inequality constraint for collision avoidance between drones
         # if k > 1:
         # if k > 0:
         for ii in range(N_cf-1):
@@ -415,6 +481,25 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
                         (Xk_end[2*ii+1] - Xk_end[2*jj+1])**2]
                 lbg += [(6*r_drone)**2]
                 ubg += [+inf]
+
+
+
+        # ###### Trying Taylor expansion for collision avoidance constraint #########
+        # ######################## N O T    W O R K I N G ###########################
+
+        # # Add inequality constraint for collision avoidance between drones
+        # if k > 0:
+        #     for ii in range(N_cf-1):
+        #         for jj in range(ii+1,N_cf):
+        #             g   += [(Xk_end[2*ii] - Xk_end[2*jj])*(Xk[2*ii] - Xk[2*jj]) + 
+        #                     (Xk_end[2*ii+1] - Xk_end[2*jj+1])**(Xk[2*ii] - Xk[2*jj])]
+        #             # lbg += [0.5*((Xk[2*ii]-Xk[2*jj])**2 + 
+        #             #         (Xk[2*ii+1]-Xk[2*jj+1])**2 + (6*r_drone)**2)]
+
+                    
+        #             lbg += [0]
+        #             ubg += [+inf]
+
 
 
         ################ Center of mass in final target ##########################
@@ -727,6 +812,10 @@ if __name__ == '__main__':
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
+
+            # We add the initial position of the drone inside the 
+            # mpc_velocity message, in order to communicate all the info
+            # needed by the CBF on a single topic
 
             for ii in range(N_cf):
                 mpc_velocity[ii].desired_position.x = swarm.states[ii].position.x
