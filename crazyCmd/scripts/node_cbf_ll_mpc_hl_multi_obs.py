@@ -114,8 +114,12 @@ class CBF_controller():
 
 
         constraints = []
+
         for ii in range(N_obs):
-            constraints.append(grad_h_num[ii].T @ v_opt >= -self.alpha*h_num[ii])
+            obs_distance = np.linalg.norm(np.array([x[0]-x_obs[ii][0],
+                                                    x[1]-x_obs[ii][1]]))
+            if obs_distance < (r_obs[ii]+1.5):
+                constraints.append(grad_h_num[ii].T @ v_opt >= -self.alpha*h_num[ii])
 
 
         ########################################################################################
@@ -381,6 +385,21 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     x_cm = x_cm/N_cf
     y_cm = y_cm/N_cf
 
+
+
+
+
+    # for ii in range(N_cf):
+
+    #     # Control input cost
+
+    #     if abs(P_0[2*ii] - x_des) < 1 and abs(P_0[2*ii+1] - y_des) < 1: 
+    #         w_vel_i = 10*w_vel
+    #     else:
+    #         w_vel_i = w_vel
+
+    #     L += w_vel_i*(v[ii*2]**2 + v[ii*2+1]**2)
+
     # # Final Position cost for center of mass
     # L += w_final*(P_N[0] - x_cm)**2
     # L += w_final*(P_N[1] - y_cm)**2
@@ -575,6 +594,17 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
         ubg += ubg_k
 
 
+        # # Add inequality constraint for obstacle avoidance between drones
+        # # if k > 1:
+        # # if k > 0:
+        # for ii in range(N_cf):
+        #     for jj in list_list_neighbours[ii]:
+        #         g   += [(Xk_end[2*ii] - Xk_end[2*jj])**2 + 
+        #                 (Xk_end[2*ii+1] - Xk_end[2*jj+1])**2]
+        #         lbg += [(6*r_drone)**2]
+        #         ubg += [+inf]
+
+
         # Add inequality constraint for obstacle avoidance between drones
         # if k > 1:
         # if k > 0:
@@ -582,7 +612,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
             for jj in range(ii+1,N_cf):
                 g   += [(Xk_end[2*ii] - Xk_end[2*jj])**2 + 
                         (Xk_end[2*ii+1] - Xk_end[2*jj+1])**2]
-                lbg += [(6*r_drone)**2]
+                lbg += [(8*r_drone)**2]
                 ubg += [+inf]
 
 
@@ -798,11 +828,11 @@ if __name__ == '__main__':
     N_neigh = 2
 
     # Weights for objective function
-    w_sep = 10 #0.01*number_of_cfs**-1
+    w_sep = 4 #0.01*number_of_cfs**-1
     w_nav = 10 #100
     w_dir = 1
-    w_final = 10
-    w_vel = 50
+    w_final = 4
+    w_vel = 100
 
     #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
 
@@ -886,7 +916,7 @@ if __name__ == '__main__':
     mpc_target.desired_position.y = 0
 
 
-    rate = rospy.Rate(100)
+    rate = rospy.Rate(20)
 
     # rate = rospy.Rate(100)
 

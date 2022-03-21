@@ -11,7 +11,7 @@ from crazyflie_manager.CrazyManager import *
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.common_functions import rad2deg, deg2rad
 from std_msgs.msg import Empty, Int16
-from crazyflie_messages.msg import Position, CrazyflieState, Attitude
+from crazyflie_messages.msg import Position, CrazyflieState, Attitude, SwarmStates
 from crazy_common_py.common_functions import standardNameList
 from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
 
@@ -28,7 +28,7 @@ from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
 
 def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt, 
                   d_ref, d_neigh, v_ref, w_sep, 
-                  w_final, w_vel):
+                  w_final, w_vel, N_neigh):
 
     # Getting center of mass of the swarm
     x_cm = np.array(P_0[0::2]).sum()/N_cf
@@ -155,13 +155,13 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
             p_rel = np.array(p_rel)
             # Storing p_rel in a list
             list_p_rel.append(np.linalg.norm(p_rel))
-        print('list_p_rel is: ', list_p_rel)
+        # print('list_p_rel is: ', list_p_rel)
 
         # Getting the sorted indices of list_p_rel to set the order of neighbours
         index_neigh_i = (np.argsort(list_p_rel)).tolist()
         index_neigh_i.pop()
         index_neigh.append(index_neigh_i)
-    print('index_neigh is: ', index_neigh)
+    # print('index_neigh is: ', index_neigh)
 
 
     ###################### Ordered list of neighbours ############################
@@ -169,15 +169,15 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     
     
     for ii in range(N_cf):
-        if N_cf > 3:
-            list_neighbours_i = index_neigh[ii][:3]
+        if N_cf > N_neigh:
+            list_neighbours_i = index_neigh[ii][:N_neigh]
         else:
             list_neighbours_i = index_neigh[ii][:(N_cf-1)]
         list_list_neighbours.append(list_neighbours_i)
-        print('list_neighbours_i is: ', list_neighbours_i)
+    #     print('list_neighbours_i is: ', list_neighbours_i)
 
     
-    print('list_list_neighbours is: ', list_list_neighbours)
+    # print('list_list_neighbours is: ', list_list_neighbours)
 
 
 
@@ -632,6 +632,7 @@ def swarm_mpc_velocity_pub(mpc_velocity):
     for index, mpc_velocity_pub in enumerate(mpc_velocity_publishers):
         mpc_velocity_pub.publish(mpc_velocity[index])
 
+
 ###########################################################################
 
 #                                M A I N
@@ -670,6 +671,8 @@ if __name__ == '__main__':
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
 
+    N_neigh = 2
+
     # Weights for objective function
     w_sep = 4 #0.01*number_of_cfs**-1
     w_nav = 10 #100
@@ -695,12 +698,16 @@ if __name__ == '__main__':
     mpc_velocity_publishers = []
     make_mpc_velocity_publishers()
 
-    # Publisher to get number of cfs
-    n_cf_pub = rospy.Publisher('/swarm/n_cf', Int16, queue_size=1)
-    number_cf = Int16()
-    number_cf.data = N_cf
-    print('publishing number of crazyflies')
-    n_cf_pub.publish(number_cf)
+    # # Publisher to get number of cfs
+    # n_cf_pub = rospy.Publisher('/swarm/n_cf', Int16, queue_size=1)
+    # number_cf = Int16()
+    # number_cf.data = N_cf
+    # print('publishing number of crazyflies')
+    # n_cf_pub.publish(number_cf)
+
+    # Publisher to publish the states of the cfs as a list
+    swarm_states_pub = rospy.Publisher('/swarm/state_list', 
+                                   SwarmStates, queue_size=1)
 
     ###############################################################################
 
@@ -717,6 +724,7 @@ if __name__ == '__main__':
                                       mpc_target_sub_callback)
     mpc_target = Position()
 
+    swarm_states = SwarmStates()
     ###############################################################################
 
 
@@ -725,7 +733,7 @@ if __name__ == '__main__':
     mpc_target.desired_position.y = 0
 
 
-    rate = rospy.Rate(5)
+    rate = rospy.Rate(1)
 
 
     while not rospy.is_shutdown():
@@ -748,21 +756,25 @@ if __name__ == '__main__':
             # Initializing the target position for each drone starting from
             # mpc target
             P_N = []
-            for ii in range(N_cf):
-                P_N.append(mpc_target.desired_position.x)
-                P_N.append(mpc_target.desired_position.y)            
+            P_N.append(mpc_target.desired_position.x)
+            P_N.append(mpc_target.desired_position.y)
+
             # print('P_N is: ', P_N)
             # Initializing the optimal velocity of agents to use it 
             # for the hot start initial guess
             v_opt_old = []
-            for ii in range(2*N_cf):
-                v_opt_old.append(np.linspace(0, 0, N_mpc+1))
+            for ii in range(N_cf):
+                # v_opt_old.append(np.linspace(0, 0, N_mpc+1))
+
+                v_opt_old.append(np.zeros(N_mpc+1))
+                v_opt_old.append(np.zeros(N_mpc+1))
 
             # Initializing optimal positions to use them as initial guess 
             # for the hot start initial guess
             x_opt_old = []
-            for ii in range(2*N_cf):
-                x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
+            for ii in range(N_cf):
+                x_opt_old.append(np.linspace(P_0[2*ii], P_N[0], N_mpc+1))
+                x_opt_old.append(np.linspace(P_0[2*ii+1], P_N[1], N_mpc+1))
 
             sub_mpc_flag.data = 2
 
@@ -772,23 +784,22 @@ if __name__ == '__main__':
             
             #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
 
+            for ii in range(N_cf):
+                swarm_states.states[ii].position.x = swarm.states[ii].position.x
+                swarm_states.states[ii].position.y = swarm.states[ii].position.y
+
+
+            swarm_states_pub.publish(swarm.states)
+
             mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, P_0, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,
-                                                       w_sep, w_final, w_vel)
+                                                       w_sep, w_final, w_vel, N_neigh)
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
-            # We add the initial position of the drone inside the 
-            # mpc_velocity message, in order to communicate all the info
-            # needed by the CBF on a single topic
-
-            for ii in range(N_cf):
-                mpc_velocity[ii].desired_position.x = swarm.states[ii].position.x
-                mpc_velocity[ii].desired_position.y = swarm.states[ii].position.y
 
             swarm_mpc_velocity_pub(mpc_velocity)
-            # print('N_cf is: ', N_cf)
 
 
         rate.sleep()

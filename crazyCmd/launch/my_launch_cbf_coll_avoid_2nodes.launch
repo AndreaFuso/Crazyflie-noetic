@@ -33,7 +33,7 @@
 			<rosparam param="initial_position">[0.0, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
-
+<!--
 
 	<group ns = "cf4">
 		<node pkg="crazyCmd" type="crazyflie_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
@@ -41,7 +41,7 @@
 			<rosparam param="initial_position">[0.5, 0.5, 0.2]</rosparam>
 		</node>
 	</group>
-<!--
+
 	<group ns = "cf5">
 		<node pkg="crazyCmd" type="crazyflie_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
 			<rosparam param="name">cf5</rosparam>
@@ -59,9 +59,9 @@
 
 
 	<group ns = "swarm">
-		<rosparam param="cfs_number">4</rosparam>
+		<rosparam param="cfs_number">3</rosparam>
 		<node pkg="crazyCmd" type="swarm_cbf_coll_avoid_node2.py" name="swarm_node" output="screen">
-			<rosparam param="cfs_number">4</rosparam>
+			<rosparam param="cfs_number">3</rosparam>
 		</node>
 	</group> 
 

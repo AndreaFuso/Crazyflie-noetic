@@ -98,7 +98,7 @@ class CBF_controller():
         for ii in range(N_obs):
             obs_distance = np.linalg.norm(np.array([x[0]-x_obs[ii][0],
                                                     x[1]-x_obs[ii][1]]))
-            if obs_distance < 5*r_obs[ii]:
+            if obs_distance < (r_obs[ii]+1.5):
                 constraints.append(grad_h_num[ii].T @ v_opt >= -self.alpha*h_num[ii])
 
         ########################################################################################

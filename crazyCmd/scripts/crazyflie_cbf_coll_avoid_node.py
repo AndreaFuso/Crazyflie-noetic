@@ -8,7 +8,7 @@ from crazyflie_simulator.CrazySim import CrazySim
 
 from crazy_common_py.common_functions import deg2rad, extractCfNumber
 from std_msgs.msg import Empty, Int16
-from crazyflie_messages.msg import Position, CrazyflieState, Attitude
+from crazyflie_messages.msg import Position, CrazyflieState, Attitude, SwarmStates
 import numpy as np
 import cvxpy as cp      # cvxpy is a toolbox for convex optimization in python, 
                         # we need to solve a convex QP
@@ -131,103 +131,112 @@ def mpc2cbf_sub_callback(msg):
     mpc_velocity.desired_velocity.y = msg.desired_velocity.y
     # print('mpc_velocity is: ', mpc_velocity)
 
-    cf_state.position.x = msg.desired_position.x
-    cf_state.position.y = msg.desired_position.y
-    # print('cf_state is: ', cf_state)
-
-
-    # sub_cbf_flag.data = 1
-
     print('starting cbf...')
 
-    #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
+    # +++++++++++++++ LOW LEVEL CBF CONTROLLER +++++++++++++++++++++++++++++++
     
     # Getting position of crazyflie
+    cf_index = int(crazyflie_name[2:]) - 1
+    print('cf_index is: ', cf_index)
+
     P_0 = []
-    P_0.append(cf_state.position.x)
-    P_0.append(cf_state.position.y)
+    P_0.append(swarm_states.states[cf_index].position.x)
+    P_0.append(swarm_states.states[cf_index].position.y)
 
-    # print('P_0 is: ', P_0)
+    print('P_0 is: ', P_0)
 
 
-    # Getting positions of other crazyflies and put it into a list of arrays
-    P_crazy = []
-    for ii in range(N_cf.data):
-        P_crazy.append(np.array([cf_state_neigh_list[ii].position.x,
-                                 cf_state_neigh_list[ii].position.y]))
+    # # Getting positions of other crazyflies and put it into a list of arrays
+    # P_crazy = []
+    # for ii in range(N_cf.data):
+    #     P_crazy.append(np.array([swarm_states.states[ii].position.x,
+    #                              swarm_states.states[ii].position.y]))
 
     # print('P_crazy is: ', P_crazy)
 
-    x_obs = []
-    x_obs.append(x_obs_1)
-    x_obs.append(x_obs_2)
-    x_obs.append(x_obs_3)
+    # x_obs = []
+    # x_obs.append(x_obs_1)
+    # x_obs.append(x_obs_2)
+    # x_obs.append(x_obs_3)
 
-    r_obs = []
-    r_obs.append(r_obs_1)
-    r_obs.append(r_obs_2)
-    r_obs.append(r_obs_3)
+    # r_obs = []
+    # r_obs.append(r_obs_1)
+    # r_obs.append(r_obs_2)
+    # r_obs.append(r_obs_3)
 
-    # Appending other drones as obstacles
+    # # Appending other drones as obstacles
+    # for ii in range(N_cf.data):
+    #     # Initial position of the other crazyflies
+    #     x_crazy = P_crazy[ii]
+    #     x_obs.append(x_crazy)
+    #     r_obs.append(2*r_drone)
+
+    # # print('x_obs is: ', x_obs)
+
+    # # print('r_obs is: ', r_obs)
+
+    # # Extracting the mpc velocities from mpc_velocity
+    # v_mpc = []
+    # v_mpc.append(mpc_velocity.desired_velocity.x)
+    # v_mpc.append(mpc_velocity.desired_velocity.y)
+
+    # v_mpc = np.array(v_mpc)
+    # # print('v_mpc is: ' , v_mpc)
+
+    # # Setting number of obstacles
+    # N_obs = 3 + N_cf.data
+
+    # # Setting initial position at the current time step
+    # x0 = np.array(P_0)
+
+    # # Creating the instance of the CBF controller
+    # cbf_controller = CBF_controller(v_mpc, alpha, x0)
+
+    # # Setting obstacles
+    # cbf_controller.set_obstacle(N_obs, x_obs, r_obs)
+
+    # # Getting cbf velocity
+    # v = cbf_controller.get_cbf_v(x0)
+
+    # # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
+    # mpc_velocity.desired_velocity.x = v[0]
+    # mpc_velocity.desired_velocity.y = v[1]
+
+    # # print('mpc_velocity is: ', mpc_velocity)
+
+    # mpc_velocity_pub.publish(mpc_velocity)
+
+
+
+
+
+def swarm_states_sub_callback(msg):
+    # print('Got the message for the swarm...')
+
+    # Number of cfs
+    N_cf.data = len(swarm_states.states)
+    # print('N_cf is: ', N_cf)
+
     for ii in range(N_cf.data):
-        # Initial position of the other crazyflies
-        x_crazy = P_crazy[ii]
-        x_obs.append(x_crazy)
-        r_obs.append(2*r_drone)
+        swarm_states.states[ii].position.x = msg.states[ii].position.x
+        swarm_states.states[ii].position.y = msg.states[ii].position.y
 
-    # print('x_obs is: ', x_obs)
+    # print('swarm states is: ', swarm_states)
 
-    # print('r_obs is: ', r_obs)
+    # How to access a field of the swarm_states message
+    # x_1 = msg.states[0].position.x
 
-    # Extracting the mpc velocities from mpc_velocity
-    v_mpc = []
-    v_mpc.append(mpc_velocity.desired_velocity.x)
-    v_mpc.append(mpc_velocity.desired_velocity.y)
-
-    v_mpc = np.array(v_mpc)
-    # print('v_mpc is: ' , v_mpc)
-
-    # Setting number of obstacles
-    N_obs = 3 + N_cf.data
-
-    # Setting initial position at the current time step
-    x0 = np.array(P_0)
-
-    # Creating the instance of the CBF controller
-    cbf_controller = CBF_controller(v_mpc, alpha, x0)
-
-    # Setting obstacles
-    cbf_controller.set_obstacle(N_obs, x_obs, r_obs)
-
-    # Getting cbf velocity
-    v = cbf_controller.get_cbf_v(x0)
-
-    # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
-    mpc_velocity.desired_velocity.x = v[0]
-    mpc_velocity.desired_velocity.y = v[1]
-
-    # print('mpc_velocity is: ', mpc_velocity)
-
-    mpc_velocity_pub.publish(mpc_velocity)
+    
+    pass
 
 
 
-def state_sub_callback(msg):
 
-    # print('the state callback has been called')
+###########################################################################
 
-    # Getting id:
-    crazy_name = msg.name
-    ID = int(crazy_name.lstrip('cf'))
+#                                M A I N
 
-    # Update state vector:
-    cf_state_neigh_list[ID - 1] = msg
-    # print(cf_state_neigh_list)
-
-def n_cf_sub_callback(msg):
-    N_cf.data = msg.data
-    # print('Received N_cf', N_cf.data)
-
+###########################################################################
 
 if __name__ == '__main__':
     # Node initialization:
@@ -305,41 +314,32 @@ if __name__ == '__main__':
     mpc2cbf_sub = rospy.Subscriber('/' + crazyflie_name + '/mpc2cbf_velocity', 
                                    Position, mpc2cbf_sub_callback)
     
-    # Subscriber to get the state
-    cf_state = CrazyflieState()
-    # state_sub = rospy.Subscriber('/' + crazyflie_name + '/state', 
-    #                                CrazyflieState, state_sub_callback)
 
-    # Subscriber to get number of cfs
-    n_cf_sub = rospy.Subscriber('/swarm/n_cf', Int16, n_cf_sub_callback)
+    # Subscriber to get the states of the swarm
+    swarm_states_sub = rospy.Subscriber('/swarm/state_list', SwarmStates, 
+                                        swarm_states_sub_callback)
+    swarm_states = SwarmStates()
+
+
+    for ii in range(3):
+        swarm_states.states.append(CrazyflieState())
+        swarm_states.states[ii].name = 'cf' + str(ii+1)
+        swarm_states.states[ii].position.x = 0
+        swarm_states.states[ii].position.y = 0
+
+    print('swarm states is: ', swarm_states)
+
     N_cf = Int16()
 
-    # Subscribers to get the states of the other crazyflies
-    cf_state_neigh_list = []    
-    cf_state_sub_list = []
-
-    # print('it is working')
-
-    N_cf.data = 4
-    # print('numebr of crazyflies is: ', N_cf.data)
-
-    for ii in range(N_cf.data):
-        # print('ii is: ', ii)
-        cf_name_i = 'cf' + str(ii+1)
-        # print('cf_name_i is: ', cf_name_i)
-            
-        cf_state_neigh_i = CrazyflieState()
-        cf_state_neigh_list.append(cf_state_neigh_i)
-
-        cf_state_sub = rospy.Subscriber('/'+ cf_name_i + '/state', 
-                                        CrazyflieState, state_sub_callback)
-        cf_state_sub_list.append(cf_state_sub)
-        
+    # Initializing N_cf
+    N_cf.data = 3
     
     #################################################################################
 
-    N_obs = 3
+    N_obs = 3 + 3
+
+
+            
 
 
     rospy.spin()
-

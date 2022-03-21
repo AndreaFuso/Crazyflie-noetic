@@ -28,7 +28,7 @@ from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
 
 def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt, 
                   d_ref, d_neigh, v_ref, w_sep, 
-                  w_final, w_vel):
+                  w_final, w_vel, N_neigh):
 
     # Getting center of mass of the swarm
     x_cm = np.array(P_0[0::2]).sum()/N_cf
@@ -170,8 +170,8 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     
     
     for ii in range(N_cf):
-        if N_cf > 3:
-            list_neighbours_i = index_neigh[ii][:3]
+        if N_cf > N_neigh:
+            list_neighbours_i = index_neigh[ii][:N_neigh]
         else:
             list_neighbours_i = index_neigh[ii][:(N_cf-1)]
         list_list_neighbours.append(list_neighbours_i)
@@ -179,31 +179,6 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
 
     
     print('list_list_neighbours is: ', list_list_neighbours)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     ##############################################################################
@@ -263,7 +238,7 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
 
 
         # Final Position cost
-        L += 0.02*w_final*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
+        L += w_final*((x[ii*2] - x_des)**2 + (x[ii*2+1] - y_des)**2)
 
         # Control input cost
         L += w_vel*(v[ii*2]**2 + v[ii*2+1]**2)
@@ -712,11 +687,13 @@ if __name__ == '__main__':
     v_ref = 0.5 # reference velocity
     d_final_lim = 0.01
 
+    N_neigh = 2
+
     # Weights for objective function
     w_sep = 4 #0.01*number_of_cfs**-1
     w_nav = 10 #100
     w_dir = 1
-    w_final = 200
+    w_final = 4
     w_vel = 100
 
 
@@ -808,7 +785,7 @@ if __name__ == '__main__':
             mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, P_0, 
                                                        N_mpc, x_opt_old, v_opt_old,
                                                        d_ref, d_neigh, v_ref,
-                                                       w_sep, w_final, w_vel)
+                                                       w_sep, w_final, w_vel, N_neigh)
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
