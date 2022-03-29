@@ -197,15 +197,6 @@ class MotionCommanderSim:
         self.__flock_act.start()
 
 
-        # # Make square position action:
-        # self.__square_position_act = actionlib.SimpleActionServer('/' + cfName + '/square_position_act', EmptyAction, 
-        #                                                  self.__square_position_act_callback, False)
-        # self.__square_position_act.start()
-
-        # # Make square action:
-        # self.__square_velocity_act = actionlib.SimpleActionServer('/' + cfName + '/square_velocity_act', EmptyAction, 
-        #                                                  self.__square_velocity_act_callback, False)
-        # self.__square_velocity_act.start()
 
 
 

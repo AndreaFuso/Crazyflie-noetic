@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 from cmath import sqrt
 from tkinter import N
 import rosbag
@@ -7,13 +9,15 @@ import numpy as np
 
 from crazy_common_py.common_functions import rad2deg
 
-N_cf = 6
-N_obs = 3
+
+N_cf = 1
+N_obs = 1
 
 rospack = rospkg.RosPack()
 
-bag_name = '6_drones_cbf_coll_avoid_centralized.bag'
-bag_path = rospack.get_path('crazyCmd') + '/data/output/Rosbags/' + bag_name
+
+bag_name = 'mpc_2d_hot_start.bag'
+bag_path = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name
 bag = rosbag.Bag(bag_path)
 
 
@@ -60,6 +64,14 @@ for ii in range(N_cf):
         time_nsec_list_list[ii].append(t.nsecs)
 
 
+# +++++++++++++++++++++++++ Target Coordinates +++++++++++++++++++++++++++++++++
+
+# x_target = 3.0
+# y_target = 6.0
+
+x_target = 2.0
+y_target = 0.5
+
 # +++++++++++++++++++++++++ Plotting trajectories ++++++++++++++++++++++++++++++
 
 fig1,ax1 = plt.subplots()
@@ -105,25 +117,42 @@ for kk in range(N_time_steps):
     y_cm_list.append(y_cm)
 
 
-ax1.plot(x_cm_list, y_cm_list)
+ax1.plot(x_cm_list, y_cm_list, '--')
 legend_traj.append('center of mass')
 
 
-ax1.legend(legend_traj)
 
+
+# ++++++++++++++++++++++++++ Plotting Target +++++++++++++++++++++++++++++++++
+
+ax1.plot(x_target, y_target, 'ro')
+
+legend_traj.append('target')
+
+
+ax1.legend(legend_traj)
 
 # +++++++++++++++++++++++++ Plotting Obstacles +++++++++++++++++++++++++++++++
 
 
 dummy_angle = np.linspace(0,2*np.pi,100)
 
-x_obs = [2.0, 1.0, 2.0]
-y_obs = [2.5, 2.5, 4.0]
-r_obs = [0.3, 0.2, 0.4]
+# x_obs = [2.0, 1.0, 2.0]
+# y_obs = [2.5, 2.5, 4.0]
+# r_obs = [0.3, 0.2, 0.4]
+
+
+x_obs = [1.0]
+y_obs = [0.1]
+r_obs = [0.3]
 
 for ii in range(N_obs):
     ax1.plot(x_obs[ii] + r_obs[ii]*np.cos(dummy_angle),
              y_obs[ii] + r_obs[ii]*np.sin(dummy_angle), 'k')
+
+
+
+
 
 # +++++++++++++++++++++ Plotting velocity vs. time +++++++++++++++++++++++++++
 
@@ -180,8 +209,6 @@ plt.grid("minor")
 
 # +++++++++++++ Plotting distance of Center of Mass from Target ++++++++++++++
 
-x_target = 3.0
-y_target = 6.0
 
 distance_cm_list = []
 
@@ -193,7 +220,7 @@ time_sec_list_cm = time_sec_list_list[0][0:N_time_steps]
 
 fig4,ax4 = plt.subplots()
 
-ax4.plot(time_sec_list_cm, distance_cm_list)
+# ax4.plot(time_sec_list_cm, distance_cm_list)
 
 ax4.set_xlabel('t [s]')
 ax4.set_ylabel('d_cm [m]')

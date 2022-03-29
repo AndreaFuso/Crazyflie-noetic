@@ -397,7 +397,7 @@ def nlp_solver_2d(N_cf, T_mpc, P_N, P_0, N, x_opt, v_opt,
 
         # Control input cost
 
-        box_lim_u = 1
+        box_lim_u = 0.6
 
         if abs(P_0[2*ii] - x_des) < box_lim_u and abs(P_0[2*ii+1] - y_des) < box_lim_u: 
             # w_vel_i = w_vel*3
@@ -614,19 +614,19 @@ def nlp_solver_2d(N_cf, T_mpc, P_N, P_0, N, x_opt, v_opt,
 
         ################## Terminal Penalty Cost Center of Mass ##################
 
-        # if k == N - 1:
+        if k == N - 1:
 
-        #     x_cm_end = 0
-        #     y_cm_end = 0
+            x_cm_end = 0
+            y_cm_end = 0
 
-        #     for ii in range(N_cf):
-        #         x_cm_end += Xk_end[2*ii]
-        #         y_cm_end += Xk_end[2*ii+1]
+            for ii in range(N_cf):
+                x_cm_end += Xk_end[2*ii]
+                y_cm_end += Xk_end[2*ii+1]
 
-        #     x_cm_end = x_cm_end/N_cf
-        #     y_cm_end = y_cm_end/N_cf
+            x_cm_end = x_cm_end/N_cf
+            y_cm_end = y_cm_end/N_cf
 
-        #     J = J + 5*w_final*(x_cm_end-x_des)**2 + 5*w_final*(y_cm_end-y_des)**2
+            J = J + 2*w_final*(x_cm_end-x_des)**2 + 2*w_final*(y_cm_end-y_des)**2
 
 
 
@@ -848,8 +848,8 @@ if __name__ == '__main__':
     w_sep = 10 #0.01*number_of_cfs**-1
     w_nav = 10 #100
     w_dir = 1
-    w_final = 10
-    w_vel = 5
+    w_final = 5
+    w_vel = 10
 
     # w_vel = 200
 

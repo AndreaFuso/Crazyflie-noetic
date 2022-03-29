@@ -7,11 +7,12 @@ from crazyflie_manager.CrazyManager import *
 from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.common_functions import rad2deg, deg2rad
 from std_msgs.msg import Empty, Int16
-from crazyflie_messages.msg import Position, CrazyflieState, Attitude
+from crazyflie_messages.msg import Position, CrazyflieState, Attitude, MpcOpenLoopTraj
 
 
 def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc, 
-                    r_drone, r_safety, x1_opt, x2_opt):
+                    r_drone, r_safety, x1_opt, x2_opt, w_vel, 
+                    a_pos, b_pos, d_lb, d_ub):
 
     # Getting the actual position to set the initial condition
     x_pos = actual_state.position.x
@@ -46,10 +47,7 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     distance = np.linalg.norm(vector)
 
     # Defining weights for position cost
-    a_pos = 0.15
-    b_pos = -1.3
-    d_lb = 0.5
-    d_ub = 3
+
     w_pos = a_pos*distance**(b_pos)
     if distance < d_lb:
         w_pos = a_pos*d_lb**(b_pos)
@@ -57,7 +55,7 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
         w_pos = a_pos*d_ub**(b_pos)
 
     # Defining weights for velocity cost
-    w_vel = 0.1
+    # w_vel = 0.1
 
     # Objective term (minimize control effort)
     L = (v1**2 + v2**2 - v_des**2)**2 + w_vel*v1**2 + w_vel*v2**2 +\
@@ -172,6 +170,15 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
             lbg += [-1, -1]
             ubg += [ 1,  1]
 
+        
+        ################## Terminal Penalty Cost ##################
+
+        if k == N_mpc - 1:
+
+            J = J + w_pos*(Xk_end[2*ii]-x_des)**2 + \
+                    w_pos*(Xk_end[2*ii+1]-y_des)**2
+
+
     prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
     solver = nlpsol('solver', 'ipopt', prob);
 
@@ -252,14 +259,23 @@ if __name__ == '__main__':
     r_safety = 0.05
 
     # Time interval and number of control intervals
-    T_mpc = 5
-    N_mpc = 10
+    # T_mpc = 5
+    T_mpc = 1
+    N_mpc = 5
 
     # Setting the obstacles
     x_obs=[1]
     y_obs=[0.1]
     r_obs=[0.3]
 
+
+    # Weights
+    w_vel = 0.1
+
+    a_pos = 0.15
+    b_pos = -1.3
+    d_lb = 0.5
+    d_ub = 3
 
     ###############################################################################
 
@@ -271,7 +287,13 @@ if __name__ == '__main__':
     mpc_velocity = Position()
     mpc_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', Position, queue_size=1)
 
+    # Publisher to publish the optimal trajectory computed by the MPC
+    mpc_traj = MpcOpenLoopTraj()
+    mpc_traj_pub = rospy.Publisher('/cf1/mpc_traj', MpcOpenLoopTraj,queue_size=1)
 
+    for ii in range(N_mpc+1):
+        mpc_traj.x_vec.append(Position())
+    print('mpc_traj empty is: ', mpc_traj)
     ###############################################################################
 
     #                     S U B S C R I B E R S   S E T U P
@@ -323,10 +345,28 @@ if __name__ == '__main__':
         else:
             # If the mpc target remains the same, the nlp solver is called      
             mpc_velocity, x1_opt, x2_opt = nlp_solver_2d(mpc_target, actual_state, 
-                x_obs, y_obs, r_obs, T_mpc, N_mpc, r_drone, r_safety, x1_opt_old, x2_opt_old) #, v1_opt_old, v2_opt_old
+                x_obs, y_obs, r_obs, T_mpc, N_mpc, r_drone, r_safety, x1_opt_old, 
+                x2_opt_old, w_vel, a_pos, b_pos, d_lb, d_ub) #, v1_opt_old, v2_opt_old
+
+            print('x_opt is: ', x1_opt)
+            print('y_opt is: ', x2_opt)
+
+            # for ii in range(N_mpc + 1):
+            #     mpc_traj.x_vec[ii].desired_position.x = 1 #x1_opt[ii]
+            #     mpc_traj.x_vec[ii].desired_position.y = 1 #x2_opt[ii]
+            
+            
+
+            for ii in range(N_mpc+1):
+                mpc_traj.x_vec[ii].desired_position.x = x1_opt[ii]
+                mpc_traj.x_vec[ii].desired_position.y = x2_opt[ii]
+            print('mpc_traj full is: ', mpc_traj)
+            
             
             # The mpc velocity is published
             mpc_velocity_pub.publish(mpc_velocity)
+
+            mpc_traj_pub.publish(mpc_traj)
 
             x1_opt_old, x2_opt_old = x1_opt, x2_opt
 

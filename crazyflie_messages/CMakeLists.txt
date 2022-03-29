@@ -59,6 +59,7 @@ add_message_files(
     Attitude.msg
     KeyboardKeys.msg
     SwarmStates.msg
+    MpcOpenLoopTraj.msg
 )
 
 ## Generate services in the 'srv' folder
