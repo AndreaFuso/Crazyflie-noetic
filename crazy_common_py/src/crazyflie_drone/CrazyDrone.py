@@ -146,7 +146,7 @@ class CrazyDrone:
                                                                self.__rel_vel_move_act_callback, False)
         self.__rel_vel_move_act.start()
 
-        self.__rel_vel_move_client = actionlib.SimpleActionClient('__rel_vel_move_client', Destination3DAction)
+        self.__rel_vel_move_client = actionlib.SimpleActionClient('rel_vel_move_client', Destination3DAction)
 
         # Waits until the action server has started up and started listening for goals.
         self.__rel_vel_move_client.wait_for_server()
