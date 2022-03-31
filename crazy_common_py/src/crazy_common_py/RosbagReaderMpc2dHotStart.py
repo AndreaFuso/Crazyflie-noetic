@@ -138,7 +138,7 @@ for ii in range(N_cf):
 
 # ++++++++++++++++++++++++++ Plotting Target +++++++++++++++++++++++++++++++++
 
-ax1.plot(x_target, y_target, 'ro')
+ax1.plot(x_target, y_target, 'ko')
 
 legend_traj.append('target')
 
