@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-
 	<!-- Starting up nodes that give the pace to the inner controllers -->
 	<node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>
 	<node name="node_500Hz" pkg="crazyCmd" type="node_500Hz.py" output="screen"/>
