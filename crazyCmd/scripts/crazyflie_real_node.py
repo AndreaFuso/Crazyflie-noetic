@@ -14,6 +14,8 @@ def exiting_hook():
 
 def compute_address(name):
     num_ID = int(name[2:]) - 1
+    print('num_ID is: ', num_ID)
+    print('radio address is: //0/80/2M/E7E7E7E7E'+ hex(num_ID)[-1])
     return 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
 
 if __name__ == '__main__':
@@ -24,7 +26,7 @@ if __name__ == '__main__':
     crazyflie_name = rospy.get_param('crazyflie_real_node/name')
     initial_pos = rospy.get_param('crazyflie_real_node/initial_position')
 
-    # Spawning the virtual Crazyflie:
+    # Creating CrazyDrone instance:
     drone = CrazyDrone(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
     time.sleep(5)
 
