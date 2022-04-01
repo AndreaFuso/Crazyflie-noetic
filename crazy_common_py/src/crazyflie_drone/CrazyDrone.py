@@ -104,10 +104,10 @@ class CrazyDrone:
         self.__pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_cb)
 
 
-        # Subscriber to read the desired velocity computed by the MPC controller
-        self.mpc_velocity_sub = rospy.Subscriber('/' + self.cfName + '/mpc_velocity',
-                                                          Position, self.__mpc_velocity_callback)
-        self.mpc_velocity = Position()
+        # # Subscriber to read the desired velocity computed by the MPC controller
+        # self.mpc_velocity_sub = rospy.Subscriber('/' + self.cfName + '/mpc_velocity',
+        #                                                   Position, self.__mpc_velocity_callback)
+        # self.mpc_velocity = Position()
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -146,7 +146,8 @@ class CrazyDrone:
                                                                self.__rel_vel_move_act_callback, False)
         self.__rel_vel_move_act.start()
 
-        self.__rel_vel_move_client = actionlib.SimpleActionClient('rel_vel_move_client', Destination3DAction)
+        self.__rel_vel_move_client = actionlib.SimpleActionClient('/' + name + '/' + DEFAULT_REL_VEL_TOPIC,
+                                                                  Destination3DAction)
 
         # Waits until the action server has started up and started listening for goals.
         self.__rel_vel_move_client.wait_for_server()
@@ -155,7 +156,11 @@ class CrazyDrone:
         self.goal = Destination3DAction()
 
 
-
+        # Relative displacement motion;
+        self.__rel_displ_move_act = actionlib.SimpleActionServer('/' + name + '/' + DEFAULT_REL_POS_TOPIC,
+                                                                 Destination3DAction,
+                                                                 self.__rel_displ_move_act_callback, False)
+        self.__rel_displ_move_act.start()
 
 
 
@@ -170,6 +175,12 @@ class CrazyDrone:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                        I N I T I A L  O P E R A T I O N S
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+       
+        # if self.cfName == 'cf1':
+        #     # Drivers initialization:
+        #     cflib.crtp.init_drivers()
+
+    
         # Drivers initialization:
         cflib.crtp.init_drivers()
 
@@ -256,29 +267,29 @@ class CrazyDrone:
 
 
 
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                               __M P C _ V E L O C I T Y _ C A L L B A C K
-    #
-    # This callback gets the desired velocity computed by the mpc controller and sets the velocity target so that
-    # the velocity command is provided to the velocity controller
-    # ------------------------------------------------------------------------------------------------------------------
-    def __mpc_velocity_callback(self, msg):
+    # # ------------------------------------------------------------------------------------------------------------------
+    # #
+    # #                               __M P C _ V E L O C I T Y _ C A L L B A C K
+    # #
+    # # This callback gets the desired velocity computed by the mpc controller and sets the velocity target so that
+    # # the velocity command is provided to the velocity controller
+    # # ------------------------------------------------------------------------------------------------------------------
+    # def __mpc_velocity_callback(self, msg):
         
-        # self.position_target.desired_velocity.x = msg.desired_velocity.x
-        # self.position_target.desired_velocity.y = msg.desired_velocity.y
-        # self.position_target.desired_velocity.z = msg.desired_velocity.z
+    #     # self.position_target.desired_velocity.x = msg.desired_velocity.x
+    #     # self.position_target.desired_velocity.y = msg.desired_velocity.y
+    #     # self.position_target.desired_velocity.z = msg.desired_velocity.z
 
-        self.goal.destination_info.desired_velocity.x = msg.desired_velocity.x
-        self.goal.destination_info.desired_velocity.y = msg.desired_velocity.y
-        self.goal.destination_info.desired_velocity.z = msg.desired_velocity.z
+    #     self.goal.destination_info.desired_velocity.x = msg.desired_velocity.x
+    #     self.goal.destination_info.desired_velocity.y = msg.desired_velocity.y
+    #     self.goal.destination_info.desired_velocity.z = msg.desired_velocity.z
 
 
-        # Sends the goal to the action server.
-        self.__rel_vel_move_client.send_goal(self.goal)
+    #     # Sends the goal to the action server.
+    #     self.__rel_vel_move_client.send_goal(self.goal)
 
-        # Waits for the server to finish performing the action.
-        self.__rel_vel_move_client.wait_for_result()
+    #     # Waits for the server to finish performing the action.
+    #     self.__rel_vel_move_client.wait_for_result()
 
 
 
