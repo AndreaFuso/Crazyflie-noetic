@@ -19,6 +19,7 @@ if __name__ == '__main__':
 
     # Generate a standard list of names:
     cf_names = standardNameList(number_of_cfs)
+    print('cf_names are: ', cf_names)
 
     # Instantiate a swarm:
     swarm = CrazySwarmSim(cf_names)

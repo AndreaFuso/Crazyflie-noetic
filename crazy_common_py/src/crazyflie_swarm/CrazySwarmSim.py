@@ -89,6 +89,7 @@ class CrazySwarmSim:
             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/takeoff_actn', TakeoffAction)
             self.takeoff_act_clients.append(tmp_action)
             self.takeoff_act_clients[-1].wait_for_server()
+            print('added 1 takeoff client')
 
     def __make_flocking_clients(self):
         for cf_name in self.cf_names:
