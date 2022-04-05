@@ -10,13 +10,13 @@ import numpy as np
 from crazy_common_py.common_functions import rad2deg
 
 
-N_cf = 1
-N_obs = 1
+N_cf = 6
+N_obs = 3
 
 rospack = rospkg.RosPack()
 
 
-bag_name = 'mpc_2d_hot_start.bag'
+bag_name = '6_drones_cbf_coll_avoid_soft_terminal.bag'
 bag_path = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name
 bag = rosbag.Bag(bag_path)
 
@@ -66,11 +66,11 @@ for ii in range(N_cf):
 
 # +++++++++++++++++++++++++ Target Coordinates +++++++++++++++++++++++++++++++++
 
-# x_target = 3.0
-# y_target = 6.0
+x_target = 3.0
+y_target = 6.0
 
-x_target = 2.0
-y_target = 0.5
+# x_target = 2.0
+# y_target = 0.5
 
 # +++++++++++++++++++++++++ Plotting trajectories ++++++++++++++++++++++++++++++
 
@@ -78,13 +78,13 @@ fig1,ax1 = plt.subplots()
 legend_traj = []
 
 for ii in range(N_cf):
-    ax1.plot(x_list_list[ii], y_list_list[ii])
+    ax1.plot(y_list_list[ii], x_list_list[ii])
     legend_traj.append('drone_'+str(ii+1))
 
 
-ax1.set_xlabel('x [m]')
+ax1.set_xlabel('y [m]')
 
-ax1.set_ylabel('y [m]')
+ax1.set_ylabel('x [m]')
 
 ax1.set_aspect("equal")
 plt.grid("minor")
@@ -117,7 +117,10 @@ for kk in range(N_time_steps):
     y_cm_list.append(y_cm)
 
 
-ax1.plot(x_cm_list, y_cm_list, '--')
+ax1.invert_yaxis()
+ax1.xaxis.tick_top()
+ax1.tick_params(labelbottom=False,labeltop=True)
+ax1.plot(y_cm_list,x_cm_list, '--')
 legend_traj.append('center of mass')
 
 
@@ -125,7 +128,7 @@ legend_traj.append('center of mass')
 
 # ++++++++++++++++++++++++++ Plotting Target +++++++++++++++++++++++++++++++++
 
-ax1.plot(x_target, y_target, 'ro')
+ax1.plot(y_target, x_target, 'ro')
 
 legend_traj.append('target')
 
@@ -137,18 +140,18 @@ ax1.legend(legend_traj)
 
 dummy_angle = np.linspace(0,2*np.pi,100)
 
-# x_obs = [2.0, 1.0, 2.0]
-# y_obs = [2.5, 2.5, 4.0]
-# r_obs = [0.3, 0.2, 0.4]
+x_obs = [2.0, 1.0, 2.0]
+y_obs = [2.5, 2.5, 4.0]
+r_obs = [0.3, 0.2, 0.4]
 
 
-x_obs = [1.0]
-y_obs = [0.1]
-r_obs = [0.3]
+# x_obs = [1.0]
+# y_obs = [0.1]
+# r_obs = [0.3]
 
 for ii in range(N_obs):
-    ax1.plot(x_obs[ii] + r_obs[ii]*np.cos(dummy_angle),
-             y_obs[ii] + r_obs[ii]*np.sin(dummy_angle), 'k')
+    ax1.plot(y_obs[ii] + r_obs[ii]*np.sin(dummy_angle),
+             x_obs[ii] + r_obs[ii]*np.cos(dummy_angle), 'k')
 
 
 
