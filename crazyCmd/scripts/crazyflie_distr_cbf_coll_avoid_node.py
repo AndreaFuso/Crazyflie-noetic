@@ -27,7 +27,7 @@ class CBF_controller():
         self.v_mpc = v_mpc
         self.alpha  = alpha
 
-    def set_obstacle(self, N_obs, x_obs, r_obs):
+    def set_obstacle(self):
 
         ########################################################################################
 
@@ -60,7 +60,7 @@ class CBF_controller():
 
         ########################################################################################
 
-    def get_cbf_v(self, x):
+    def get_cbf_v(self, x, N_obs, x_obs, r_obs):
 
         # Given current state solve pointwise Quadratic Program and get safe 
         # control action (velocity)
@@ -118,45 +118,34 @@ class CBF_controller():
 
 
 
-###########################################################################
+#######################################################
 
-#                S U B S C R I B E R     C A L L B A C K S
+#      S U B S C R I B E R     C A L L B A C K S
 
-###########################################################################
+#######################################################
 
 # to initialize the desired velocity for the drone
 
 def mpc2cbf_sub_callback(msg):
     mpc_velocity.desired_velocity.x = msg.desired_velocity.x
     mpc_velocity.desired_velocity.y = msg.desired_velocity.y
-    # print('mpc_velocity is: ', mpc_velocity)
 
     cf_state.position.x = msg.desired_position.x
     cf_state.position.y = msg.desired_position.y
-    # print('cf_state is: ', cf_state)
 
-
-    # sub_cbf_flag.data = 1
-
-    print('starting cbf...')
-
-    #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
+    #++++++++++ DRONE LEVEL CBF CONTROLLER +++++++++++
     
     # Getting position of crazyflie
     P_0 = []
     P_0.append(cf_state.position.x)
     P_0.append(cf_state.position.y)
 
-    # print('P_0 is: ', P_0)
-
-
-    # Getting positions of other crazyflies and put it into a list of arrays
+    # Getting positions of other crazyflies and put it 
+    # into a list of arrays
     P_crazy = []
     for ii in range(N_cf.data):
         P_crazy.append(np.array([cf_state_neigh_list[ii].position.x,
                                  cf_state_neigh_list[ii].position.y]))
-
-    # print('P_crazy is: ', P_crazy)
 
     x_obs = []
     x_obs.append(x_obs_1)
@@ -175,17 +164,12 @@ def mpc2cbf_sub_callback(msg):
         x_obs.append(x_crazy)
         r_obs.append(2*r_drone)
 
-    # print('x_obs is: ', x_obs)
-
-    # print('r_obs is: ', r_obs)
-
     # Extracting the mpc velocities from mpc_velocity
     v_mpc = []
     v_mpc.append(mpc_velocity.desired_velocity.x)
     v_mpc.append(mpc_velocity.desired_velocity.y)
 
     v_mpc = np.array(v_mpc)
-    # print('v_mpc is: ' , v_mpc)
 
     # Setting number of obstacles
     N_obs = 3 + N_cf.data
@@ -197,10 +181,10 @@ def mpc2cbf_sub_callback(msg):
     cbf_controller = CBF_controller(v_mpc, alpha, x0)
 
     # Setting obstacles
-    cbf_controller.set_obstacle(N_obs, x_obs, r_obs)
+    cbf_controller.set_obstacle()
 
     # Getting cbf velocity
-    v = cbf_controller.get_cbf_v(x0)
+    v = cbf_controller.get_cbf_v(x0, N_obs, x_obs, r_obs)
 
     # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
     mpc_velocity.desired_velocity.x = v[0]
@@ -233,49 +217,36 @@ if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('crazyflie_spawner_node', log_level=rospy.ERROR)
 
-    # Extracting rosparam informations (to understand the name and spawn position):
+    # Extracting rosparam informations (to understand the name 
+    # and spawn position):
     crazyflie_name = rospy.get_param('crazyflie_spawner_node/name')
     initial_pos = rospy.get_param('crazyflie_spawner_node/initial_position')
 
     # Spawning the virtual Crazyflie:
-    cf = CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
-
+    cf = CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1], 
+                                          initial_pos[2]))
 
     #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
 
     # Setting the parameters for the cbf controller and the position goal
-    v_lim = 0.5
     alpha = 1.0
-    d_lim = 0.4
 
     # Defining obstacles geometry
-
 
     x_obs = []
 
     x_obs_1 = np.array([2.0, 2.5])
-    x_obs.append(x_obs_1)
     x_obs_2 = np.array([1.0, 2.5])
-    x_obs.append(x_obs_2)
     x_obs_3 = np.array([2.0, 4.0])
-    x_obs.append(x_obs_3)
-    # print('x_obs is: ', x_obs)
-    
 
-
-    r_drone = 0.07
-    r_safety = 0.10
+    r_drone = 0.05
+    r_safety = 0.12
 
     r_obs = []
 
     r_obs_1 = 0.30 + r_drone + r_safety
-    r_obs.append(r_obs_1)
     r_obs_2 = 0.20 + r_drone + r_safety
-    r_obs.append(r_obs_2)
     r_obs_3 = 0.40 + r_drone + r_safety
-    r_obs.append(r_obs_3)
-    # print('r_obs is: ', r_obs)
-
 
     sub_cbf_flag = Int16()
     sub_cbf_flag.data = 0
@@ -320,13 +291,10 @@ if __name__ == '__main__':
 
     # print('it is working')
 
-    N_cf.data = 4
-    # print('numebr of crazyflies is: ', N_cf.data)
+    N_cf.data = 3
 
     for ii in range(N_cf.data):
-        # print('ii is: ', ii)
         cf_name_i = 'cf' + str(ii+1)
-        # print('cf_name_i is: ', cf_name_i)
             
         cf_state_neigh_i = CrazyflieState()
         cf_state_neigh_list.append(cf_state_neigh_i)

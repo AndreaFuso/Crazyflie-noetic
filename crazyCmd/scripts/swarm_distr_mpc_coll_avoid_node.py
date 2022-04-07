@@ -661,27 +661,18 @@ if __name__ == '__main__':
     swarm = CrazySwarmSim(cf_names)
 
 
-    #++++++++++++++++++++++ MPC PARAMETERS +++++++++++++++++++++++++++++++++++++
+    #+++++++++++++++++++ MPC PARAMETERS ++++++++++++++++++++++
 
-    # Time interval and number of control intervals for the MPC
-    T_mpc = 5
-    # N_mpc = 10
-    N_mpc = 5
-    # Some constants
-    d_ref = 1 # reference distance between agents
-    
-    r_drone = 0.07
-    v_ref = 0.5 # reference velocity
-    d_final_lim = 0.01
-
-    N_neigh = 2 # number of neighbours
+    N_mpc = 5                # number of MPC time steps
+    d_ref = 1.0              # reference distance between agents
+    v_ref = 0.5              # reference velocity
+    N_neigh = 2              # number of neighbours per drone
+    r_drone = 0.05           # radius of the drone
 
     # Weights for objective function
-    w_sep = 4 
-    # w_nav = 10 
-    # w_dir = 1
-    w_final = 4
-    w_vel = 100
+    w_sep = 4           # separation term
+    w_final = 4         # final position penalty term
+    w_vel = 100         # velocity control input term
 
 
     ###############################################################################
@@ -702,17 +693,19 @@ if __name__ == '__main__':
     make_mpc_velocity_publishers()
 
 
-    ###############################################################################
+    ##############################################################
 
-    #                     S U B S C R I B E R S   S E T U P
+    #               S U B S C R I B E R S   S E T U P
 
-    ###############################################################################
+    ##############################################################
 
     # Subscriber to get the mpc target position
-    mpc_target_sub = rospy.Subscriber('/swarm/mpc_target', Position, mpc_target_sub_callback)
+    mpc_target_sub = rospy.Subscriber('/swarm/mpc_target', Position, 
+                                      mpc_target_sub_callback)
     mpc_target = Position()
 
-    ###############################################################################
+    ##############################################################
+    
     # Flag for the mpc target subscriber
     sub_mpc_flag = Int16()
     sub_mpc_flag.data = 0
@@ -764,15 +757,16 @@ if __name__ == '__main__':
             sub_mpc_flag.data = 2
 
         else:
-            # Once the flag is set to 2, the nlp solver is called at each iteration
-            # until a new mpc target is set
+            # Once the flag is set to 2, the nlp solver is called at 
+            # each iteration until a new mpc target is set and the 
+            # flag is reset to 1
             
-            #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
+            #++++++++++++ SWARM LEVEL MPC CONTROLLER +++++++++++
 
-            mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, P_0, 
-                                                       N_mpc, x_opt_old, v_opt_old,
-                                                       d_ref, v_ref, w_sep, w_final,
-                                                       w_vel, N_neigh)
+            mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, 
+                                P_0, N_mpc, x_opt_old, v_opt_old,
+                                d_ref, v_ref, w_sep, w_final, w_vel,
+                                N_neigh)
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
@@ -782,12 +776,12 @@ if __name__ == '__main__':
             # needed by the CBF on a single topic
 
             for ii in range(N_cf):
-                mpc_velocity[ii].desired_position.x = swarm.states[ii].position.x
-                mpc_velocity[ii].desired_position.y = swarm.states[ii].position.y
+                mpc_velocity[ii].desired_position.x = \
+                                    swarm.states[ii].position.x
+                mpc_velocity[ii].desired_position.y = \
+                                    swarm.states[ii].position.y
 
             swarm_mpc_velocity_pub(mpc_velocity)
-            print('N_cf is: ', N_cf)
-
 
         rate.sleep()
 

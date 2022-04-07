@@ -653,8 +653,6 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     
     return mpc_velocity, x_opt, v_opt
 
-
-
 ###########################################################################
 
 #                S U B S C R I B E R     C A L L B A C K S
@@ -666,7 +664,6 @@ def mpc_target_sub_callback(msg):
     mpc_target.desired_position.y = msg.desired_position.y
     mpc_target.desired_position.z = msg.desired_position.z
     sub_mpc_flag.data = 1
-
 
 ###########################################################################
 
@@ -686,12 +683,11 @@ def swarm_mpc_velocity_pub(mpc_velocity):
     for index, mpc_velocity_pub in enumerate(mpc_velocity_publishers):
         mpc_velocity_pub.publish(mpc_velocity[index])
 
-###########################################################################
+##################################################################
 
-#                                M A I N
+#                            M A I N
 
-###########################################################################
-
+##################################################################
 
 if __name__ == '__main__':
     
@@ -700,81 +696,53 @@ if __name__ == '__main__':
 
     # Extracting rosparam informations (to understand the number of crazyflies):
     N_cf = rospy.get_param('swarm_node/cfs_number')
-    # print(N_cf)
 
     # Generate a standard list of names:
     cf_names = standardNameList(N_cf)
-    # print(cf_names)
 
     # Instantiate a swarm:
     swarm = CrazySwarmSim(cf_names)
 
+    #+++++++++++++++++++ MPC PARAMETERS ++++++++++++++++++++++
 
-
-    #++++++++++++++++++++++ MPC PARAMETERS +++++++++++++++++++++++++++++++++++++
-
-    # Time interval and number of control intervals for the MPC
-    T_mpc = 5
-    # N_mpc = 10
-    N_mpc = 5
-    # Some constants
-    d_ref = 0.4 + 0.075*N_cf # reference distance between agents
-    v_ref = 0.5 # reference velocity
-    N_neigh = 2 # number of neighbours per drone
+    N_mpc = 5                # number of MPC time steps
+    d_ref = 0.85             # reference distance between agents
+    v_ref = 0.5              # reference velocity
+    N_neigh = 2              # number of neighbours per drone
 
     # Weights for objective function
-    w_sep = 10 
-    # w_nav = 10
-    # w_dir = 1
-    w_final = 10
-    w_vel = 50
+    w_sep = 10      # separation term
+    w_final = 10    # final position penalty term
+    w_vel = 50      # velocity control input term
 
-    #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
+    #++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++
 
-    # Setting the parameters for the cbf controller and the position goal
+    # Setting the parameters for the CBF controller and the position goal
     alpha = 1.0
 
-    
     # Defining obstacles geometry
-
     N_obs = 3 + N_cf - 1
+    # 3 is the number of real obstacles, N_cf-1 is the number of agents 
+    # that have to be avoided by the drone by means of CBF controller.
 
-    x_obs = []
-
+    # Defining arbitrary obstacles' positions
     x_obs_1 = np.array([2.0, 2.5])
-    x_obs.append(x_obs_1)
     x_obs_2 = np.array([1.0, 2.5])
-    x_obs.append(x_obs_2)
     x_obs_3 = np.array([2.0, 4.0])
-    x_obs.append(x_obs_3)
-    # print('x_obs is: ', x_obs)
     
+    r_drone = 0.05      # radius of the drone
+    r_safety = 0.12     # additional safety radius
 
-
-    r_drone = 0.07
-    r_safety = 0.10
-
-
-    r_obs = []
-
+    # Defining arbitrary obstacles' radii
     r_obs_1 = 0.30 + r_drone + r_safety
-    r_obs.append(r_obs_1)
     r_obs_2 = 0.20 + r_drone + r_safety
-    r_obs.append(r_obs_2)
     r_obs_3 = 0.40 + r_drone + r_safety
-    r_obs.append(r_obs_3)
-    # print('r_obs is: ', r_obs)
 
+    ##############################################################
 
+    #               P U B L I S H E R S   S E T U P
 
-
-    ###############################################################################
-
-    #                     P U B L I S H E R S   S E T U P
-
-    ###############################################################################
-
-    # Publisher to publish the target velocity (output of nlp)
+    ##############################################################
 
     # List of velocities used to collect the output of the nlp solver
     mpc_velocity = []
@@ -785,32 +753,28 @@ if __name__ == '__main__':
     mpc_velocity_publishers = []
     make_mpc_velocity_publishers()
 
+    ##############################################################
 
-    ###############################################################################
+    #               S U B S C R I B E R S   S E T U P
 
-    #                     S U B S C R I B E R S   S E T U P
-
-    ###############################################################################
+    ##############################################################
 
     # Subscriber to get the mpc target position
-    mpc_target_sub = rospy.Subscriber('/swarm/mpc_target', Position, mpc_target_sub_callback)
+    mpc_target_sub = rospy.Subscriber('/swarm/mpc_target', Position, 
+                                      mpc_target_sub_callback)
     mpc_target = Position()
-
-    ###############################################################################
+    
+    ##############################################################
+    
     # Flag for the mpc target subscriber
     sub_mpc_flag = Int16()
     sub_mpc_flag.data = 0
 
-    # Initializing mpc_target, mpc_target_init and mpc_target_old
+    # Initializing mpc_target
     mpc_target.desired_position.x = 0
     mpc_target.desired_position.y = 0
 
-
     rate = rospy.Rate(20)
-
-    # rate = rospy.Rate(100)
-
-    # rate = rospy.Rate(N_mpc/T_mpc)
 
     while not rospy.is_shutdown():
 
@@ -820,29 +784,26 @@ if __name__ == '__main__':
             P_0.append(swarm.states[ii].position.x)
             P_0.append(swarm.states[ii].position.y)
 
-        # print('P_0 is: ', P_0)
-        
         if sub_mpc_flag.data == 0:
             # nothing is executed if no mpc target has been published
             pass
 
         elif sub_mpc_flag.data == 1:  # in case a new target is set
-            
-            # Initializing the target position for each drone starting from
-            # mpc target
+            # Initializing the target position for each drone starting 
+            # from mpc target
             P_N = []
             for ii in range(N_cf):
                 P_N.append(mpc_target.desired_position.x)
                 P_N.append(mpc_target.desired_position.y)            
-            # print('P_N is: ', P_N)
+            
             # Initializing the optimal velocity of agents to use it 
             # for the hot start initial guess
             v_opt_old = []
             for ii in range(2*N_cf):
                 v_opt_old.append(np.zeros(N_mpc+1))
 
-            # Initializing optimal positions to use them as initial guess 
-            # for the hot start initial guess
+            # Initializing optimal positions to use them as initial 
+            # guess for the hot start initial guess
             x_opt_old = []
             for ii in range(2*N_cf):
                 x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
@@ -850,24 +811,24 @@ if __name__ == '__main__':
             sub_mpc_flag.data = 2
 
         else:
-            # Once the flag is set to 2, the nlp solver is called at each iteration
-            # until a new mpc target is set and the 
+            # Once the flag is set to 2, the nlp solver is called at 
+            # each iteration until a new mpc target is set and the 
+            # flag is reset to 1
             
-            #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
+            #++++++++++++ SWARM LEVEL MPC CONTROLLER +++++++++++
 
-            mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, P_0, 
-                                                       N_mpc, x_opt_old, v_opt_old,
-                                                       d_ref, v_ref, w_sep, w_final,
-                                                       w_vel, N_neigh)
+            mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, 
+                                P_0, N_mpc, x_opt_old, v_opt_old,
+                                d_ref, v_ref, w_sep, w_final, w_vel,
+                                N_neigh)
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
+            #++++++++++++ DRONE LEVEL CBF CONTROLLER +++++++++++
             
-            #++++++++++++++ LOW LEVEL CBF CONTROLLER+++++++++++++++++++++++++++++++
-            
-
             for ii in range(N_cf):
-
+                
+                # Appending obstacles' positions
                 x_obs = []
                 x_obs.append(x_obs_1)
                 x_obs.append(x_obs_2)
@@ -877,8 +838,8 @@ if __name__ == '__main__':
                 r_obs.append(r_obs_1)
                 r_obs.append(r_obs_2)
                 r_obs.append(r_obs_3)
-                    
-                # Appending the other drones as obstacles
+                
+                # Appending the other drones' positions as obstacles
                 for jj in range(N_cf):
                     if ii != jj:
                         # Initial position of the other crazyflies
@@ -886,9 +847,7 @@ if __name__ == '__main__':
                         x_obs.append(x_crazy)
                         # print('x_obs is: ', x_obs)
                         r_obs.append(3*r_drone)
-                        # print('r_obs is: ', r_obs)
                 
-
                 # Extracting the mpc velocities from mpc_velocity list
                 v_mpc_x = mpc_velocity[ii].desired_velocity.x
                 v_mpc_y = mpc_velocity[ii].desired_velocity.y
@@ -902,13 +861,11 @@ if __name__ == '__main__':
                 cbf_controller.set_obstacle()
                 # Getting cbf velocity
                 v = cbf_controller.get_cbf_v(x0, N_obs, x_obs, r_obs)
-                # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
+                # Setting cbf_velocity msg to be published to 
+                # /cf1/mpc_velocity
                 mpc_velocity[ii].desired_velocity.x = v[0]
                 mpc_velocity[ii].desired_velocity.y = v[1]
             
-                        
             swarm_mpc_velocity_pub(mpc_velocity)
 
-
         rate.sleep()
-

@@ -27,7 +27,7 @@ from crazyflie_swarm.CrazySwarmSim import CrazySwarmSim
 
 
 def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt, 
-                  d_ref, d_neigh, v_ref, w_sep, 
+                  d_ref, v_ref, w_sep, 
                   w_final, w_vel, N_neigh):
 
     # Getting center of mass of the swarm
@@ -782,25 +782,22 @@ if __name__ == '__main__':
             # Once the flag is set to 2, the nlp solver is called at each iteration
             # until a new mpc target is set
             
-            #++++++++++++++ HIGH LEVEL MPC CONTROLLER+++++++++++++++++++++++++++++++
+            #++++++++++++ SWARM LEVEL MPC CONTROLLER +++++++++++
 
             for ii in range(N_cf):
                 swarm_states.states[ii].position.x = swarm.states[ii].position.x
                 swarm_states.states[ii].position.y = swarm.states[ii].position.y
 
-
             swarm_states_pub.publish(swarm.states)
-
-            mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, P_0, 
-                                                       N_mpc, x_opt_old, v_opt_old,
-                                                       d_ref, d_neigh, v_ref,
-                                                       w_sep, w_final, w_vel, N_neigh)
+ 
+            mpc_velocity, x_opt, v_opt = nlp_solver_2d(N_cf, P_N, 
+                                P_0, N_mpc, x_opt_old, v_opt_old,
+                                d_ref, v_ref, w_sep, w_final, w_vel,
+                                N_neigh)
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
-
             swarm_mpc_velocity_pub(mpc_velocity)
-
 
         rate.sleep()
 

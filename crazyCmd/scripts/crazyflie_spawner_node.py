@@ -15,6 +15,7 @@ if __name__ == '__main__':
     initial_pos = rospy.get_param('crazyflie_spawner_node/initial_position')
 
     # Spawning the virtual Crazyflie:
-    CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
+    CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1],
+                                     initial_pos[2]))
 
     rospy.spin()
