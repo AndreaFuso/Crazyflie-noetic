@@ -163,6 +163,11 @@ def mpc2cbf_sub_callback(msg):
 
     mpc_velocity_pub.publish(mpc_velocity)
 
+#######################################################
+
+#                       M A I N
+
+#######################################################
 
 if __name__ == '__main__':
     # Node initialization:
@@ -177,45 +182,42 @@ if __name__ == '__main__':
     cf = CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1], 
                                           initial_pos[2]))
 
-    #++++++++++++++++++++++ CBF PARAMETERS +++++++++++++++++++++++++++++++++++++
+    #+++++++++++++ CBF PARAMETERS +++++++++++++++
 
     # Setting the parameters for the cbf controller and the position goal
     alpha = 1.0
 
     # Defining obstacles geometry
-
-    N_obs = 3
+    N_obs = 3           # Number of obstacles
 
     x_obs = []
 
     x_obs_1 = np.array([2.0, 2.5])
-    x_obs.append(x_obs_1)
     x_obs_2 = np.array([1.0, 2.5])
-    x_obs.append(x_obs_2)
     x_obs_3 = np.array([2.0, 4.0])
+
+    x_obs.append(x_obs_1)
+    x_obs.append(x_obs_2)
     x_obs.append(x_obs_3)
 
-    r_drone = 0.05
-    r_safety = 0.12
+    r_drone = 0.05      # radius of the drone
+    r_safety = 0.12     # safety radius
 
     r_obs = []
 
     r_obs_1 = 0.30 + r_drone + r_safety
-    r_obs.append(r_obs_1)
     r_obs_2 = 0.20 + r_drone + r_safety
-    r_obs.append(r_obs_2)
     r_obs_3 = 0.40 + r_drone + r_safety
+
+    r_obs.append(r_obs_1)
+    r_obs.append(r_obs_2)
     r_obs.append(r_obs_3)
-    print('r_obs is: ', r_obs)
 
-    sub_cbf_flag = Int16()
-    sub_cbf_flag.data = 0
+    #######################################################
 
-    ###############################################################################
+    #           P U B L I S H E R S   S E T U P
 
-    #                     P U B L I S H E R S   S E T U P
-
-    ###############################################################################
+    #######################################################
 
     # Publisher to publish the target velocity (output of cbf controller)
     mpc_velocity_pub = rospy.Publisher('/' + crazyflie_name + '/mpc_velocity', 
@@ -225,24 +227,17 @@ if __name__ == '__main__':
     mpc_velocity.desired_velocity.x = 0
     mpc_velocity.desired_velocity.y = 0
 
-    ###############################################################################
+    #######################################################
 
-    #                     S U B S C R I B E R S   S E T U P
-
-    ###############################################################################
+    #          S U B S C R I B E R S   S E T U P
+ 
+    #######################################################
 
     # Subscriber to get the mpc target position
-    mpc_velocity = Position()
     mpc2cbf_sub = rospy.Subscriber('/' + crazyflie_name + '/mpc2cbf_velocity', 
                                    Position, mpc2cbf_sub_callback)
-    
-
-
-    # Subscriber to get the state
-    cf_state = CrazyflieState()
-    # state_sub = rospy.Subscriber('/' + crazyflie_name + '/state', 
-    #                                CrazyflieState, state_sub_callback)
-    
+    mpc_velocity = Position()
+    cf_state = CrazyflieState()   
 
     rospy.spin()
 
