@@ -8,7 +8,12 @@ from crazy_common_py.dataTypes import Vector3
 from crazy_common_py.common_functions import standardNameList
 from crazyflie_swarm.CrazySwarmReal import CrazySwarmReal
 
-from cflib.crazyflie import Swarm, CachedCfFactory, _Factory
+from cflib.crazyflie.swarm import Swarm, CachedCfFactory, _Factory
+
+
+
+# def exiting_hook():
+#     swarm.__swarm.close_links()
 
 
 if __name__ == '__main__':
@@ -32,3 +37,6 @@ if __name__ == '__main__':
     # print(type(swarm.takeoff_act_clients[0]))
 
     rospy.spin()
+
+
+    # rospy.on_shutdown(exiting_hook)

@@ -102,7 +102,7 @@ class CrazyDrone:
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        self.__pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_cb)
+        # self.__pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_cb)
 
 
         # Subscriber to read the desired velocity computed by the MPC controller
@@ -182,35 +182,36 @@ class CrazyDrone:
         #     cflib.crtp.init_drivers()
 
     
-        # Drivers initialization:
-        cflib.crtp.init_drivers()
+        # # Drivers initialization:
+        # cflib.crtp.init_drivers()
 
-        # Instantiation of SyncCrazyflie and opening communication:
-        self.__scf = SyncCrazyflie(URI)
-        self.__scf.open_link()
+        # # Instantiation of SyncCrazyflie and opening communication:
+        # self.__scf = SyncCrazyflie(URI)
+        # self.__scf.open_link()
 
-        # Instantiation of MotionCommander:
-        self.__mc = MotionCommander(self.__scf)
+        # # Instantiation of MotionCommander:
+        # self.__mc = MotionCommander(self.__scf)
 
-        # Attitude logger:
-        self.__attitude_logger = SyncLogger(self.__scf, self.__attitude_logger_config)
-        self.__attitude_logger.connect()
+        # # Attitude logger:
+        # self.__attitude_logger = SyncLogger(self.__scf, self.__attitude_logger_config)
+        # self.__attitude_logger.connect()
 
-        # State logger:
-        self.__state_logger = SyncLogger(self.__scf, self.__state_logger_config)
-        self.__state_logger.connect()
+        # # State logger:
+        # self.__state_logger = SyncLogger(self.__scf, self.__state_logger_config)
+        # self.__state_logger.connect()
 
-        # Controller output logger:
-        self.__controller_output_logger = SyncLogger(self.__scf, self.__controller_output_config)
-        self.__controller_output_logger.connect()
+        # # Controller output logger:
+        # self.__controller_output_logger = SyncLogger(self.__scf, self.__controller_output_config)
+        # self.__controller_output_logger.connect()
 
-        # Desired state logger:
-        self.__desired_state_logger = SyncLogger(self.__scf, self.__desired_state_logger_config)
-        self.__desired_state_logger.connect()
+        # # Desired state logger:
+        # self.__desired_state_logger = SyncLogger(self.__scf, self.__desired_state_logger_config)
+        # self.__desired_state_logger.connect()
 
-        self.__initialOperationsEnded = True
-        #self.__mc.take_off()
-        #self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
+        # self.__initialOperationsEnded = True
+
+        # self.__mc.take_off()
+        # self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
 
     # ==================================================================================================================
     #

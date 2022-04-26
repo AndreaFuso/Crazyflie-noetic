@@ -8,18 +8,18 @@ from crazy_common_py.dataTypes import Vector3
 from crazyflie_drone.CrazyDrone import CrazyDrone
 
 # Function called when the node is shutdown, in order to perform exiting operations:
-def exiting_hook():
-    global drone
-    drone.exit_operations()
+# def exiting_hook():
+#     global drone
+#     drone.exit_operations()
 
 def compute_address(name):
     num_ID = int(name[2:]) - 1
     # print('num_ID is: ', num_ID)
     # print('radio address is: //0/80/2M/E7E7E7E7E'+ hex(num_ID)[-1])
-    # return 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
+    return 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
     
     # print('radio address is: //0/80/2M/E7E7E7E7E0')
-    return 'radio://0/80/2M/E7E7E7E7E0'
+    # return 'radio://0/80/2M/E7E7E7E7E0'
 
 if __name__ == '__main__':
     # Node initialization:
@@ -42,4 +42,4 @@ if __name__ == '__main__':
 
     rospy.spin()
 
-    rospy.on_shutdown(exiting_hook)
+    # rospy.on_shutdown(exiting_hook)

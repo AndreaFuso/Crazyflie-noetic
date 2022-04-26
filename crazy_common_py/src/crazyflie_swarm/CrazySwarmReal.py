@@ -22,7 +22,7 @@ from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
 from cflib.crazyflie.log import LogConfig
-from cflib.crazyflie import Swarm, CachedCfFactory, _Factory
+from cflib.crazyflie.swarm import Swarm, CachedCfFactory, _Factory
 
 class CrazySwarmReal:
     # ==================================================================================================================
@@ -88,6 +88,12 @@ class CrazySwarmReal:
         #                                        I N I T I A L  O P E R A T I O N S
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
+
+    
+        # Drivers initialization:
+        cflib.crtp.init_drivers()
+
+
         # List of URIs
         self.uris = self.compute_uris(cf_names)
 
