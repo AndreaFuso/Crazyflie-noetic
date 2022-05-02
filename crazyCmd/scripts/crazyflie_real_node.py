@@ -5,7 +5,7 @@ import time
 
 # CUSTOM MODULES
 from crazy_common_py.dataTypes import Vector3
-from crazyflie_drone.CrazyDrone import CrazyDrone
+from crazyflie_drone.CrazyDrone4Swarm import CrazyDrone4Swarm
 
 # Function called when the node is shutdown, in order to perform exiting operations:
 # def exiting_hook():
@@ -29,12 +29,12 @@ if __name__ == '__main__':
     crazyflie_name = rospy.get_param('crazyflie_real_node/name')
     initial_pos = rospy.get_param('crazyflie_real_node/initial_position')
 
-    # Creating CrazyDrone instance:
-    drone = CrazyDrone(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
+    # Creating CrazyDrone4Swarm instance (to control a single drone in a swarm):
+    drone = CrazyDrone4Swarm(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
     time.sleep(5)
 
-    '''# CrazyDrone instance:
-    drone = CrazyDrone('cf1', 'radio://0/80/2M/E7E7E7E7E7', Vector3(0, 0, 0))'''
+    '''# CrazyDrone4Swarm instance:
+    drone = CrazyDrone4Swarm('cf1', 'radio://0/80/2M/E7E7E7E7E7', Vector3(0, 0, 0))'''
 
     '''
     radio://USB_DONGLE_NUMBER/RADIO_CHANNEL/RADIO_SPEED(kbit/s)/CRAZYFLIE_ID

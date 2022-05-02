@@ -27,7 +27,7 @@ from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
 from cflib.crazyflie.log import LogConfig
 
-class CrazyDrone:
+class CrazyDrone4Swarm:
     # ==================================================================================================================
     #
     #                                               C O N S T R U C T O R
@@ -102,7 +102,7 @@ class CrazyDrone:
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        self.__pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_cb)
+        # self.__pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_cb)
 
 
         # Subscriber to read the desired velocity computed by the MPC controller
@@ -193,23 +193,23 @@ class CrazyDrone:
         self.__mc = MotionCommander(self.__scf)
 
 
-        # Attitude logger:
-        self.__attitude_logger = SyncLogger(self.__scf, self.__attitude_logger_config)
-        self.__attitude_logger.connect()
+        # # Attitude logger:
+        # self.__attitude_logger = SyncLogger(self.__scf, self.__attitude_logger_config)
+        # self.__attitude_logger.connect()
 
-        # State logger:
-        self.__state_logger = SyncLogger(self.__scf, self.__state_logger_config)
-        self.__state_logger.connect()
+        # # State logger:
+        # self.__state_logger = SyncLogger(self.__scf, self.__state_logger_config)
+        # self.__state_logger.connect()
 
-        # Controller output logger:
-        self.__controller_output_logger = SyncLogger(self.__scf, self.__controller_output_config)
-        self.__controller_output_logger.connect()
+        # # Controller output logger:
+        # self.__controller_output_logger = SyncLogger(self.__scf, self.__controller_output_config)
+        # self.__controller_output_logger.connect()
 
-        # Desired state logger:
-        self.__desired_state_logger = SyncLogger(self.__scf, self.__desired_state_logger_config)
-        self.__desired_state_logger.connect()
+        # # Desired state logger:
+        # self.__desired_state_logger = SyncLogger(self.__scf, self.__desired_state_logger_config)
+        # self.__desired_state_logger.connect()
 
-        self.__initialOperationsEnded = True
+        # self.__initialOperationsEnded = True
 
         # self.__mc.take_off()
         # self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
@@ -219,54 +219,54 @@ class CrazyDrone:
     #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
     #
     # ==================================================================================================================
-    def __pace_100Hz_cb(self, msg):
-        if self.__initialOperationsEnded:
-            # Getting data from loggers:
-            attitude_data = self.__attitude_logger.next()
-            state_data = self.__state_logger.next()
-            controller_output_data = self.__controller_output_logger.next()
-            desired_state_data = self.__desired_state_logger.next()
+    # def __pace_100Hz_cb(self, msg):
+    #     if self.__initialOperationsEnded:
+    #         # Getting data from loggers:
+    #         attitude_data = self.__attitude_logger.next()
+    #         state_data = self.__state_logger.next()
+    #         controller_output_data = self.__controller_output_logger.next()
+    #         desired_state_data = self.__desired_state_logger.next()
 
-            # Extracting attitude:
-            self.__state.orientation.roll = deg2rad(attitude_data[1]['stabilizer.roll'])
-            self.__state.orientation.pitch = deg2rad(- attitude_data[1]['stabilizer.pitch'])
-            self.__state.orientation.yaw = deg2rad(attitude_data[1]['stabilizer.yaw'])
-            self.__state.rotating_speed.x = deg2rad(attitude_data[1]['gyro.x'])
-            self.__state.rotating_speed.y = deg2rad(attitude_data[1]['gyro.y'])
-            self.__state.rotating_speed.z = deg2rad(attitude_data[1]['gyro.z'])
+    #         # Extracting attitude:
+    #         self.__state.orientation.roll = deg2rad(attitude_data[1]['stabilizer.roll'])
+    #         self.__state.orientation.pitch = deg2rad(- attitude_data[1]['stabilizer.pitch'])
+    #         self.__state.orientation.yaw = deg2rad(attitude_data[1]['stabilizer.yaw'])
+    #         self.__state.rotating_speed.x = deg2rad(attitude_data[1]['gyro.x'])
+    #         self.__state.rotating_speed.y = deg2rad(attitude_data[1]['gyro.y'])
+    #         self.__state.rotating_speed.z = deg2rad(attitude_data[1]['gyro.z'])
 
-            # Extracting state:
-            self.__state.position.x = state_data[1]['stateEstimate.x']
-            self.__state.position.y = state_data[1]['stateEstimate.y']
-            self.__state.position.z = state_data[1]['stateEstimate.z']
-            self.__state.velocity.x = state_data[1]['stateEstimate.vx']
-            self.__state.velocity.y = state_data[1]['stateEstimate.vy']
-            self.__state.velocity.z = state_data[1]['stateEstimate.vz']
+    #         # Extracting state:
+    #         self.__state.position.x = state_data[1]['stateEstimate.x']
+    #         self.__state.position.y = state_data[1]['stateEstimate.y']
+    #         self.__state.position.z = state_data[1]['stateEstimate.z']
+    #         self.__state.velocity.x = state_data[1]['stateEstimate.vx']
+    #         self.__state.velocity.y = state_data[1]['stateEstimate.vy']
+    #         self.__state.velocity.z = state_data[1]['stateEstimate.vz']
 
-            # Extracting controller output:
-            self.__controller_output.desired_attitude.roll = controller_output_data[1]['controller.cmd_roll']
-            self.__controller_output.desired_attitude.pitch = controller_output_data[1]['controller.cmd_pitch']
-            self.__controller_output.desired_attitude.yaw = controller_output_data[1]['controller.cmd_yaw']
-            self.__controller_output.desired_thrust = controller_output_data[1]['controller.cmd_thrust']
+    #         # Extracting controller output:
+    #         self.__controller_output.desired_attitude.roll = controller_output_data[1]['controller.cmd_roll']
+    #         self.__controller_output.desired_attitude.pitch = controller_output_data[1]['controller.cmd_pitch']
+    #         self.__controller_output.desired_attitude.yaw = controller_output_data[1]['controller.cmd_yaw']
+    #         self.__controller_output.desired_thrust = controller_output_data[1]['controller.cmd_thrust']
 
-            # Extracting reference data:
-            self.__desired_state.desired_velocity.x = desired_state_data[1]['posCtl.targetVX']
-            self.__desired_state.desired_velocity.y = desired_state_data[1]['posCtl.targetVY']
-            self.__desired_state.desired_velocity.z = desired_state_data[1]['posCtl.targetVZ']
-            self.__desired_state.desired_yaw_rate = desired_state_data[1]['controller.yawRate']
+    #         # Extracting reference data:
+    #         self.__desired_state.desired_velocity.x = desired_state_data[1]['posCtl.targetVX']
+    #         self.__desired_state.desired_velocity.y = desired_state_data[1]['posCtl.targetVY']
+    #         self.__desired_state.desired_velocity.z = desired_state_data[1]['posCtl.targetVZ']
+    #         self.__desired_state.desired_yaw_rate = desired_state_data[1]['controller.yawRate']
 
     
-            # Publishing the state:
-            self.__state_pub.publish(self.__state)
+    #         # Publishing the state:
+    #         self.__state_pub.publish(self.__state)
 
-            # Publishing the motor command:
-            self.__motor_command_pub.publish(self.__controller_output)
+    #         # Publishing the motor command:
+    #         self.__motor_command_pub.publish(self.__controller_output)
 
-            # Publishing desired:
-            self.__desired_state_pub.publish(self.__desired_state)
+    #         # Publishing desired:
+    #         self.__desired_state_pub.publish(self.__desired_state)
 
-            #print(data)
-            #print('ROLL: ', data[1]['stabilizer.roll'], '; PITCH: ', data[1]['stabilizer.pitch'], '; YAW: ', data[1]['stabilizer.yaw'])
+    #         #print(data)
+    #         #print('ROLL: ', data[1]['stabilizer.roll'], '; PITCH: ', data[1]['stabilizer.pitch'], '; YAW: ', data[1]['stabilizer.yaw'])
 
 
 

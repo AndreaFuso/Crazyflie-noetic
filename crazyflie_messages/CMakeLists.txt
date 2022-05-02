@@ -60,6 +60,8 @@ add_message_files(
     KeyboardKeys.msg
     SwarmStates.msg
     MpcOpenLoopTraj.msg
+    SwarmControllerOutputs.msg
+    SwarmDesiredStates.msg
 )
 
 ## Generate services in the 'srv' folder

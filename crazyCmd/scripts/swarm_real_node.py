@@ -12,8 +12,8 @@ from cflib.crazyflie.swarm import Swarm, CachedCfFactory, _Factory
 
 
 
-# def exiting_hook():
-#     swarm.__swarm.close_links()
+def exiting_hook():
+    swarm.exit_operations()
 
 
 if __name__ == '__main__':
@@ -39,4 +39,4 @@ if __name__ == '__main__':
     rospy.spin()
 
 
-    # rospy.on_shutdown(exiting_hook)
+    rospy.on_shutdown(exiting_hook)
