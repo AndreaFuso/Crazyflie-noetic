@@ -103,9 +103,11 @@ class CrazySwarmReal:
                                                                 self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
 
-        self.__swarm_flocking_act = actionlib.SimpleActionServer('/swarm/flocking_actn', EmptyAction,
-                                                                 self.__swarm_flocking_act_callback, False)
-        self.__swarm_flocking_act.start()
+
+        # Flocking not implemented for real swarm yet
+        # self.__swarm_flocking_act = actionlib.SimpleActionServer('/swarm/flocking_actn', EmptyAction,
+        #                                                          self.__swarm_flocking_act_callback, False)
+        # self.__swarm_flocking_act.start()
 
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -126,8 +128,6 @@ class CrazySwarmReal:
 
         # Loggers configuration for all the agents
 
-        # self.__swarm._cfs = {}
-        # self.__swarm._is_open = False
         self.__state_estimates = dict()
         self.__attitudes = dict()
         self.__controller_outputs = dict()
@@ -346,20 +346,21 @@ class CrazySwarmReal:
 
         self.__swarm_takeoff_act.set_succeeded(result)
 
-    def __swarm_flocking_act_callback(self, goal):
-        # Defining the goal:
-        flock_goal = EmptyGoal()
+    # def __swarm_flocking_act_callback(self, goal):
+    #     # Defining the goal:
+    #     flock_goal = EmptyGoal()
 
-        name = []
-        # Sending the goal to all followers clients:
-        for ii in range(0, len(self.flocking_act_clients)):
-            self.flocking_act_clients[ii].send_goal(flock_goal)
+    #     name = []
+    #     # Sending the goal to all followers clients:
+    #     for ii in range(0, len(self.flocking_act_clients)):
+    #         self.flocking_act_clients[ii].send_goal(flock_goal)
 
-        # Sending result:
-        result = EmptyResult()
-        result.executed = True
+    #     # Sending result:
+    #     result = EmptyResult()
+    #     result.executed = True
 
-        self.__swarm_flocking_act.set_succeeded(result)
+    #     self.__swarm_flocking_act.set_succeeded(result)
+    
     # ==================================================================================================================
     #
     #         F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)
@@ -420,12 +421,12 @@ class CrazySwarmReal:
 
         with SyncLogger(scf, self.__attitude_logger_config) as logger:
             for entry in logger:
-                roll = entry[1]['stabilizer.roll']
-                pitch = entry[1]['stabilizer.pitch']
-                yaw = entry[1]['stabilizer.yaw']
-                gyro_x = entry[1]['gyro.x']
-                gyro_y = entry[1]['gyro.y']
-                gyro_z = entry[1]['gyro.z']
+                roll = deg2rad(entry[1]['stabilizer.roll'])
+                pitch = deg2rad(-entry[1]['stabilizer.pitch'])
+                yaw = deg2rad(entry[1]['stabilizer.yaw'])
+                gyro_x = deg2rad(entry[1]['gyro.x'])
+                gyro_y = deg2rad(entry[1]['gyro.y'])
+                gyro_z = deg2rad(entry[1]['gyro.z'])
                 self.__attitudes[scf.cf.link_uri] = AttitudeLog(roll, pitch,
                 yaw, gyro_x, gyro_y, gyro_z)
                 break

@@ -185,7 +185,7 @@ class CrazyDrone4Swarm:
         # Drivers initialization:
         cflib.crtp.init_drivers()
 
-        # Instantiation of SyncCrazyflie and opening communication:
+        # Instantiation of SyncCrazyflie:
         self.__scf = SyncCrazyflie(URI)
         # self.__scf.open_link()
 
