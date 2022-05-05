@@ -1,4 +1,5 @@
 # ROS MODULES
+from time import sleep
 import rospy
 import actionlib
 
@@ -20,6 +21,7 @@ from crazy_common_py.constants import *
 import cflib.crtp
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.crazyflie import Crazyflie
+from cflib.crazyflie.commander import Commander
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
 from cflib.crazyflie.log import LogConfig
@@ -66,6 +68,10 @@ class CrazySwarmReal:
         # self.flocking_act_clients = []
         # self.__make_flocking_clients()
 
+        # List of motion commanders initialization
+        self.mc_list = []
+        self.c_list = []
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -102,6 +108,13 @@ class CrazySwarmReal:
         self.__swarm_takeoff_act = actionlib.SimpleActionServer('/swarm/takeoff_actn', TakeoffAction,
                                                                 self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
+
+
+        # Action to land the entire swarm:
+        self.__swarm_land_act = actionlib.SimpleActionServer('/swarm/land_actn', TakeoffAction,
+                                                                self.__swarm_land_act_callback, False)
+        self.__swarm_land_act.start()
+
 
 
         # Flocking not implemented for real swarm yet
@@ -141,7 +154,7 @@ class CrazySwarmReal:
         # self.controller_output_loggers_swarm()
         # self.desired_state_loggers_swarm()
 
-        self.create_motion_commanders_swarm()
+        self.create_commanders_swarm()
 
         self.__initialOperationsEnded = True
     
@@ -323,31 +336,47 @@ class CrazySwarmReal:
 
     # ==================================================================================================================
     #
-    #                                 C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #            C A L L B A C K  M E T H O D S  (A C T I O N S)
     #
     # ==================================================================================================================
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                             __S W A R M _ T A K E O F F _ A C T _ C A L L B A C K
+    #         __S W A R M _ T A K E O F F _ A C T _ C A L L B A C K
     #
     # This method is used as the swarm takeoff action.
     # ------------------------------------------------------------------------------------------------------------------
+    
     def __swarm_takeoff_act_callback(self, goal):
         # Output:
-        feedback = TakeoffFeedback()
+        result = TakeoffResult()
+        
+        self.takeoff_swarm()
+
+        rospy.sleep(4)
+
+        self.__swarm_takeoff_act.set_succeeded(result)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #         __S W A R M _ L A N D _ A C T _ C A L L B A C K
+    #
+    # This method is used as the swarm land action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __swarm_land_act_callback(self, goal):
+        # Output:
         result = TakeoffResult()
 
-        # Setting up takeoff request:
-        _goal = TakeoffGoal()
-        _goal.takeoff_height = goal.takeoff_height
+        # # Setting up takeoff request:
+        # _goal = TakeoffGoal()
+        # _goal.takeoff_height = goal.takeoff_height
 
         # for takeoff_actn in self.takeoff_act_clients:
         #     takeoff_actn.send_goal(_goal, feedback_cb=self.__cf_takeoff_feedback_cb)
         #     #print('\n\nTIPO:' + str(type(takeoff_actn)))
         
-        self.take_off_swarm()
-
-        self.__swarm_takeoff_act.set_succeeded(result)
+        self.land_swarm()
+        
+        self.__swarm_land_act.set_succeeded(result)
 
 
 
@@ -512,36 +541,88 @@ class CrazySwarmReal:
         self.__swarm.parallel_safe(self.desired_state_logger_drone)
         return self.__desired_states
 
-    def create_motion_commander_drone(self,scf):
+
+
+    # ==================================================================================================================
+    #
+    #         M E T H O D S    F O R    A C T I O N S    
+    #
+    # ==================================================================================================================
+
+
+    #+++++++++++ MOTION COMMANDER AND COMMANDER INSTANTIATION ++++++++++++++++++++
+
+    # Creating a list of motion commanders to be used for the single drones
+    # and for the swarm
+
+    def create_commanders_drone(self,scf):
         print(scf)
         print(scf._link_uri)
+        print(scf.cf)
+
+        # Motion commander instance
         motion_commander = MotionCommander(scf)
-        # motion_commander.take_off(height=0.3)
+        self.mc_list.append(motion_commander)
+
         print(motion_commander)
-        pass
-        # 
+        print(self.mc_list)
 
-    def create_motion_commanders_swarm(self):
-        self.__swarm.parallel_safe(self.create_motion_commander_drone)
+        commander = Commander(scf.cf)
+        self.c_list.append(commander)
+
+        print(commander)
+        print(self.c_list)
+
+    def create_commanders_swarm(self):
+        self.__swarm.parallel_safe(self.create_commanders_drone)
+
+    #+++++++++++++++++++++++ TAKEOFF METHOD ++++++++++++++++++++++++++++++++++++++
+
+    def takeoff_drone4swarm(self,scf):
+        # uri = scf._link_uri
+        # cf_index = int(uri[-1]) # ok for up to 10 drones
+        # print('cf_index is:', cf_index)
+        # self.mc_list[cf_index].take_off(height=0.3)
 
 
-
-    def take_off_drone4swarm(self,scf):
-        print(scf)
-        print(scf._link_uri)
+        print('instantiation of motion commander')
         motion_commander = MotionCommander(scf)
+        print('land command')
         motion_commander.take_off(height=0.3)
-        print(motion_commander)
-        pass
-        # 
+        self.mc_list.append(motion_commander)
 
-    def take_off_swarm(self):
-        self.__swarm.parallel_safe(self.take_off_drone4swarm)
+    def takeoff_swarm(self):
+        print('takeoff action')
 
-
-
+        self.mc_list = []
+        self.__swarm.parallel_safe(self.takeoff_drone4swarm)
 
 
+    # def takeoff_swarm(self):
+    #     print('takeoff action')
+    #     for cf_index in range(self.number_of_cfs):
+    #         print('cf_index is: ', cf_index)
+    #         self.mc_list[cf_index].take_off(height=0.3)
+
+    #+++++++++++++++++++++++++ LAND METHOD +++++++++++++++++++++++++++++++++++++++
+
+    # def land_drone4swarm(self,scf):
+    #     print('instantiation of motion commander')
+    #     motion_commander = MotionCommander(scf)
+    #     print('land command')
+    #     motion_commander.land()
+
+    # def land_swarm(self):
+    #     print('land action')        
+    #     self.__swarm.parallel_safe(self.land_drone4swarm)
+
+
+
+    def land_swarm(self):
+        print('land action')
+        for cf_index in range(self.number_of_cfs):
+            print('cf_index is: ', cf_index)
+            self.mc_list[cf_index].land()
 
 
 
