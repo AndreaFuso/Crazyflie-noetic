@@ -141,6 +141,7 @@ class CrazySwarmReal:
         # self.controller_output_loggers_swarm()
         # self.desired_state_loggers_swarm()
 
+        self.create_motion_commanders_swarm()
 
         self.__initialOperationsEnded = True
     
@@ -193,7 +194,7 @@ class CrazySwarmReal:
         index = 0
         for index, controller_output_pub in enumerate(self.controller_outputs_pubs):
             controller_output_pub.publish(controller_outputs.controller_outputs[index])
-            print('co pub is ok')
+            # print('co pub is ok')
 
     def __make_desired_states_publishers(self):
         self.desired_states_pubs = []
@@ -207,7 +208,7 @@ class CrazySwarmReal:
         index = 0
         for index, desired_state_pub in enumerate(self.desired_states_pubs):
             desired_state_pub.publish(desired_states.desired_states[index])
-            print('ds pub is ok')
+            # print('ds pub is ok')
 
 
     def compute_uris(self, cf_names):
@@ -309,7 +310,7 @@ class CrazySwarmReal:
             controller_outputs.controller_outputs = self.controller_outputs
             desired_states.desired_states = self.desired_states
 
-            print(self.states)
+            # print(self.states)
             # print(self.controller_outputs)
             # print(self.desired_states)
 
@@ -340,11 +341,27 @@ class CrazySwarmReal:
         _goal = TakeoffGoal()
         _goal.takeoff_height = goal.takeoff_height
 
-        for takeoff_actn in self.takeoff_act_clients:
-            takeoff_actn.send_goal(_goal, feedback_cb=self.__cf_takeoff_feedback_cb)
-            #print('\n\nTIPO:' + str(type(takeoff_actn)))
+        # for takeoff_actn in self.takeoff_act_clients:
+        #     takeoff_actn.send_goal(_goal, feedback_cb=self.__cf_takeoff_feedback_cb)
+        #     #print('\n\nTIPO:' + str(type(takeoff_actn)))
+        
+        self.take_off_swarm()
 
         self.__swarm_takeoff_act.set_succeeded(result)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # def __swarm_flocking_act_callback(self, goal):
     #     # Defining the goal:
@@ -495,12 +512,31 @@ class CrazySwarmReal:
         self.__swarm.parallel_safe(self.desired_state_logger_drone)
         return self.__desired_states
 
+    def create_motion_commander_drone(self,scf):
+        print(scf)
+        print(scf._link_uri)
+        motion_commander = MotionCommander(scf)
+        # motion_commander.take_off(height=0.3)
+        print(motion_commander)
+        pass
+        # 
+
+    def create_motion_commanders_swarm(self):
+        self.__swarm.parallel_safe(self.create_motion_commander_drone)
 
 
 
+    def take_off_drone4swarm(self,scf):
+        print(scf)
+        print(scf._link_uri)
+        motion_commander = MotionCommander(scf)
+        motion_commander.take_off(height=0.3)
+        print(motion_commander)
+        pass
+        # 
 
-
-
+    def take_off_swarm(self):
+        self.__swarm.parallel_safe(self.take_off_drone4swarm)
 
 
 

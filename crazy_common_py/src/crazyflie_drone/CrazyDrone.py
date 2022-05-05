@@ -187,7 +187,7 @@ class CrazyDrone:
 
         # Instantiation of SyncCrazyflie and opening communication:
         self.__scf = SyncCrazyflie(URI)
-        # self.__scf.open_link()
+        self.__scf.open_link()
 
         # Instantiation of MotionCommander:
         self.__mc = MotionCommander(self.__scf)

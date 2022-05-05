@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # Instantiation of CrazySwarmReal
     swarm = CrazySwarmReal(cf_names)
 
-    time.sleep(10)
+    time.sleep(5)
 
     # print(cf_names)
     # print(swarm.cf_names)

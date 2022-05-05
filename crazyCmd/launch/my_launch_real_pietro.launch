@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+	<!-- Starting up nodes that give the pace to the inner controllers -->
+	<node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>
+	<node name="node_500Hz" pkg="crazyCmd" type="node_500Hz.py" output="screen"/>
+	<node name="node_1000Hz" pkg="crazyCmd" type="node_1000Hz.py" output="screen"/>
+
+	<group ns = "swarm">
+		<rosparam param="cfs_number">2</rosparam>
+		<node pkg="crazyCmd" type="swarm_real_node.py" name="swarm_node" output="screen">
+			<rosparam param="cfs_number">2</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf1">
+		<node pkg="crazyCmd" type="crazyflie_real_node_pietro.py" name="crazyflie_real_node" output="screen">
+			<rosparam param="name">cf1</rosparam>
+			<rosparam param="initial_position">[0.0, 0.0, 0.0]</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf2">
+		<node pkg="crazyCmd" type="crazyflie_real_node_pietro.py" name="crazyflie_real_node" output="screen">
+			<rosparam param="name">cf2</rosparam>
+			<rosparam param="initial_position">[1.0, 0.0, 0.0]</rosparam>
+		</node>
+	</group>
+
+</launch>

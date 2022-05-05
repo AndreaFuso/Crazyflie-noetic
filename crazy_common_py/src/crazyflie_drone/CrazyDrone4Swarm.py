@@ -5,6 +5,7 @@ import actionlib
 # Generic modules
 import logging
 import time
+import datetime
 
 # Custom modules
 from crazy_common_py.dataTypes import Vector3
@@ -187,6 +188,7 @@ class CrazyDrone4Swarm:
 
         # Instantiation of SyncCrazyflie:
         self.__scf = SyncCrazyflie(URI)
+        
         # self.__scf.open_link()
 
         # Instantiation of MotionCommander:

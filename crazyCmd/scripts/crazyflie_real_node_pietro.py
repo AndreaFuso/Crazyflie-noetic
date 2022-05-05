@@ -32,9 +32,9 @@ if __name__ == '__main__':
     initial_pos = rospy.get_param('crazyflie_real_node/initial_position')
 
     # Creating CrazyDrone4Swarm instance (to control a single drone in a swarm):
-    # drone = CrazyDrone4Swarm(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
+    drone = CrazyDrone4Swarm(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
     
-    drone = CrazyDrone(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
+    # drone = CrazyDrone(crazyflie_name, compute_address(crazyflie_name), Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))
    
     
     time.sleep(10)
