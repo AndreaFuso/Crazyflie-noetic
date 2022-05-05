@@ -69,8 +69,8 @@ class CrazySwarmReal:
         # self.__make_flocking_clients()
 
         # List of motion commanders initialization
-        self.mc_list = []
-        self.c_list = []
+        self.mc_dict = {}
+        self.c_dict = {}
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -154,7 +154,7 @@ class CrazySwarmReal:
         # self.controller_output_loggers_swarm()
         # self.desired_state_loggers_swarm()
 
-        self.create_commanders_swarm()
+        self.create_commanders_dict_swarm()
 
         self.__initialOperationsEnded = True
     
@@ -323,7 +323,7 @@ class CrazySwarmReal:
             controller_outputs.controller_outputs = self.controller_outputs
             desired_states.desired_states = self.desired_states
 
-            # print(self.states)
+            print(self.states)
             # print(self.controller_outputs)
             # print(self.desired_states)
 
@@ -555,74 +555,39 @@ class CrazySwarmReal:
     # Creating a list of motion commanders to be used for the single drones
     # and for the swarm
 
-    def create_commanders_drone(self,scf):
-        print(scf)
-        print(scf._link_uri)
-        print(scf.cf)
+    def create_commanders_dict_drone(self,scf):
 
         # Motion commander instance
-        motion_commander = MotionCommander(scf)
-        self.mc_list.append(motion_commander)
+        motion_commander = MotionCommander(scf)        
+        self.mc_dict[scf._link_uri] = motion_commander
 
-        print(motion_commander)
-        print(self.mc_list)
-
+        # Commander instance to send control setpoints
         commander = Commander(scf.cf)
-        self.c_list.append(commander)
+        commander.set_client_xmode(enabled=True)
 
-        print(commander)
-        print(self.c_list)
+        self.c_dict[scf._link_uri] = commander
 
-    def create_commanders_swarm(self):
-        self.__swarm.parallel_safe(self.create_commanders_drone)
+    def create_commanders_dict_swarm(self):
+        self.__swarm.parallel_safe(self.create_commanders_dict_drone)
 
     #+++++++++++++++++++++++ TAKEOFF METHOD ++++++++++++++++++++++++++++++++++++++
 
     def takeoff_drone4swarm(self,scf):
-        # uri = scf._link_uri
-        # cf_index = int(uri[-1]) # ok for up to 10 drones
-        # print('cf_index is:', cf_index)
-        # self.mc_list[cf_index].take_off(height=0.3)
-
-
-        print('instantiation of motion commander')
-        motion_commander = MotionCommander(scf)
-        print('land command')
-        motion_commander.take_off(height=0.3)
-        self.mc_list.append(motion_commander)
+        self.mc_dict[scf._link_uri].take_off(height=0.3)
 
     def takeoff_swarm(self):
         print('takeoff action')
-
-        self.mc_list = []
         self.__swarm.parallel_safe(self.takeoff_drone4swarm)
-
-
-    # def takeoff_swarm(self):
-    #     print('takeoff action')
-    #     for cf_index in range(self.number_of_cfs):
-    #         print('cf_index is: ', cf_index)
-    #         self.mc_list[cf_index].take_off(height=0.3)
 
     #+++++++++++++++++++++++++ LAND METHOD +++++++++++++++++++++++++++++++++++++++
 
-    # def land_drone4swarm(self,scf):
-    #     print('instantiation of motion commander')
-    #     motion_commander = MotionCommander(scf)
-    #     print('land command')
-    #     motion_commander.land()
-
-    # def land_swarm(self):
-    #     print('land action')        
-    #     self.__swarm.parallel_safe(self.land_drone4swarm)
-
-
+    def land_drone4swarm(self,scf):
+        self.mc_dict[scf._link_uri].land()
 
     def land_swarm(self):
         print('land action')
-        for cf_index in range(self.number_of_cfs):
-            print('cf_index is: ', cf_index)
-            self.mc_list[cf_index].land()
+        self.__swarm.parallel_safe(self.land_drone4swarm)
+
 
 
 
