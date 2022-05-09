@@ -1,3 +1,5 @@
+# Crazyflie name:
+string name
 geometry_msgs/Vector3 desired_position
 geometry_msgs/Vector3 desired_velocity
 float64 desired_yaw

@@ -39,7 +39,7 @@ ControllerOutputLog= namedtuple('ControllerOutputLog', 'cmd_thrust cmd_roll cmd_
 class CrazySwarmReal:
     # ==================================================================================================================
     #
-    #                                               C O N S T R U C T O R
+    #              C O N S T R U C T O R
     #
     # This class completely handle one virtual swarm of crazyflies.
     # INPUTS:
@@ -48,10 +48,11 @@ class CrazySwarmReal:
     # ==================================================================================================================
     def __init__(self, cf_names):
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
+        #              P R O P E R T I E S  I N I T I A L I Z A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-        # Variable to understand when initial operations are ended (otherwise problem with 100Hz subscriber):
+        # Variable to understand when initial operations are ended 
+        # (otherwise problem with 100Hz subscriber):
         self.__initialOperationsEnded = False
 
         # List of crazyflies names:
@@ -60,31 +61,75 @@ class CrazySwarmReal:
         # Number of crazyflies:
         self.number_of_cfs = len(self.cf_names)
 
-        # List of clients for takeoff action per each drone:
-        self.takeoff_act_clients = []
-        self.__make_takeoff_clients()
+        # Dictionaries for commanders initialization
+        self.mc_dict = dict()
+        self.c_dict = dict()
 
-        # # List of clients for flocking action:
-        # self.flocking_act_clients = []
-        # self.__make_flocking_clients()
+        # State logger configuration (6 floats => 24/26 bytes):
+        self.__state_logger_config = LogConfig(name='state_conf', period_in_ms=10)
+        self.__state_logger_config.add_variable('stateEstimate.x', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.y', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.z', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.vx', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.vy', 'float')
+        self.__state_logger_config.add_variable('stateEstimate.vz', 'float')
 
-        # List of motion commanders initialization
-        self.mc_dict = {}
-        self.c_dict = {}
+        # Attitude logger configuration (6 floats => 24/26 bytes):
+        self.__attitude_logger_config = LogConfig(name='attitude_conf', 
+                                                            period_in_ms=10)
+        self.__attitude_logger_config.add_variable('stabilizer.roll', 'float')
+        self.__attitude_logger_config.add_variable('stabilizer.pitch', 'float')
+        self.__attitude_logger_config.add_variable('stabilizer.yaw', 'float')
+        self.__attitude_logger_config.add_variable('gyro.x', 'float')
+        self.__attitude_logger_config.add_variable('gyro.y', 'float')
+        self.__attitude_logger_config.add_variable('gyro.z', 'float')
+
+         # Controller output logger configuration (4 floats => 16/26 bytes):
+        self.__controller_output_config = LogConfig(name='controller_output_conf', 
+                                                                    period_in_ms=10)
+        self.__controller_output_config.add_variable('controller.cmd_thrust', 'float')
+        self.__controller_output_config.add_variable('controller.cmd_roll', 'float')
+        self.__controller_output_config.add_variable('controller.cmd_pitch', 'float')
+        self.__controller_output_config.add_variable('controller.cmd_yaw', 'float')
+
+        # Reference velocity state logger configuration (4 floats => 16/26 bytes):
+        self.__desired_state_logger_config = LogConfig(name='desired_state_config', 
+                                                                    period_in_ms=10)
+        self.__desired_state_logger_config.add_variable('posCtl.targetVX', 'float')
+        self.__desired_state_logger_config.add_variable('posCtl.targetVY', 'float')
+        self.__desired_state_logger_config.add_variable('posCtl.targetVZ', 'float')
+        self.__desired_state_logger_config.add_variable('controller.yawRate', 'float')
+
+        # Dictionaries for logger data
+        self.attitude_data_dict = dict()
+        self.state_data_dict = dict()
+        self.controller_output_data_dict = dict()
+        self.desired_state_data_dict = dict()
+
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                       S U B S C R I B E R S  S E T U P
+        #                 S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber to pace 100Hz:
-        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_sub_callback)
+        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, 
+                                            Empty, self.__pace_100Hz_sub_callback)
 
         # List of state subscribers:
         self.state_subs = []
         self.states = []
         self.__make_state_subs()
         
+
+        # List of mpc velocity subscribers:
+        self.mpc_velocity_subs = []
+        self.mpc_velocities = []
+        self.desired_vx = dict()
+        self.desired_vy = dict()
+        self.desired_vz = dict()
+        self.__make_mpc_velocity_subs()
+        
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                       P U B L I S H E R S  S E T U P
+        #                 P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # States publisher:
         self.states_pub = rospy.Publisher('/swarm/states', SwarmStates, queue_size=1)
@@ -98,40 +143,32 @@ class CrazySwarmReal:
         self.__make_desired_states_publishers()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           S E R V I C E S  S E T U P
+        #                   S E R V I C E S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                           A C T I O N S  S E T U P
+        #                    A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # Action to take off the entire swarm:
-        self.__swarm_takeoff_act = actionlib.SimpleActionServer('/swarm/takeoff_actn', TakeoffAction,
-                                                                self.__swarm_takeoff_act_callback, False)
+        # Action to make the entire swarm take off :
+        self.__swarm_takeoff_act = actionlib.SimpleActionServer('/swarm/takeoff_actn',
+                            TakeoffAction, self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
 
 
-        # Action to land the entire swarm:
-        self.__swarm_land_act = actionlib.SimpleActionServer('/swarm/land_actn', TakeoffAction,
-                                                                self.__swarm_land_act_callback, False)
+        # Action to make the entire swarm land:
+        self.__swarm_land_act = actionlib.SimpleActionServer('/swarm/land_actn', 
+                                 TakeoffAction, self.__swarm_land_act_callback, False)
         self.__swarm_land_act.start()
 
-
-
-        # Flocking not implemented for real swarm yet
-        # self.__swarm_flocking_act = actionlib.SimpleActionServer('/swarm/flocking_actn', EmptyAction,
-        #                                                          self.__swarm_flocking_act_callback, False)
-        # self.__swarm_flocking_act.start()
-
-
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #                                        I N I T I A L  O P E R A T I O N S
+        #             I N I T I A L  O P E R A T I O N S
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         # Drivers initialization:
         cflib.crtp.init_drivers()
 
         # List of URIs
-        self.uris = self.compute_uris(cf_names)
+        self.uris = self.create_uris_list(cf_names)
 
         print(self.uris)
 
@@ -141,23 +178,27 @@ class CrazySwarmReal:
 
         # Loggers configuration for all the agents
 
-        self.__state_estimates = dict()
-        self.__attitudes = dict()
-        self.__controller_outputs = dict()
-        self.__desired_states = dict()
+        self.__attitude_loggers = dict()
+        self.__state_loggers = dict()
+        self.__controller_output_loggers = dict()
+        self.__desired_state_loggers = dict()
 
-        # for uri in self.uris:
-        #     self.__swarm._cfs[uri] = self.__swarm.factory.construct(uri)
 
-        # self.state_loggers_swarm()
-        # self.attitude_loggers_swarm()
-        # self.controller_output_loggers_swarm()
-        # self.desired_state_loggers_swarm()
 
+
+        # Configuring the loggers
+        self.state_loggers_swarm()
+        self.attitude_loggers_swarm()
+        self.controller_output_loggers_swarm()
+        self.desired_state_loggers_swarm()
+
+        # Create commanders for the swarm
         self.create_commanders_dict_swarm()
 
+
+
+        # Ending initial operations
         self.__initialOperationsEnded = True
-    
 
 
 
@@ -165,35 +206,31 @@ class CrazySwarmReal:
 
     # ==================================================================================================================
     #
-    #                                   I N I T I A L  O P E R A T I O N S  M E T H O D S
+    #         I N I T I A L  O P E R A T I O N S  M E T H O D S
     #
     # ==================================================================================================================
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                                   __M A K E _ T A K E O F F _ C L I E N T S
-    #
-    # This method is used to create one action client per each drone, in order to perform takeoff action.
-    # ------------------------------------------------------------------------------------------------------------------
-    def __make_takeoff_clients(self):
-        for cf_name in self.cf_names:
-            tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/takeoff_actn', TakeoffAction)
-            self.takeoff_act_clients.append(tmp_action)
-            self.takeoff_act_clients[-1].wait_for_server()
-            print('added 1 takeoff client')
 
-    # def __make_flocking_clients(self):
-    #     for cf_name in self.cf_names:
-    #         if cf_name != DEFAULT_LEADER:
-    #             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/' + DEFAULT_FLOCK_TOPIC, EmptyAction)
-    #             self.flocking_act_clients.append(tmp_action)
-    #             self.flocking_act_clients[-1].wait_for_server()
+    #+++++++++++++++++++ STATE SUBSCRIBER LIST METHOD ++++++++++++++++++++++++++++++
 
     def __make_state_subs(self):
         for cf_name in self.cf_names:
+            # Subscribers to read the state of the drones
             tmp_sub = rospy.Subscriber('/' + cf_name + '/' + 
                         DEFAULT_CF_STATE_TOPIC, CrazyflieState, self.__state_cb)
             self.state_subs.append(tmp_sub)
             self.states.append(CrazyflieState())
+
+    #+++++++++++++++++++ MPC VELOCITY SUBSCRIBER LIST METHOD ++++++++++++++++++++++++
+
+    def __make_mpc_velocity_subs(self):
+        for cf_name in self.cf_names:
+            # Subscribers to read the desired velocity computed by the MPC controller
+            tmp_sub = rospy.Subscriber('/' + cf_name + 
+                        '/mpc_velocity', Position, self.__mpc_velocity_callback)
+            self.mpc_velocity_subs.append(tmp_sub)
+            self.mpc_velocities.append(Position())
+
+    #+++++++++++++++++++ C.O. PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
 
     def __make_controller_outputs_publishers(self):
         self.controller_outputs_pubs = []
@@ -203,11 +240,15 @@ class CrazySwarmReal:
             self.controller_outputs_pubs.append(tmp_pub)
             self.controller_outputs.append(Attitude())
 
+    #+++++++++++++++++++ C.O. PUBLISHERS PUBLISH METHOD ++++++++++++++++++++++++++++
+
     def __controller_outputs_pub(self, controller_outputs):
         index = 0
         for index, controller_output_pub in enumerate(self.controller_outputs_pubs):
             controller_output_pub.publish(controller_outputs.controller_outputs[index])
             # print('co pub is ok')
+
+    #+++++++++++++++++++ D.S. PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
 
     def __make_desired_states_publishers(self):
         self.desired_states_pubs = []
@@ -217,14 +258,17 @@ class CrazySwarmReal:
             self.desired_states_pubs.append(tmp_pub)
             self.desired_states.append(Position())
 
+    #+++++++++++++++++++ D.S. PUBLISHERS PUBLISH METHOD ++++++++++++++++++++++++++++
+
     def __desired_states_pub(self, desired_states):
         index = 0
         for index, desired_state_pub in enumerate(self.desired_states_pubs):
             desired_state_pub.publish(desired_states.desired_states[index])
             # print('ds pub is ok')
 
+    #++++++++++++++++++++++++ CREATE LIST OF URIS +++++++++++++++++++++++++++++++++
 
-    def compute_uris(self, cf_names):
+    def create_uris_list(self, cf_names):
         uris = []
         for name in cf_names:
             num_ID = int(name[2:]) - 1
@@ -232,6 +276,26 @@ class CrazySwarmReal:
             uris.append(uri)
         
         return uris
+
+    #++++++++ MOTION COMMANDER AND COMMANDER INSTANTIATION METHOD +++++++++++++++++
+
+    # Creating a list of motion commanders to be used for the single drones
+    # and for the swarm
+
+    def create_commanders_dict_drone(self, scf):
+
+        # Motion commander instance
+        motion_commander = MotionCommander(scf)        
+        self.mc_dict[scf._link_uri] = motion_commander
+
+        # Commander instance to send control setpoints
+        commander = Commander(scf.cf)
+        commander.set_client_xmode(enabled=True)
+
+        self.c_dict[scf._link_uri] = commander
+
+    def create_commanders_dict_swarm(self):
+        self.__swarm.parallel_safe(self.create_commanders_dict_drone)
 
     # ==================================================================================================================
     #
@@ -268,63 +332,78 @@ class CrazySwarmReal:
             controller_outputs = SwarmControllerOutputs()
             desired_states = SwarmDesiredStates()
 
-            # Configuring the loggers
-            self.state_loggers_swarm()
-            self.attitude_loggers_swarm()
-            self.controller_output_loggers_swarm()
-            self.desired_state_loggers_swarm()
 
-
-            # Extracting information from the loggers
 
             cf_index = 0
 
             for uri in self.uris:
+
+                # Extracting information from the loggers
+                self.state_data_dict[uri] = self.__state_loggers[uri].next()
+                self.attitude_data_dict[uri] = self.__attitude_loggers[uri].next()
+                self.controller_output_data_dict[uri] = \
+                                    self.__controller_output_loggers[uri].next()
+                self.desired_state_data_dict[uri] = \
+                                    self.__desired_state_loggers[uri].next()
+
+
                 # States
                 self.states[cf_index].name = 'cf' + str(cf_index + 1)
-                self.states[cf_index].position.x = self.__state_estimates[uri].x
-                self.states[cf_index].position.y = self.__state_estimates[uri].y
-                self.states[cf_index].position.z = self.__state_estimates[uri].z
-                self.states[cf_index].velocity.x = self.__state_estimates[uri].vx
-                self.states[cf_index].velocity.y = self.__state_estimates[uri].vy
-                self.states[cf_index].velocity.z = self.__state_estimates[uri].vz
+                self.states[cf_index].position.x = \
+                    self.state_data_dict[uri][1]['stateEstimate.x']
+                self.states[cf_index].position.y = \
+                    self.state_data_dict[uri][1]['stateEstimate.y']
+                self.states[cf_index].position.z = \
+                    self.state_data_dict[uri][1]['stateEstimate.z']
+                self.states[cf_index].velocity.x = \
+                    self.state_data_dict[uri][1]['stateEstimate.vx']
+                self.states[cf_index].velocity.y = \
+                    self.state_data_dict[uri][1]['stateEstimate.vy']
+                self.states[cf_index].velocity.z = \
+                    self.state_data_dict[uri][1]['stateEstimate.vz']
 
                 # Attitudes
-                self.states[cf_index].orientation.roll = self.__attitudes[uri].roll
-                self.states[cf_index].orientation.pitch = self.__attitudes[uri].pitch
-                self.states[cf_index].orientation.yaw = self.__attitudes[uri].yaw
-                self.states[cf_index].rotating_speed.x = self.__attitudes[uri].gyro_x
-                self.states[cf_index].rotating_speed.y = self.__attitudes[uri].gyro_y
-                self.states[cf_index].rotating_speed.z = self.__attitudes[uri].gyro_z
+                self.states[cf_index].orientation.roll = \
+                    deg2rad(self.attitude_data_dict[uri][1]['stabilizer.roll'])
+                self.states[cf_index].orientation.pitch = \
+                    deg2rad(-self.attitude_data_dict[uri][1]['stabilizer.pitch'])
+                self.states[cf_index].orientation.yaw = \
+                    deg2rad(self.attitude_data_dict[uri][1]['stabilizer.yaw'])
+                self.states[cf_index].rotating_speed.x = \
+                    deg2rad(self.attitude_data_dict[uri][1]['gyro.x'])
+                self.states[cf_index].rotating_speed.y = \
+                    deg2rad(self.attitude_data_dict[uri][1]['gyro.y'])
+                self.states[cf_index].rotating_speed.z = \
+                    deg2rad(self.attitude_data_dict[uri][1]['gyro.z'])
                 
                 # Controller outputs
                 self.controller_outputs[cf_index].desired_thrust = \
-                                            self.__controller_outputs[uri].cmd_thrust
+                    self.controller_output_data_dict[uri][1]['controller.cmd_thrust']
                 self.controller_outputs[cf_index].desired_attitude.roll = \
-                                            self.__controller_outputs[uri].cmd_roll
+                    self.controller_output_data_dict[uri][1]['controller.cmd_roll']
                 self.controller_outputs[cf_index].desired_attitude.pitch = \
-                                            self.__controller_outputs[uri].cmd_pitch
+                    self.controller_output_data_dict[uri][1]['controller.cmd_pitch']
                 self.controller_outputs[cf_index].desired_attitude.yaw = \
-                                            self.__controller_outputs[uri].cmd_yaw
+                    self.controller_output_data_dict[uri][1]['controller.cmd_yaw']
 
                 # Desired states
                 self.desired_states[cf_index].desired_velocity.x = \
-                                    self.__desired_states[uri].target_vx
+                    self.desired_state_data_dict[uri][1]['posCtl.targetVX']
                 self.desired_states[cf_index].desired_velocity.y = \
-                                    self.__desired_states[uri].target_vy
+                    self.desired_state_data_dict[uri][1]['posCtl.targetVY']
                 self.desired_states[cf_index].desired_velocity.z = \
-                                    self.__desired_states[uri].target_vz
+                    self.desired_state_data_dict[uri][1]['posCtl.targetVZ']
                 self.desired_states[cf_index].desired_yaw_rate = \
-                                    self.__desired_states[uri].yawrate
+                    self.desired_state_data_dict[uri][1]['controller.yawRate']
                 
                 cf_index += 1
 
-            states.states = self.states
+            # states.states = self.states
             controller_outputs.controller_outputs = self.controller_outputs
             desired_states.desired_states = self.desired_states
 
             print(self.states)
-            # print(self.controller_outputs)
+            print(self.controller_outputs)
             # print(self.desired_states)
 
             self.states_pub.publish(states)
@@ -333,6 +412,23 @@ class CrazySwarmReal:
             
 
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #         __M P C _ V E L O C I T Y _ C A L L B A C K
+    #
+    # This callback gets the desired velocity computed by the mpc controller 
+    # and sets the velocity target so that the velocity commands are given as 
+    # velocity setpoints to the drones composing the swarm
+    # ------------------------------------------------------------------------------------------------------------------
+    def __mpc_velocity_callback(self, msg):
+        
+        cf_name = msg.name
+        num_ID = int(cf_name[2:]) - 1
+        uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
+
+        self.desired_vx[uri] = msg.desired_velocity.x
+        self.desired_vy[uri] = msg.desired_velocity.y
+        self.desired_vz[uri] = msg.desired_velocity.z
 
     # ==================================================================================================================
     #
@@ -352,8 +448,6 @@ class CrazySwarmReal:
         
         self.takeoff_swarm()
 
-        rospy.sleep(4)
-
         self.__swarm_takeoff_act.set_succeeded(result)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -365,47 +459,10 @@ class CrazySwarmReal:
     def __swarm_land_act_callback(self, goal):
         # Output:
         result = TakeoffResult()
-
-        # # Setting up takeoff request:
-        # _goal = TakeoffGoal()
-        # _goal.takeoff_height = goal.takeoff_height
-
-        # for takeoff_actn in self.takeoff_act_clients:
-        #     takeoff_actn.send_goal(_goal, feedback_cb=self.__cf_takeoff_feedback_cb)
-        #     #print('\n\nTIPO:' + str(type(takeoff_actn)))
         
         self.land_swarm()
         
         self.__swarm_land_act.set_succeeded(result)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # def __swarm_flocking_act_callback(self, goal):
-    #     # Defining the goal:
-    #     flock_goal = EmptyGoal()
-
-    #     name = []
-    #     # Sending the goal to all followers clients:
-    #     for ii in range(0, len(self.flocking_act_clients)):
-    #         self.flocking_act_clients[ii].send_goal(flock_goal)
-
-    #     # Sending result:
-    #     result = EmptyResult()
-    #     result.executed = True
-
-    #     self.__swarm_flocking_act.set_succeeded(result)
     
     # ==================================================================================================================
     #
@@ -418,128 +475,82 @@ class CrazySwarmReal:
 
     # ==================================================================================================================
     #
-    #         L O G G E R S     C O N F I G U R A T I O N    
+    #        L O G G E R S     C O N F I G U R A T I O N    M E T H O D S
     #
     # ==================================================================================================================
-  
+
+    # Dictionaries are used to store the SyncLogger instances and extract data 
+    # within the 100 Hz callback
+    # The key used to identify the drones is the URI string
+
+
+    #++++++++++++++++++++++++ CREATE STATE LOGGERS +++++++++++++++++++++++++++++++++
+
     def state_logger_drone(self, scf):
 
-        # State logger configuration (6 floats => 24/26 bytes):
-        self.__state_logger_config = LogConfig(name='state_conf', period_in_ms=10)
-        self.__state_logger_config.add_variable('stateEstimate.x', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.y', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.z', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.vx', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.vy', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.vz', 'float')
-
-        with SyncLogger(scf, self.__state_logger_config) as logger:
-            for entry in logger:
-                x = entry[1]['stateEstimate.x']
-                y = entry[1]['stateEstimate.y']
-                z = entry[1]['stateEstimate.z']
-                vx = entry[1]['stateEstimate.vx']
-                vy = entry[1]['stateEstimate.vy']
-                vz = entry[1]['stateEstimate.vz']
-                self.__state_estimates[scf.cf.link_uri] = StateEstimateLog(x, y, z, 
-                                                                        vx, vy, vz)
-                break
+        # SyncLogger instantiation
+        self.__state_logger = SyncLogger(scf, self.__state_logger_config)
+        self.__state_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__state_loggers[scf._link_uri] = self.__state_logger
 
     def state_loggers_swarm(self):
         """
         Configuring the loggers to be used 
         """
         self.__swarm.parallel_safe(self.state_logger_drone)
-        return self.__state_estimates
 
 
-  
+    #++++++++++++++++++++++++ CREATE ATTITUDE LOGGERS ++++++++++++++++++++++++++++++
+
     def attitude_logger_drone(self, scf):
 
-        # Attitude logger configuration (6 floats => 24/26 bytes):
-        self.__attitude_logger_config = LogConfig(name='attitude_conf', period_in_ms=10)
-        self.__attitude_logger_config.add_variable('stabilizer.roll', 'float')
-        self.__attitude_logger_config.add_variable('stabilizer.pitch', 'float')
-        self.__attitude_logger_config.add_variable('stabilizer.yaw', 'float')
-        self.__attitude_logger_config.add_variable('gyro.x', 'float')
-        self.__attitude_logger_config.add_variable('gyro.y', 'float')
-        self.__attitude_logger_config.add_variable('gyro.z', 'float')
-
-        with SyncLogger(scf, self.__attitude_logger_config) as logger:
-            for entry in logger:
-                roll = deg2rad(entry[1]['stabilizer.roll'])
-                pitch = deg2rad(-entry[1]['stabilizer.pitch'])
-                yaw = deg2rad(entry[1]['stabilizer.yaw'])
-                gyro_x = deg2rad(entry[1]['gyro.x'])
-                gyro_y = deg2rad(entry[1]['gyro.y'])
-                gyro_z = deg2rad(entry[1]['gyro.z'])
-                self.__attitudes[scf.cf.link_uri] = AttitudeLog(roll, pitch,
-                yaw, gyro_x, gyro_y, gyro_z)
-                break
+        # SyncLogger instantiation
+        self.__attitude_logger = SyncLogger(scf, self.__attitude_logger_config)
+        self.__attitude_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__attitude_loggers[scf._link_uri] = self.__attitude_logger
 
     def attitude_loggers_swarm(self):
         """
         Configuring the loggers to be used 
         """
         self.__swarm.parallel_safe(self.attitude_logger_drone)
-        return self.__attitudes
 
+    #++++++++++++++++++++ CREATE CONTROLLER OUTPUT LOGGERS +++++++++++++++++++++++++
 
-
-  
     def controller_output_logger_drone(self, scf):
 
-         # Controller output logger configuration (4 floats => 16/26 bytes):
-        self.__controller_output_config = LogConfig(name='controller_output_conf', period_in_ms=10)
-        self.__controller_output_config.add_variable('controller.cmd_thrust')
-        self.__controller_output_config.add_variable('controller.cmd_roll')
-        self.__controller_output_config.add_variable('controller.cmd_pitch')
-        self.__controller_output_config.add_variable('controller.cmd_yaw')
-
-        with SyncLogger(scf, self.__controller_output_config) as logger:
-            for entry in logger:
-                cmd_thrust = entry[1]['controller.cmd_thrust']
-                cmd_roll = entry[1]['controller.cmd_roll']
-                cmd_pitch = entry[1]['controller.cmd_pitch']
-                cmd_yaw = entry[1]['controller.cmd_yaw']
-                self.__controller_outputs[scf.cf.link_uri] = ControllerOutputLog(cmd_thrust, 
-                cmd_roll, cmd_pitch, cmd_yaw)
-                break
+        # SyncLogger instantiation
+        self.__controller_output_logger = SyncLogger(scf, 
+                                    self.__controller_output_config)
+        self.__controller_output_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__controller_output_loggers[scf._link_uri] = \
+                                    self.__controller_output_logger
 
     def controller_output_loggers_swarm(self):
         """
         Configuring the loggers to be used 
         """
         self.__swarm.parallel_safe(self.controller_output_logger_drone)
-        return self.__controller_outputs
 
+    #+++++++++++++++++++++ CREATE DESIRED STATE LOGGERS ++++++++++++++++++++++++++++
 
-  
     def desired_state_logger_drone(self, scf):
 
-        # Reference velocity state logger configuration (4 floats => 16/26 bytes):
-        self.__desired_state_logger_config = LogConfig(name='desired_state_config', period_in_ms=10)
-        self.__desired_state_logger_config.add_variable('posCtl.targetVX', 'float')
-        self.__desired_state_logger_config.add_variable('posCtl.targetVY', 'float')
-        self.__desired_state_logger_config.add_variable('posCtl.targetVZ', 'float')
-        self.__desired_state_logger_config.add_variable('controller.yawRate', 'float')
-
-        with SyncLogger(scf, self.__desired_state_logger_config) as logger:
-            for entry in logger:
-                target_vx = entry[1]['posCtl.targetVX']
-                target_vy = entry[1]['posCtl.targetVY']
-                target_vz = entry[1]['posCtl.targetVZ']
-                yawrate = entry[1]['controller.yawRate']
-                self.__desired_states[scf.cf.link_uri] = RefVelocityLog(target_vx, target_vy,
-                target_vz, yawrate)
-                break
+        # SyncLogger instantiation
+        self.__desired_state_logger = SyncLogger(scf, 
+                                    self.__desired_state_logger_config)
+        self.__desired_state_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__desired_state_loggers[scf._link_uri] = self.__desired_state_logger
 
     def desired_state_loggers_swarm(self):
         """
         Configuring the loggers to be used 
         """
         self.__swarm.parallel_safe(self.desired_state_logger_drone)
-        return self.__desired_states
 
 
 
@@ -550,29 +561,9 @@ class CrazySwarmReal:
     # ==================================================================================================================
 
 
-    #+++++++++++ MOTION COMMANDER AND COMMANDER INSTANTIATION ++++++++++++++++++++
-
-    # Creating a list of motion commanders to be used for the single drones
-    # and for the swarm
-
-    def create_commanders_dict_drone(self,scf):
-
-        # Motion commander instance
-        motion_commander = MotionCommander(scf)        
-        self.mc_dict[scf._link_uri] = motion_commander
-
-        # Commander instance to send control setpoints
-        commander = Commander(scf.cf)
-        commander.set_client_xmode(enabled=True)
-
-        self.c_dict[scf._link_uri] = commander
-
-    def create_commanders_dict_swarm(self):
-        self.__swarm.parallel_safe(self.create_commanders_dict_drone)
-
     #+++++++++++++++++++++++ TAKEOFF METHOD ++++++++++++++++++++++++++++++++++++++
 
-    def takeoff_drone4swarm(self,scf):
+    def takeoff_drone4swarm(self, scf):
         self.mc_dict[scf._link_uri].take_off(height=0.3)
 
     def takeoff_swarm(self):
@@ -581,37 +572,47 @@ class CrazySwarmReal:
 
     #+++++++++++++++++++++++++ LAND METHOD +++++++++++++++++++++++++++++++++++++++
 
-    def land_drone4swarm(self,scf):
+    def land_drone4swarm(self, scf):
         self.mc_dict[scf._link_uri].land()
 
     def land_swarm(self):
         print('land action')
         self.__swarm.parallel_safe(self.land_drone4swarm)
 
+    #+++++++++++++++++++++ VELOCITY SETPOINT METHOD ++++++++++++++++++++++++++++++
 
+    def velocity_setpoint_drone4swarm(self, scf):
+        self.c_dict[scf._link_uri].send_velocity_world_setpoint(
+                                        self.desired_vx[scf._link_uri], 
+                                        self.desired_vy[scf._link_uri],
+                                        self.desired_vz[scf._link_uri])
 
+    def velocity_setpoint_swarm(self):
+        print('... sending velocity setpoints')
+        self.__swarm.parallel_safe(self.velocity_setpoint_drone4swarm)
 
     # ==================================================================================================================
     #
-    #                                               E X I T  M E T H O D S
+    #                   E X I T  M E T H O D S
     #
-    # All operations to perform if an error occurs (like KeyboardInterrupt to stop the execution).
+    # All operations to perform if an error occurs (like KeyboardInterrupt to stop 
+    # the execution).
     # ==================================================================================================================
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                                           E X I T _ O P E R A T I O N S
+    #                   E X I T _ O P E R A T I O N S
     #
     # This method performs all the required exiting operations.
     # ------------------------------------------------------------------------------------------------------------------
     def exit_operations(self):
-        # # Land the drone:
-        # self.__mc.land()
 
-        # # Stop logger:
-        # self.__attitude_logger.disconnect()
+        print('...about to land the swarm')
+        # Land the swarm
+        self.land_swarm()
 
-        print('about to close links')
+        print('swarm landed')
 
+        print('...about to close links')
         # Closing communication with the crazyflie:
         self.__swarm.close_links()
 
@@ -619,9 +620,10 @@ class CrazySwarmReal:
 
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #                                           __ E X I T __
+    #                   __ E X I T __
     #
-    # This method is called when an error occurs, performing some operations before destroy class instance.
+    # This method is called when an error occurs, performing some operations before 
+    # destroying class instance.
     # ------------------------------------------------------------------------------------------------------------------
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.exit_operations()
