@@ -398,7 +398,7 @@ class CrazySwarmReal:
                 
                 cf_index += 1
 
-            # states.states = self.states
+            states.states = self.states
             controller_outputs.controller_outputs = self.controller_outputs
             desired_states.desired_states = self.desired_states
 
