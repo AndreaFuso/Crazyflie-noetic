@@ -114,8 +114,8 @@ class CrazySwarmReal:
         self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, 
                                             Empty, self.__pace_100Hz_sub_callback)
 
-        # List of state subscribers:
-        self.state_subs = []
+        # # List of state subscribers:
+        # self.state_subs = []
         self.states = []
         self.__make_state_subs()
         
@@ -126,6 +126,7 @@ class CrazySwarmReal:
         self.desired_vx = dict()
         self.desired_vy = dict()
         self.desired_vz = dict()
+        self.desired_yaw_rate = dict()
         self.__make_mpc_velocity_subs()
         
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -133,6 +134,9 @@ class CrazySwarmReal:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # States publisher:
         self.states_pub = rospy.Publisher('/swarm/states', SwarmStates, queue_size=1)
+
+        # List of states
+        self.__make_states_publishers()
 
         # List of controller outputs
         self.controller_outputs = []
@@ -237,10 +241,10 @@ class CrazySwarmReal:
 
     def __make_state_subs(self):
         for cf_name in self.cf_names:
-            # Subscribers to read the state of the drones
-            tmp_sub = rospy.Subscriber('/' + cf_name + '/' + 
-                        DEFAULT_CF_STATE_TOPIC, CrazyflieState, self.__state_cb)
-            self.state_subs.append(tmp_sub)
+            # # Subscribers to read the state of the drones
+            # tmp_sub = rospy.Subscriber('/' + cf_name + '/' + 
+            #             DEFAULT_CF_STATE_TOPIC, CrazyflieState, self.__state_cb)
+            # self.state_subs.append(tmp_sub)
             self.states.append(CrazyflieState())
 
     #+++++++++++++++++++ MPC VELOCITY SUBSCRIBER LIST METHOD ++++++++++++++++++++++++
@@ -252,6 +256,25 @@ class CrazySwarmReal:
                         '/mpc_velocity', Position, self.__mpc_velocity_callback)
             self.mpc_velocity_subs.append(tmp_sub)
             self.mpc_velocities.append(Position())
+
+    #+++++++++++++++++++ STATE PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
+
+    def __make_states_publishers(self):
+        self.states_pubs = []
+        for cf_name in self.cf_names:
+            tmp_pub = rospy.Publisher('/' + cf_name + '/state', 
+                                                CrazyflieState, queue_size=1)
+            self.states_pubs.append(tmp_pub)
+            # self.states.append(CrazyflieState())
+
+    #+++++++++++++++++++ STATE PUBLISHERS PUBLISH METHOD ++++++++++++++++++++++++++++
+
+    def __states_pub(self, states):
+        index = 0
+        for index, state_pub in enumerate(self.states_pubs):
+            state_pub.publish(states.states[index])
+            # print('state pub is ok')
+
 
     #+++++++++++++++++++ C.O. PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
 
@@ -306,19 +329,19 @@ class CrazySwarmReal:
     #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
     #
     # ==================================================================================================================
-    # ------------------------------------------------------------------------------------------------------------------
-    #
-    #                                                       __S T A T E _ C B
-    #
-    # This callback is called whenever a CrazyflieState message is published by one crazyflie; this state is put in
-    # correct position within states list.
-    # ------------------------------------------------------------------------------------------------------------------
-    def __state_cb(self, msg):
-        # Getting id:
-        ID = extractCfNumber(msg.name)
+    # # ------------------------------------------------------------------------------------------------------------------
+    # #
+    # #                                                       __S T A T E _ C B
+    # #
+    # # This callback is called whenever a CrazyflieState message is published by one crazyflie; this state is put in
+    # # correct position within states list.
+    # # ------------------------------------------------------------------------------------------------------------------
+    # def __state_cb(self, msg):
+    #     # Getting id:
+    #     ID = extractCfNumber(msg.name)
 
-        # Update state vector:
-        self.states[ID - 1] = msg
+    #     # Update state vector:
+    #     self.states[ID - 1] = msg
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -411,6 +434,7 @@ class CrazySwarmReal:
             # print(self.desired_states)
 
             self.states_pub.publish(states)
+            self.__states_pub(states)
             self.__controller_outputs_pub(controller_outputs)
             self.__desired_states_pub(desired_states)
             
@@ -427,12 +451,16 @@ class CrazySwarmReal:
     def __mpc_velocity_callback(self, msg):
         
         cf_name = msg.name
+        # print('cf_name is: ', cf_name)
         num_ID = int(cf_name[2:]) - 1
         uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
 
         self.desired_vx[uri] = msg.desired_velocity.x
         self.desired_vy[uri] = msg.desired_velocity.y
         self.desired_vz[uri] = msg.desired_velocity.z
+        self.desired_yaw_rate[uri] = msg.desired_yaw_rate
+
+        self.velocity_setpoint_swarm()
 
     # ==================================================================================================================
     #
@@ -595,7 +623,8 @@ class CrazySwarmReal:
         self.c_dict[scf._link_uri].send_velocity_world_setpoint(
                                         self.desired_vx[scf._link_uri], 
                                         self.desired_vy[scf._link_uri],
-                                        self.desired_vz[scf._link_uri])
+                                        self.desired_vz[scf._link_uri],
+                                        self.desired_yaw_rate[scf._link_uri])
 
     def velocity_setpoint_swarm(self):
         print('... sending velocity setpoints')

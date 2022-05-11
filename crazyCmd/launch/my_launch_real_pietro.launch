@@ -7,9 +7,9 @@
 	<node name="node_1000Hz" pkg="crazyCmd" type="node_1000Hz.py" output="screen"/>
 
 	<group ns = "swarm">
-		<rosparam param="cfs_number">2</rosparam>
+		<rosparam param="cfs_number">1</rosparam>
 		<node pkg="crazyCmd" type="swarm_real_node.py" name="swarm_node" output="screen">
-			<rosparam param="cfs_number">2</rosparam>
+			<rosparam param="cfs_number">1</rosparam>
 		</node>
 	</group>
 
@@ -20,11 +20,11 @@
 		</node>
 	</group>
 
-	<group ns = "cf2">
+	<!-- <group ns = "cf2">
 		<node pkg="crazyCmd" type="crazyflie_real_node_pietro.py" name="crazyflie_real_node" output="screen">
 			<rosparam param="name">cf2</rosparam>
 			<rosparam param="initial_position">[0.0, 1.0, 0.0]</rosparam>
 		</node>
-	</group>
+	</group> -->
 
 </launch>

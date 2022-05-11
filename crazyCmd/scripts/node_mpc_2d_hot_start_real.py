@@ -210,6 +210,8 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     mpc_velocity.desired_velocity.y = v_desired[1]
     mpc_velocity.desired_velocity.z = 0.0
 
+    mpc_velocity.name = 'cf1'
+
     return mpc_velocity, x1_opt, x2_opt
 
 
@@ -256,7 +258,7 @@ if __name__ == '__main__':
     
     # Safety measures
     r_drone = 0.05
-    r_safety = 0.05
+    r_safety = 0.20
 
     # Time interval and number of control intervals
     # T_mpc = 5
@@ -264,9 +266,9 @@ if __name__ == '__main__':
     N_mpc = 5
 
     # Setting the obstacles
-    x_obs=[1]
+    x_obs=[0.4]
     y_obs=[0.1]
-    r_obs=[0.3]
+    r_obs=[0.1]
 
 
     # Weights
@@ -293,7 +295,7 @@ if __name__ == '__main__':
 
     for ii in range(N_mpc+1):
         mpc_traj.x_vec.append(Position())
-    print('mpc_traj empty is: ', mpc_traj)
+    # print('mpc_traj empty is: ', mpc_traj)
     ###############################################################################
 
     #                     S U B S C R I B E R S   S E T U P
