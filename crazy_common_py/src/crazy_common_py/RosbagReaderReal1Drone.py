@@ -15,7 +15,7 @@ from crazy_common_py.common_functions import rad2deg
 
 rospack = rospkg.RosPack()
 
-bag_name = 'real_1_drone_square.bag'
+bag_name = '1_drone_real_takeoff.bag'
 bag_path = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name
 bag = rosbag.Bag(bag_path)
 
@@ -99,6 +99,7 @@ for ii in range(N_cf):
 for topic, msg, t in bag.read_messages(topics=topics_list):
 
     if topic == '/swarm/states':
+        print('msg is: ', msg)
         for ii in range(N_cf):
             # Position trajectories
             x_list_list[ii].append(msg.states[ii].position.x)
