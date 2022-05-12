@@ -55,11 +55,13 @@ class CrazySwarmReal:
         # (otherwise problem with 100Hz subscriber):
         self.__initialOperationsEnded = False
 
-        # Flag to understand when the land action is called
-        self.__land_action_flag = False
-
         # List of crazyflies names:
         self.cf_names = cf_names
+
+        # List of URIs
+        self.uris = self.create_uris_list(cf_names)
+
+        print(self.uris)
 
         # Number of crazyflies:
         self.number_of_cfs = len(self.cf_names)
@@ -116,21 +118,21 @@ class CrazySwarmReal:
         # Subscriber to pace 100Hz:
         self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, 
                                             Empty, self.__pace_100Hz_sub_callback)
-
-        # # List of state subscribers:
-        # self.state_subs = []
-        self.states = []
-        self.__make_state_subs()
-        
-
+   
         # List of mpc velocity subscribers:
         self.mpc_velocity_subs = []
-        self.mpc_velocities = []
         self.desired_vx = dict()
         self.desired_vy = dict()
         self.desired_vz = dict()
         self.desired_yaw_rate = dict()
         self.__make_mpc_velocity_subs()
+
+        # List of mpc target subscribers:
+        self.mpc_target_subs = []
+        # Flag to understand if the mpc target has been set
+        self.mpc_target_flag = dict()
+        self.__make_mpc_target_subs()
+
         
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                 P U B L I S H E R S  S E T U P
@@ -176,11 +178,6 @@ class CrazySwarmReal:
         # Drivers initialization:
         cflib.crtp.init_drivers()
 
-        # List of URIs
-        self.uris = self.create_uris_list(cf_names)
-
-        print(self.uris)
-
         # Instantiation of Swarm:
         self.__swarm = Swarm(self.uris, factory = _Factory())
 
@@ -201,6 +198,10 @@ class CrazySwarmReal:
         self.attitude_loggers_swarm()
         self.controller_output_loggers_swarm()
         self.desired_state_loggers_swarm()
+
+        # # List of states as CrazyflieState messages:
+        self.states = []
+        self.__make_states_list()
 
         # Create commanders for the swarm
         self.create_commanders_dict_swarm()
@@ -239,15 +240,10 @@ class CrazySwarmReal:
     def create_commanders_dict_swarm(self):
         self.__swarm.parallel_safe(self.create_commanders_dict_drone)
 
-
     #+++++++++++++++++++ STATE SUBSCRIBER LIST METHOD ++++++++++++++++++++++++++++++
 
-    def __make_state_subs(self):
+    def __make_states_list(self):
         for cf_name in self.cf_names:
-            # # Subscribers to read the state of the drones
-            # tmp_sub = rospy.Subscriber('/' + cf_name + '/' + 
-            #             DEFAULT_CF_STATE_TOPIC, CrazyflieState, self.__state_cb)
-            # self.state_subs.append(tmp_sub)
             self.states.append(CrazyflieState())
 
     #+++++++++++++++++++ MPC VELOCITY SUBSCRIBER LIST METHOD ++++++++++++++++++++++++
@@ -256,10 +252,21 @@ class CrazySwarmReal:
         for cf_name in self.cf_names:
             # Subscribers to read the desired velocity computed by the MPC controller
             tmp_sub = rospy.Subscriber('/' + cf_name + 
-                        '/mpc_velocity', Position, self.__mpc_velocity_callback)
+                        '/mpc_velocity', Position, self.__mpc_velocity_sub_callback)
             self.mpc_velocity_subs.append(tmp_sub)
-            self.mpc_velocities.append(Position())
 
+    #++++++++++++++++++++ MPC TARGET SUBSCRIBER LIST METHOD +++++++++++++++++++++++++
+
+    def __make_mpc_target_subs(self):
+        for cf_name in self.cf_names:
+            # Subscribers to read the MPC target for single drones
+            tmp_sub = rospy.Subscriber('/' + cf_name + 
+                        '/mpc_target', Position, self.__mpc_target_sub_callback)
+            self.mpc_target_subs.append(tmp_sub)
+
+        for uri in self.uris:
+            self.mpc_target_flag[uri] = False
+            
     #+++++++++++++++++++ STATE PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
 
     def __make_states_publishers(self):
@@ -268,7 +275,6 @@ class CrazySwarmReal:
             tmp_pub = rospy.Publisher('/' + cf_name + '/state', 
                                                 CrazyflieState, queue_size=1)
             self.states_pubs.append(tmp_pub)
-            # self.states.append(CrazyflieState())
 
     #+++++++++++++++++++ STATE PUBLISHERS PUBLISH METHOD ++++++++++++++++++++++++++++
 
@@ -276,8 +282,6 @@ class CrazySwarmReal:
         index = 0
         for index, state_pub in enumerate(self.states_pubs):
             state_pub.publish(states.states[index])
-            # print('state pub is ok')
-
 
     #+++++++++++++++++++ C.O. PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
 
@@ -295,7 +299,6 @@ class CrazySwarmReal:
         index = 0
         for index, controller_output_pub in enumerate(self.controller_outputs_pubs):
             controller_output_pub.publish(controller_outputs.controller_outputs[index])
-            # print('co pub is ok')
 
     #+++++++++++++++++++ D.S. PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
 
@@ -313,7 +316,6 @@ class CrazySwarmReal:
         index = 0
         for index, desired_state_pub in enumerate(self.desired_states_pubs):
             desired_state_pub.publish(desired_states.desired_states[index])
-            # print('ds pub is ok')
 
     #++++++++++++++++++++++++ CREATE LIST OF URIS +++++++++++++++++++++++++++++++++
 
@@ -326,25 +328,11 @@ class CrazySwarmReal:
         
         return uris
 
-
     # ==================================================================================================================
     #
     #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
     #
     # ==================================================================================================================
-    # # ------------------------------------------------------------------------------------------------------------------
-    # #
-    # #                                                       __S T A T E _ C B
-    # #
-    # # This callback is called whenever a CrazyflieState message is published by one crazyflie; this state is put in
-    # # correct position within states list.
-    # # ------------------------------------------------------------------------------------------------------------------
-    # def __state_cb(self, msg):
-    #     # Getting id:
-    #     ID = extractCfNumber(msg.name)
-
-    #     # Update state vector:
-    #     self.states[ID - 1] = msg
 
     # ------------------------------------------------------------------------------------------------------------------
     #
@@ -362,8 +350,6 @@ class CrazySwarmReal:
             controller_outputs = SwarmControllerOutputs()
             desired_states = SwarmDesiredStates()
 
-
-
             cf_index = 0
 
             for uri in self.uris:
@@ -375,7 +361,6 @@ class CrazySwarmReal:
                                     self.__controller_output_loggers[uri].next()
                 self.desired_state_data_dict[uri] = \
                                     self.__desired_state_loggers[uri].next()
-
 
                 # States
                 self.states[cf_index].name = 'cf' + str(cf_index + 1)
@@ -441,24 +426,21 @@ class CrazySwarmReal:
             self.__controller_outputs_pub(controller_outputs)
             self.__desired_states_pub(desired_states)
             
-
-
     # ------------------------------------------------------------------------------------------------------------------
     #
-    #         __M P C _ V E L O C I T Y _ C A L L B A C K
+    #         __M P C _ V E L O C I T Y  _ S U B _ C A L L B A C K
     #
     # This callback gets the desired velocity computed by the mpc controller 
     # and sets the velocity target so that the velocity commands are given as 
     # velocity setpoints to the drones composing the swarm
     # ------------------------------------------------------------------------------------------------------------------
-    def __mpc_velocity_callback(self, msg):
+    def __mpc_velocity_sub_callback(self, msg):
         
         cf_name = msg.name
-        # print('cf_name is: ', cf_name)
         num_ID = int(cf_name[2:]) - 1
         uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
 
-        if self.__land_action_flag == False:
+        if self.mpc_target_flag[uri]:
             self.desired_vx[uri] = msg.desired_velocity.x
             self.desired_vy[uri] = msg.desired_velocity.y
             self.desired_vz[uri] = msg.desired_velocity.z
@@ -469,7 +451,21 @@ class CrazySwarmReal:
         else:
             pass
 
-
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #         __M P C _ T A R G E T _ S U B _ C A L L B A C K
+    #
+    # This callback gets the desired velocity computed by the mpc controller 
+    # and sets the velocity target so that the velocity commands are given as 
+    # velocity setpoints to the drones composing the swarm
+    # ------------------------------------------------------------------------------------------------------------------
+    def __mpc_target_sub_callback(self, msg):
+        
+        cf_name = 'cf1'
+        num_ID = int(cf_name[2:]) - 1
+        uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
+        print('A new MPC targethas been accepted')
+        self.mpc_target_flag[uri] = True
 
     # ==================================================================================================================
     #
@@ -486,11 +482,11 @@ class CrazySwarmReal:
     def __swarm_takeoff_act_callback(self, goal):
         # Output:
         result = TakeoffResult()
-        # rospy.sleep(2)
 
         print('about to take off')
-
-        self.__land_action_flag = False
+        
+        for uri in self.uris:
+            self.mpc_target_flag[uri] = False
 
         self.takeoff_swarm()
 
@@ -508,7 +504,8 @@ class CrazySwarmReal:
         # Output:
         result = TakeoffResult()
 
-        self.__land_action_flag = True
+        for uri in self.uris:
+            self.mpc_target_flag[uri] = False
 
         self.land_swarm()
 
@@ -524,7 +521,6 @@ class CrazySwarmReal:
     def __cf_takeoff_feedback_cb(self, feedback):
         pass
 
-
     # ==================================================================================================================
     #
     #        L O G G E R S     C O N F I G U R A T I O N    M E T H O D S
@@ -534,7 +530,6 @@ class CrazySwarmReal:
     # Dictionaries are used to store the SyncLogger instances and extract data 
     # within the 100 Hz callback
     # The key used to identify the drones is the URI string
-
 
     #++++++++++++++++++++++++ CREATE STATE LOGGERS +++++++++++++++++++++++++++++++++
 
@@ -604,14 +599,11 @@ class CrazySwarmReal:
         """
         self.__swarm.parallel_safe(self.desired_state_logger_drone)
 
-
-
     # ==================================================================================================================
     #
     #         M E T H O D S    F O R    A C T I O N S    
     #
     # ==================================================================================================================
-
 
     #+++++++++++++++++++++++ TAKEOFF METHOD ++++++++++++++++++++++++++++++++++++++
 
@@ -641,7 +633,7 @@ class CrazySwarmReal:
                                         self.desired_yaw_rate[scf._link_uri])
 
     def velocity_setpoint_swarm(self):
-        print('... sending velocity setpoints')
+        # print('... sending velocity setpoints')
         self.__swarm.parallel_safe(self.velocity_setpoint_drone4swarm)
 
     # ==================================================================================================================

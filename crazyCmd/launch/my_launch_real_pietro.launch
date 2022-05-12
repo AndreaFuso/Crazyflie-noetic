@@ -13,12 +13,12 @@
 		</node>
 	</group>
 
-	<group ns = "cf1">
+	<!-- <group ns = "cf1">
 		<node pkg="crazyCmd" type="crazyflie_real_node_pietro.py" name="crazyflie_real_node" output="screen">
 			<rosparam param="name">cf1</rosparam>
 			<rosparam param="initial_position">[0.0, 0.0, 0.0]</rosparam>
 		</node>
-	</group>
+	</group> -->
 
 	<!-- <group ns = "cf2">
 		<node pkg="crazyCmd" type="crazyflie_real_node_pietro.py" name="crazyflie_real_node" output="screen">
