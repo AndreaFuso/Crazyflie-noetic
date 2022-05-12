@@ -51,9 +51,12 @@ class CrazySwarmReal:
         #              P R O P E R T I E S  I N I T I A L I Z A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-        # Variable to understand when initial operations are ended 
+        # Flag to understand when initial operations are ended 
         # (otherwise problem with 100Hz subscriber):
         self.__initialOperationsEnded = False
+
+        # Flag to understand when the land action is called
+        self.__land_action_flag = False
 
         # List of crazyflies names:
         self.cf_names = cf_names
@@ -455,12 +458,18 @@ class CrazySwarmReal:
         num_ID = int(cf_name[2:]) - 1
         uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
 
-        self.desired_vx[uri] = msg.desired_velocity.x
-        self.desired_vy[uri] = msg.desired_velocity.y
-        self.desired_vz[uri] = msg.desired_velocity.z
-        self.desired_yaw_rate[uri] = msg.desired_yaw_rate
+        if self.__land_action_flag == False:
+            self.desired_vx[uri] = msg.desired_velocity.x
+            self.desired_vy[uri] = msg.desired_velocity.y
+            self.desired_vz[uri] = msg.desired_velocity.z
+            self.desired_yaw_rate[uri] = msg.desired_yaw_rate
 
-        self.velocity_setpoint_swarm()
+            self.velocity_setpoint_swarm()
+
+        else:
+            pass
+
+
 
     # ==================================================================================================================
     #
@@ -477,14 +486,15 @@ class CrazySwarmReal:
     def __swarm_takeoff_act_callback(self, goal):
         # Output:
         result = TakeoffResult()
-        
-        rospy.sleep(2)
+        # rospy.sleep(2)
 
         print('about to take off')
 
+        self.__land_action_flag = False
+
         self.takeoff_swarm()
 
-        rospy.sleep(4)
+        rospy.sleep(2)
 
         self.__swarm_takeoff_act.set_succeeded(result)
 
@@ -497,8 +507,12 @@ class CrazySwarmReal:
     def __swarm_land_act_callback(self, goal):
         # Output:
         result = TakeoffResult()
-        
+
+        self.__land_action_flag = True
+
         self.land_swarm()
+
+        rospy.sleep(2)
         
         self.__swarm_land_act.set_succeeded(result)
     

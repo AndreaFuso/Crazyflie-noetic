@@ -258,7 +258,7 @@ if __name__ == '__main__':
     
     # Safety measures
     r_drone = 0.05
-    r_safety = 0.20
+    r_safety = 0.10
 
     # Time interval and number of control intervals
     # T_mpc = 5
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     N_mpc = 5
 
     # Setting the obstacles
-    x_obs=[0.4]
+    x_obs=[0.5]
     y_obs=[0.1]
     r_obs=[0.1]
 
