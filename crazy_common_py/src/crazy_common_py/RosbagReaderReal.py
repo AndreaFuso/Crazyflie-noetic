@@ -15,11 +15,11 @@ from crazy_common_py.common_functions import rad2deg
 
 rospack = rospkg.RosPack()
 
-bag_name = '2_drones_takeoff.bag'
+bag_name = 'real_cbf_1_drone1.bag'
 bag_path = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name
 bag = rosbag.Bag(bag_path)
 
-N_cf = 2
+N_cf = 1
 
 # Position trajectories
 x_list_list = []
@@ -283,6 +283,25 @@ ax2.set_ylabel('y [m]')
 
 ax2.set_aspect("equal")
 plt.grid("minor")
+
+# ------------- Plotting Obstacles ---------------
+
+dummy_angle = np.linspace(0,2*np.pi,100)
+
+# x_obs = [2.0, 1.0, 2.0]
+# y_obs = [2.5, 2.5, 4.0]
+# r_obs = [0.3, 0.2, 0.4]
+
+N_obs = 1
+
+x_obs = [0.5]
+y_obs = [0.1]
+r_obs = [0.2]
+
+for ii in range(N_obs):
+    ax2.plot(x_obs[ii] + r_obs[ii]*np.cos(dummy_angle),
+             y_obs[ii] + r_obs[ii]*np.sin(dummy_angle), 'r')
+
 
 
 # +++++++++++++++++++++++++ Plotting trajectories 3D ++++++++++++++++++++++++++++++

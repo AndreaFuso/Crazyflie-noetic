@@ -51,6 +51,9 @@ class CrazySwarmReal:
         #              P R O P E R T I E S  I N I T I A L I Z A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+        # Logger period
+        logger_period = 200 # ms
+
         # Flag to understand when initial operations are ended 
         # (otherwise problem with 100Hz subscriber):
         self.__initialOperationsEnded = False
@@ -71,7 +74,8 @@ class CrazySwarmReal:
         self.c_dict = dict()
 
         # State logger configuration (6 floats => 24/26 bytes):
-        self.__state_logger_config = LogConfig(name='state_conf', period_in_ms=200)
+        self.__state_logger_config = LogConfig(name='state_conf', 
+                                                    period_in_ms=logger_period)
         self.__state_logger_config.add_variable('stateEstimate.x', 'float')
         self.__state_logger_config.add_variable('stateEstimate.y', 'float')
         self.__state_logger_config.add_variable('stateEstimate.z', 'float')
@@ -81,7 +85,7 @@ class CrazySwarmReal:
 
         # Attitude logger configuration (6 floats => 24/26 bytes):
         self.__attitude_logger_config = LogConfig(name='attitude_conf', 
-                                                            period_in_ms=200)
+                                                    period_in_ms=logger_period)
         self.__attitude_logger_config.add_variable('stabilizer.roll', 'float')
         self.__attitude_logger_config.add_variable('stabilizer.pitch', 'float')
         self.__attitude_logger_config.add_variable('stabilizer.yaw', 'float')
@@ -91,7 +95,7 @@ class CrazySwarmReal:
 
          # Controller output logger configuration (4 floats => 16/26 bytes):
         self.__controller_output_config = LogConfig(name='controller_output_conf', 
-                                                                    period_in_ms=200)
+                                                    period_in_ms=logger_period)
         self.__controller_output_config.add_variable('controller.cmd_thrust', 'float')
         self.__controller_output_config.add_variable('controller.cmd_roll', 'float')
         self.__controller_output_config.add_variable('controller.cmd_pitch', 'float')
@@ -99,7 +103,7 @@ class CrazySwarmReal:
 
         # Reference velocity state logger configuration (4 floats => 16/26 bytes):
         self.__desired_state_logger_config = LogConfig(name='desired_state_config', 
-                                                                    period_in_ms=200)
+                                                    period_in_ms=logger_period)
         self.__desired_state_logger_config.add_variable('posCtl.targetVX', 'float')
         self.__desired_state_logger_config.add_variable('posCtl.targetVY', 'float')
         self.__desired_state_logger_config.add_variable('posCtl.targetVZ', 'float')
