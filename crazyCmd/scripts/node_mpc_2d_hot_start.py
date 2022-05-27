@@ -105,7 +105,6 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     X_i = P_0
     v_i = v_ig
 
-
     # Start with an empty NLP at each time step
     w = []
     w0 = []
@@ -204,6 +203,8 @@ def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc,
     mpc_velocity.desired_velocity.y = v_desired[1]
     mpc_velocity.desired_velocity.z = 0.0
 
+    mpc_velocity.name = 'cf1'
+
     return mpc_velocity, x1_opt, x2_opt
 
 
@@ -263,7 +264,7 @@ if __name__ == '__main__':
     r_safety = 0.05
 
     # Weights' parameters
-    w_des_vel = 1
+    w_des_vel = 1.0
     w_vel = 0.1
     a_pos = 0.15
     b_pos = 1.3
@@ -276,7 +277,7 @@ if __name__ == '__main__':
 
     ###############################################################################
 
-    # Publisher to publish the target velocity (output of nlp)
+    # Publisher to publish the target velocity
     mpc_velocity = Position()
     mpc_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', 
                                        Position, queue_size=1)

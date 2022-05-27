@@ -100,6 +100,11 @@ class MotionCommanderSim:
         self.mpc_velocity = Position()
 
 
+        # Subscriber to read the mpc target and set the mpc target flag
+        self.mpc_velocity_sub = rospy.Subscriber('/' + cfName + '/mpc_target', 
+                                        Position, self.__mpc_target_sub_callback)
+        self.mpc_target_flag = False
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -284,14 +289,36 @@ class MotionCommanderSim:
     # This callback gets the desired velocity computed by the mpc controller and sets the velocity target so that
     # the velocity command is provided to the velocity controller
     # ------------------------------------------------------------------------------------------------------------------
+    
     def __mpc_velocity_callback(self, msg):
-                
-        # Setting velocity mode:
-        self.flight_controller.mode = MovementMode.VELOCITY
+        cf_name = msg.name
+        if self.mpc_target_flag:
+            # Setting velocity mode:
+            self.flight_controller.mode = MovementMode.VELOCITY
         
-        self.position_target.desired_velocity.x = msg.desired_velocity.x
-        self.position_target.desired_velocity.y = msg.desired_velocity.y
-        self.position_target.desired_velocity.z = msg.desired_velocity.z
+            self.position_target.desired_velocity.x = msg.desired_velocity.x
+            self.position_target.desired_velocity.y = msg.desired_velocity.y
+            self.position_target.desired_velocity.z = msg.desired_velocity.z
+
+        else:
+            pass
+
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __M P C _ T A R G E T _ S U B _ C A L L B A C K
+    #
+    # This callback gets the new MPC target and sets the mpc target flag to true 
+    # if it is safe to give velocity commands to the velocity controller
+    # ------------------------------------------------------------------------------------------------------------------
+    
+    def __mpc_target_sub_callback(self,msg):
+        
+        cf_name = 'cf1'
+        print('A new MPC target has been accepted')
+        self.mpc_target_flag= True
+
+        pass
 
 
     # ==================================================================================================================
@@ -410,6 +437,13 @@ class MotionCommanderSim:
     #   * takeoff_height -> target takeoff height [m] to be reached to switch crazyflie state from LAND to FLYING;
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_act_callback(self, goal):
+
+        # Setting position mode:
+        self.flight_controller.mode = MovementMode.POSITION
+
+        # Setting mpc flag to false
+        self.mpc_target_flag = False
+
         # Setting up new status:
         self.status = CfStatus.TAKING_OFF
 
@@ -442,6 +476,7 @@ class MotionCommanderSim:
             # Verify if the Crazyflie has reached the takeoff height:
             if absolute_distance <= 0.005:
                 success = True
+                print('successful takeoff')
                 break
 
             # Check preemption:
@@ -477,6 +512,13 @@ class MotionCommanderSim:
     #   * takeoff_height -> height [m] at which the crazyflie has to move before turning off motors;
     # ------------------------------------------------------------------------------------------------------------------
     def __land_act_callback(self, goal):
+
+        # Setting position mode:
+        self.flight_controller.mode = MovementMode.POSITION
+
+        # Setting mpc flag to false
+        self.mpc_target_flag = False
+
         # Rate definition:
         rate = rospy.Rate(100.0)
         success = True
@@ -505,8 +547,9 @@ class MotionCommanderSim:
             self.__land_act.publish_feedback(feedback)
 
             # Verify if the Crazyflie has reached the takeoff height:
-            if absolute_distance <= 0.005:
+            if absolute_distance <= 0.05:
                 success = True
+                print('successfully landed')
                 break
 
             # Check preemption:
