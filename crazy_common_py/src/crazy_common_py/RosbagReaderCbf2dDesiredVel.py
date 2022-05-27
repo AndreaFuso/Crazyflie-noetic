@@ -296,6 +296,104 @@ ax4.plot(time_smooth_cm, distance_cm_list)
 plt.grid("minor")
 
 
+
+
+# ++++++++++ Plotting Velocity Trajectories - Actual vs. Desired ++++++++++++++
+
+fig5,ax5 = plt.subplots()
+legend_vel_traj = []
+
+for ii in range(N_cf):
+    ax5.plot(v_x_list_list[ii][500:2200], v_y_list_list[ii][500:2200])
+    ax5.plot(v_des_x_list_list[ii][500:2200], v_des_y_list_list[ii][500:2200])
+
+    legend_vel_traj.append('drone_'+str(ii+1)+' actual velocity trajectory')
+    legend_vel_traj.append('drone_'+str(ii+1)+' desired velocity trajectory')
+
+
+ax5.legend(legend_vel_traj)
+ax5.set_xlabel('v_x [m]')
+
+ax5.set_ylabel('v_y [m]')
+
+ax5.set_aspect("equal")
+plt.grid("minor")
+
+
+
+# +++++++++++++++++++++ Plotting Velocity Error +++++++++++++++++++++++++++++++
+
+
+
+n_vel = len(v_x_list_list[ii])
+n_vel_des = len(v_des_x_list_list[ii])
+
+print ('n_vel is: ', n_vel)
+print ('n_vel_des is: ', n_vel_des)
+
+
+N_des_time_steps_error_list = []
+
+for ii in range(N_cf):
+    N_des_time_steps_error_list.append(len(v_des_x_list_list[ii]))
+
+time_smooth_error = []
+
+for ii in range(N_cf):
+    time_smooth_error.append(np.linspace(des_time_sec_list_list[ii][0], 
+                                         des_time_sec_list_list[ii][-1], 
+                                         N_des_time_steps_vel_list[ii]))
+
+v_x_interp_list_list = []
+v_y_interp_list_list = []
+v_abs_interp_list_list = []
+
+for ii in range(N_cf):
+    # velocity interp trajectories
+    v_x_interp_list_i = []
+    v_x_interp_list_list.append(v_x_interp_list_i)
+    v_y_interp_list_i = []
+    v_y_interp_list_list.append(v_y_interp_list_i)
+    v_abs_interp_list_i = []
+    v_abs_interp_list_list.append(v_abs_interp_list_i)
+
+for ii in range(N_cf):
+    v_x_interp_list_list[ii] = (np.interp(time_smooth_error[ii],
+                                        time_smooth_vel[ii], v_x_list_list[ii]))
+    v_y_interp_list_list[ii] = (np.interp(time_smooth_error[ii],
+                                        time_smooth_vel[ii], v_y_list_list[ii]))
+    v_abs_interp_list_list[ii] = (np.interp(time_smooth_error[ii],
+                                        time_smooth_vel[ii], abs_vel_list_list[ii]))
+
+print('time_smooth_error[ii] is: ', time_smooth_error[0])
+print('len(time_smooth_error[ii]) is: ', len(time_smooth_error[0]))
+print('v_abs_interp_list_list[0] is: ', v_abs_interp_list_list[0])
+print('len(v_abs_interp_list_list[0]) is: ', len(v_abs_interp_list_list[0]))
+
+
+# Velocity error
+v_error_list_list = []
+for ii in range(N_cf):
+    v_error_list_list.append(np.subtract(v_abs_interp_list_list[ii],
+                                         abs_vel_des_list_list[ii]))
+    pass
+
+
+fig6,ax6 = plt.subplots()
+legend_vel_err = []
+
+
+for ii in range(N_cf):
+    # ax6.plot(v_x_interp_list_list[ii][500:2200], v_y_interp_list_list[ii][500:2200])
+    # ax6.plot(v_des_x_list_list[ii][500:2200], v_des_y_list_list[ii][500:2200])
+    ax6.plot(time_smooth_error[ii], v_error_list_list[ii])
+
+    # legend_vel_traj.append('drone_'+str(ii+1)+' actual velocity trajectory')
+    # legend_vel_traj.append('drone_'+str(ii+1)+' desired velocity trajectory')
+    pass
+
+
+
 plt.show(block=True)
 
 bag.close()
