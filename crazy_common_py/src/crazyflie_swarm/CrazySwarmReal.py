@@ -41,9 +41,9 @@ class CrazySwarmReal:
     #
     #              C O N S T R U C T O R
     #
-    # This class completely handle one virtual swarm of crazyflies.
+    # This class completely handle one real swarm of crazyflies.
     # INPUTS:
-    #   1) cf_names -> list of names of each Crazyflie within the virtual swarm;
+    #   1) cf_names -> list of names of each Crazyflie within the real swarm;
     #
     # ==================================================================================================================
     def __init__(self, cf_names):
@@ -75,13 +75,19 @@ class CrazySwarmReal:
 
         # State logger configuration (6 floats => 24/26 bytes):
         self.__state_logger_config = LogConfig(name='state_conf', 
-                                                    period_in_ms=logger_period)
-        self.__state_logger_config.add_variable('stateEstimate.x', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.y', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.z', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.vx', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.vy', 'float')
-        self.__state_logger_config.add_variable('stateEstimate.vz', 'float')
+                                        period_in_ms=logger_period)
+        self.__state_logger_config.add_variable('stateEstimate.x', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.y', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.z', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.vx', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.vy', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.vz', 
+                                                'float')
 
         # Attitude logger configuration (6 floats => 24/26 bytes):
         self.__attitude_logger_config = LogConfig(name='attitude_conf', 
@@ -120,8 +126,9 @@ class CrazySwarmReal:
         #                 S U B S C R I B E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Subscriber to pace 100Hz:
-        self.pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, 
-                                            Empty, self.__pace_100Hz_sub_callback)
+        self.pace_100Hz_sub = rospy.Subscriber(
+                        '/' + DEFAULT_100Hz_PACE_TOPIC, 
+                        Empty, self.__pace_100Hz_sub_callback)
    
         # List of mpc velocity subscribers:
         self.mpc_velocity_subs = []
@@ -142,7 +149,8 @@ class CrazySwarmReal:
         #                 P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # States publisher:
-        self.states_pub = rospy.Publisher('/swarm/states', SwarmStates, queue_size=1)
+        self.states_pub = rospy.Publisher('/swarm/states', 
+                                          SwarmStates, queue_size=1)
 
         # List of states
         self.__make_states_publishers()
@@ -163,14 +171,16 @@ class CrazySwarmReal:
         #                    A C T I O N S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Action to make the entire swarm take off :
-        self.__swarm_takeoff_act = actionlib.SimpleActionServer('/swarm/takeoff_actn',
-                            TakeoffAction, self.__swarm_takeoff_act_callback, False)
+        self.__swarm_takeoff_act = actionlib.SimpleActionServer(
+                                    '/swarm/takeoff_actn', TakeoffAction, 
+                                    self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
 
 
         # Action to make the entire swarm land:
-        self.__swarm_land_act = actionlib.SimpleActionServer('/swarm/land_actn', 
-                                 TakeoffAction, self.__swarm_land_act_callback, False)
+        self.__swarm_land_act = actionlib.SimpleActionServer(
+                                    '/swarm/land_actn', TakeoffAction, 
+                                    self.__swarm_land_act_callback, False)
         self.__swarm_land_act.start()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -203,7 +213,7 @@ class CrazySwarmReal:
         self.controller_output_loggers_swarm()
         self.desired_state_loggers_swarm()
 
-        # # List of states as CrazyflieState messages:
+        # List of states as CrazyflieState messages:
         self.states = []
         self.__make_states_list()
 
@@ -226,8 +236,8 @@ class CrazySwarmReal:
 
     #++++++++ MOTION COMMANDER AND COMMANDER INSTANTIATION METHOD +++++++++++++++++
 
-    # Creating a list of motion commanders to be used for the single drones
-    # and for the swarm
+    # Creating a list of motion commanders to be used for the single 
+    # drones and for the swarm
 
     def create_commanders_dict_drone(self, scf):
 
@@ -244,82 +254,91 @@ class CrazySwarmReal:
     def create_commanders_dict_swarm(self):
         self.__swarm.parallel_safe(self.create_commanders_dict_drone)
 
-    #+++++++++++++++++++ STATE SUBSCRIBER LIST METHOD ++++++++++++++++++++++++++++++
+    #++++++++ STATE SUBSCRIBER LIST METHOD +++++++++++++++++++
 
     def __make_states_list(self):
         for cf_name in self.cf_names:
             self.states.append(CrazyflieState())
 
-    #+++++++++++++++++++ MPC VELOCITY SUBSCRIBER LIST METHOD ++++++++++++++++++++++++
+    #++++++++ MPC VELOCITY SUBSCRIBER LIST METHOD ++++++++++++
 
     def __make_mpc_velocity_subs(self):
         for cf_name in self.cf_names:
-            # Subscribers to read the desired velocity computed by the MPC controller
+            # Subscribers to read the desired velocity 
+            # computed by the MPC controller
             tmp_sub = rospy.Subscriber('/' + cf_name + 
-                        '/mpc_velocity', Position, self.__mpc_velocity_sub_callback)
+                                       '/mpc_velocity', Position, 
+                                       self.__mpc_velocity_sub_callback)
             self.mpc_velocity_subs.append(tmp_sub)
 
-    #++++++++++++++++++++ MPC TARGET SUBSCRIBER LIST METHOD +++++++++++++++++++++++++
+    #++++++++ MPC TARGET SUBSCRIBER LIST METHOD ++++++++++++++
 
     def __make_mpc_target_subs(self):
         for cf_name in self.cf_names:
             # Subscribers to read the MPC target for single drones
             tmp_sub = rospy.Subscriber('/' + cf_name + 
-                        '/mpc_target', Position, self.__mpc_target_sub_callback)
+                                       '/mpc_target', Position, 
+                                       self.__mpc_target_sub_callback)
             self.mpc_target_subs.append(tmp_sub)
 
         for uri in self.uris:
             self.mpc_target_flag[uri] = False
-            
-    #+++++++++++++++++++ STATE PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
+
+    #+++++++++ STATE PUBLISHERS LIST METHOD ++++++++++++
 
     def __make_states_publishers(self):
         self.states_pubs = []
         for cf_name in self.cf_names:
             tmp_pub = rospy.Publisher('/' + cf_name + '/state', 
-                                                CrazyflieState, queue_size=1)
+                                      CrazyflieState, queue_size=1)
             self.states_pubs.append(tmp_pub)
 
-    #+++++++++++++++++++ STATE PUBLISHERS PUBLISH METHOD ++++++++++++++++++++++++++++
+    #+++++++++ C.O. PUBLISHERS LIST METHOD +++++++++++++
+
+    def __make_controller_outputs_publishers(self):
+        self.controller_outputs_pubs = []
+        for cf_name in self.cf_names:
+            tmp_pub = rospy.Publisher('/' + cf_name + '/' + 
+                                      DEFAULT_MOTOR_CMD_TOPIC, 
+                                      Attitude, queue_size=1)
+            self.controller_outputs_pubs.append(tmp_pub)
+            self.controller_outputs.append(Attitude())
+
+    #+++++++++ D.S. PUBLISHERS LIST METHOD +++++++++++++
+
+    def __make_desired_states_publishers(self):
+        self.desired_states_pubs = []
+        for cf_name in self.cf_names:
+            tmp_pub = rospy.Publisher('/' + cf_name + '/' + 
+                                      DEFAULT_ACTUAL_DESTINATION_TOPIC, 
+                                      Position, queue_size=1)
+            self.desired_states_pubs.append(tmp_pub)
+            self.desired_states.append(Position())
+
+    #++++++++++ STATE PUBLISHERS PUBLISH METHOD +++++++++
 
     def __states_pub(self, states):
         index = 0
         for index, state_pub in enumerate(self.states_pubs):
             state_pub.publish(states.states[index])
 
-    #+++++++++++++++++++ C.O. PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
-
-    def __make_controller_outputs_publishers(self):
-        self.controller_outputs_pubs = []
-        for cf_name in self.cf_names:
-            tmp_pub = rospy.Publisher('/' + cf_name + '/' + 
-                            DEFAULT_MOTOR_CMD_TOPIC, Attitude, queue_size=1)
-            self.controller_outputs_pubs.append(tmp_pub)
-            self.controller_outputs.append(Attitude())
-
-    #+++++++++++++++++++ C.O. PUBLISHERS PUBLISH METHOD ++++++++++++++++++++++++++++
+    #+++++++++++ C.O. PUBLISHERS PUBLISH METHOD +++++++++
 
     def __controller_outputs_pub(self, controller_outputs):
         index = 0
-        for index, controller_output_pub in enumerate(self.controller_outputs_pubs):
-            controller_output_pub.publish(controller_outputs.controller_outputs[index])
+        for index, controller_output_pub in enumerate(
+                                    self.controller_outputs_pubs):
+            controller_output_pub.publish(
+                    controller_outputs.controller_outputs[index])
 
-    #+++++++++++++++++++ D.S. PUBLISHERS LIST METHOD +++++++++++++++++++++++++++++++
-
-    def __make_desired_states_publishers(self):
-        self.desired_states_pubs = []
-        for cf_name in self.cf_names:
-            tmp_pub = rospy.Publisher('/' + cf_name + '/' + 
-                            DEFAULT_ACTUAL_DESTINATION_TOPIC, Position, queue_size=1)
-            self.desired_states_pubs.append(tmp_pub)
-            self.desired_states.append(Position())
-
-    #+++++++++++++++++++ D.S. PUBLISHERS PUBLISH METHOD ++++++++++++++++++++++++++++
+    #+++++++++++ D.S. PUBLISHERS PUBLISH METHOD +++++++++
 
     def __desired_states_pub(self, desired_states):
         index = 0
-        for index, desired_state_pub in enumerate(self.desired_states_pubs):
-            desired_state_pub.publish(desired_states.desired_states[index])
+        for index, desired_state_pub in enumerate(
+                                self.desired_states_pubs):
+            desired_state_pub.publish(
+                     desired_states.desired_states[index])
 
     #++++++++++++++++++++++++ CREATE LIST OF URIS +++++++++++++++++++++++++++++++++
 
@@ -359,12 +378,14 @@ class CrazySwarmReal:
             for uri in self.uris:
 
                 # Extracting information from the loggers
-                self.state_data_dict[uri] = self.__state_loggers[uri].next()
-                self.attitude_data_dict[uri] = self.__attitude_loggers[uri].next()
+                self.state_data_dict[uri] = \
+                            self.__state_loggers[uri].next()
+                self.attitude_data_dict[uri] = \
+                            self.__attitude_loggers[uri].next()
                 self.controller_output_data_dict[uri] = \
-                                    self.__controller_output_loggers[uri].next()
+                            self.__controller_output_loggers[uri].next()
                 self.desired_state_data_dict[uri] = \
-                                    self.__desired_state_loggers[uri].next()
+                            self.__desired_state_loggers[uri].next()
 
                 # States
                 self.states[cf_index].name = 'cf' + str(cf_index + 1)
@@ -421,10 +442,6 @@ class CrazySwarmReal:
             controller_outputs.controller_outputs = self.controller_outputs
             desired_states.desired_states = self.desired_states
 
-            # print(self.states)
-            # print(self.controller_outputs)
-            # print(self.desired_states)
-
             self.states_pub.publish(states)
             self.__states_pub(states)
             self.__controller_outputs_pub(controller_outputs)
@@ -468,7 +485,7 @@ class CrazySwarmReal:
         cf_name = 'cf1'
         num_ID = int(cf_name[2:]) - 1
         uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
-        print('A new MPC targethas been accepted')
+        print('A new MPC target has been accepted')
         self.mpc_target_flag[uri] = True
 
     # ==================================================================================================================

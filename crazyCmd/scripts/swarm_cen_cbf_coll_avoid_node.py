@@ -673,10 +673,9 @@ def mpc_target_sub_callback(msg):
 
 def make_mpc_velocity_publishers():
     for cf_name in cf_names:
-        mpc_velocity_pub = rospy.Publisher('/' + cf_name + '/mpc_velocity', 
-                                            Position, queue_size=1)
+        mpc_velocity_pub = rospy.Publisher('/' + cf_name + 
+                            '/mpc_velocity', Position, queue_size=1)
         mpc_velocity_publishers.append(mpc_velocity_pub)
-
 
 def swarm_mpc_velocity_pub(mpc_velocity):
     index = 0
@@ -694,7 +693,7 @@ if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('node_high_level_mpc', log_level=rospy.DEBUG)
 
-    # Extracting rosparam informations (to understand the number of crazyflies):
+    # Extracting rosparam information (number of crazyflies):
     N_cf = rospy.get_param('swarm_node/cfs_number')
 
     # Generate a standard list of names:
@@ -764,8 +763,6 @@ if __name__ == '__main__':
                                       mpc_target_sub_callback)
     mpc_target = Position()
     
-    ##############################################################
-    
     # Flag for the mpc target subscriber
     sub_mpc_flag = Int16()
     sub_mpc_flag.data = 0
@@ -823,7 +820,7 @@ if __name__ == '__main__':
                                 N_neigh)
             
             x_opt_old, v_opt_old = x_opt, v_opt
-            
+         
             #++++++++++++ DRONE LEVEL CBF CONTROLLER +++++++++++
             
             for ii in range(N_cf):
@@ -860,11 +857,12 @@ if __name__ == '__main__':
                 # Setting obstacles
                 cbf_controller.set_obstacle()
                 # Getting cbf velocity
-                v = cbf_controller.get_cbf_v(x0, N_obs, x_obs, r_obs)
-                # Setting cbf_velocity msg to be published to 
+                cbf_velocity = cbf_controller.get_cbf_v(x0, N_obs, 
+                                                        x_obs, r_obs)
+                # Setting mpc_velocity msg to be published to 
                 # /cf1/mpc_velocity
-                mpc_velocity[ii].desired_velocity.x = v[0]
-                mpc_velocity[ii].desired_velocity.y = v[1]
+                mpc_velocity[ii].desired_velocity.x = cbf_velocity[0]
+                mpc_velocity[ii].desired_velocity.y = cbf_velocity[1]
             
             swarm_mpc_velocity_pub(mpc_velocity)
 

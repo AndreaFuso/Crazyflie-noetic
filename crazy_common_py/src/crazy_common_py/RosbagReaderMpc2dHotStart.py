@@ -106,7 +106,7 @@ legend_traj = []
 
 for ii in range(N_cf):
     ax1.plot(x_list_list[ii], y_list_list[ii])
-    legend_traj.append('drone_'+str(ii+1))
+    legend_traj.append('drone_'+str(ii+1)+' trajectory')
 
 
 ax1.set_xlabel('x [m]')

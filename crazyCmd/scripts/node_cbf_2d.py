@@ -114,7 +114,7 @@ if __name__ == '__main__':
     rospy.init_node('node_cbf_2d', log_level=rospy.DEBUG)
 
     # Setting the parameters for the cbf controller and the position goal
-    v_lim = 0.5
+    v_lim = 0.75
     alpha = 1
     d_lim = 0.4
 
@@ -132,9 +132,10 @@ if __name__ == '__main__':
 
     ###############################################################################
 
-    # Publisher to publish the target velocity (output of nlp)
+    # Publisher to publish the target velocity
     cbf_velocity = Position()
-    cbf_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', Position, queue_size=1)
+    cbf_velocity_pub = rospy.Publisher('/cf1/mpc_velocity', 
+                                        Position, queue_size=1)
 
 
     ###############################################################################
@@ -143,15 +144,14 @@ if __name__ == '__main__':
 
     ###############################################################################
 
-    # Subscriber to get the mpc target position
-    cbf_target_sub = rospy.Subscriber('/cf1/cbf_target', Position, cbf_target_sub_callback)
+    # Subscriber to get the cbf target position
+    cbf_target_sub = rospy.Subscriber('/cf1/cbf_target', Position, 
+                                            cbf_target_sub_callback)
 
-    # Subscriber to get the actual state of the drone in the simulation:
-    state_sub = rospy.Subscriber('/cf1/state', CrazyflieState, state_sub_callback)
+    # Subscriber to get the actual state of the drone:
+    state_sub = rospy.Subscriber('/cf1/state', CrazyflieState, 
+                                                state_sub_callback)
     actual_state = CrazyflieState()
-
-
-    ###############################################################################
 
     # Flag for the cbf target subscriber
     sub_cbf_flag = Int16()
@@ -162,7 +162,6 @@ if __name__ == '__main__':
     cbf_target.desired_position.x = 0
     cbf_target.desired_position.y = 0
 
-
     rate = rospy.Rate(20)
 
     while not rospy.is_shutdown():
@@ -172,18 +171,23 @@ if __name__ == '__main__':
 
         else:
             # Getting the new goal
-            x_goal = np.array([cbf_target.desired_position.x, cbf_target.desired_position.y])
+            x_goal = np.array([cbf_target.desired_position.x, 
+                               cbf_target.desired_position.y])
             # Setting initial position at the current time step
-            x0 = np.array([actual_state.position.x, actual_state.position.y])
+            x0 = np.array([actual_state.position.x, 
+                           actual_state.position.y])
             # Creating the instance of the CBF controller
-            cbf_controller = CBF_controller(v_lim, alpha, x_goal, x0, d_lim)
+            cbf_controller = CBF_controller(v_lim, alpha, x_goal, 
+                                            x0, d_lim)
             # Setting obstacles
             cbf_controller.set_obstacle(x_obs, r_tot)
             # Getting cbf velocity
             v = cbf_controller.get_cbf_v(x0)
-            # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
+            # Setting cbf_velocity msg to be published to
+            # /cf1/mpc_velocity
             cbf_velocity.desired_velocity.x = v[0]
             cbf_velocity.desired_velocity.y = v[1]
+            cbf_velocity.name = 'cf1'
             cbf_velocity_pub.publish(cbf_velocity)
 
         rate.sleep()

@@ -10,33 +10,25 @@ from crazyflie_swarm.CrazySwarmReal import CrazySwarmReal
 
 from cflib.crazyflie.swarm import Swarm, CachedCfFactory, _Factory
 
-
-
 def exiting_hook():
     swarm.exit_operations()
-
 
 if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('swarm_real_node', log_level=rospy.DEBUG)
 
-    # Extracting rosparam informations (to understand the number of crazyflies):
+    # Extracting rosparam informations (to understand the number of 
+    # crazyflies):
     number_of_cfs = rospy.get_param('swarm_node/cfs_number')
 
     # Generate a standard list of names:
     cf_names = standardNameList(number_of_cfs)
-    print('cf_names are: ', cf_names)
 
     # Instantiation of CrazySwarmReal
     swarm = CrazySwarmReal(cf_names)
 
     time.sleep(1)
 
-    # print(cf_names)
-    # print(swarm.cf_names)
-    # print(type(swarm.takeoff_act_clients[0]))
-
     rospy.spin()
-
 
     rospy.on_shutdown(exiting_hook)

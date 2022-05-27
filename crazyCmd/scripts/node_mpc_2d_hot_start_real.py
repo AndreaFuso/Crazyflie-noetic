@@ -295,7 +295,6 @@ if __name__ == '__main__':
 
     for ii in range(N_mpc+1):
         mpc_traj.x_vec.append(Position())
-    # print('mpc_traj empty is: ', mpc_traj)
     ###############################################################################
 
     #                     S U B S C R I B E R S   S E T U P
@@ -328,8 +327,6 @@ if __name__ == '__main__':
     rospy.init_node('node_mpc_2d', log_level=rospy.DEBUG)
 
     rate = rospy.Rate(100)
-
-    # rate = rospy.Rate(N_mpc/T_mpc)
 
     while not rospy.is_shutdown():
         
