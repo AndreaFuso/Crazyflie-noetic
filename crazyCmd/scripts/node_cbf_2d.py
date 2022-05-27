@@ -145,7 +145,7 @@ if __name__ == '__main__':
     ###############################################################################
 
     # Subscriber to get the cbf target position
-    cbf_target_sub = rospy.Subscriber('/cf1/cbf_target', Position, 
+    cbf_target_sub = rospy.Subscriber('/cf1/mpc_target', Position, 
                                             cbf_target_sub_callback)
 
     # Subscriber to get the actual state of the drone:
