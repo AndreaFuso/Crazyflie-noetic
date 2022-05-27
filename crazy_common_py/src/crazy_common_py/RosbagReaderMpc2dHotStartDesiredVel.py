@@ -13,11 +13,12 @@ from crazy_common_py.common_functions import rad2deg
 N_cf = 1
 N_obs = 1
 N_mpc = 5
+mpc_traj_flag = True
 
 rospack = rospkg.RosPack()
 
 
-bag_name = '1_drone_mpc_sim_test.bag'
+bag_name = '1_drone_mpc_sim_test2.bag'
 bag_path = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name
 bag = rosbag.Bag(bag_path)
 
@@ -123,7 +124,7 @@ for ii in range(N_cf):
 # +++++++++++++++++++++++++ Target Coordinates +++++++++++++++++++++++++++++++++
 
 x_target = 2.0
-y_target = 0.5
+y_target = 0.0
 
 # +++++++++++++++++++++++++ Plotting trajectories ++++++++++++++++++++++++++++++
 
@@ -147,19 +148,21 @@ plt.grid("minor")
 # ++++++++++++++++ Plotting MPC Open Loop Trajectories +++++++++++++++++++++++
 
 
+if mpc_traj_flag:
 
-# print('N_max_time is: ', N_max_time)
+
+    initial_time_steps_i = []
+
+    for ii in range(N_cf):
+        N_max_time_i = len(time_mpc_sec_list_list[ii])
+        initial_time_steps_i = np.arange(0,N_max_time_i,35)
+        for jj in range(3):
+            initial_time_steps_i = np.delete(initial_time_steps_i,-1,0)
 
 
-initial_time_steps_i = []
-
-for ii in range(N_cf):
-    N_max_time_i = len(time_mpc_sec_list_list[ii])
-    initial_time_steps_i = np.arange(0,N_max_time_i,35)
-
-    for jj in initial_time_steps_i:
-        ax1.plot(mpc_x_list_list[ii][jj],mpc_y_list_list[ii][jj],'o--')
-        legend_traj.append('mpc open loop prediction' + str(jj))
+        for jj in initial_time_steps_i:
+            ax1.plot(mpc_x_list_list[ii][jj],mpc_y_list_list[ii][jj],'o--')
+            legend_traj.append('mpc open loop prediction' + str(jj))
 
 
 # ++++++++++++++++++++++++++ Plotting Target +++++++++++++++++++++++++++++++++

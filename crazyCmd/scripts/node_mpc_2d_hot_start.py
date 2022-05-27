@@ -344,7 +344,7 @@ if __name__ == '__main__':
             mpc_velocity, x1_opt, x2_opt = nlp_solver_2d(mpc_target, 
                 actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc, 
                 r_drone, r_safety, x1_opt_old, x2_opt_old, w_des_vel, 
-                w_vel, a_pos, b_pos, d_lb, d_ub) 
+                w_vel, a_pos, b_pos, d_lb, d_ub)
 
             for ii in range(N_mpc+1):
                 mpc_traj.x_vec[ii].desired_position.x = x1_opt[ii]
