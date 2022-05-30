@@ -304,8 +304,8 @@ fig5,ax5 = plt.subplots()
 legend_vel_traj = []
 
 for ii in range(N_cf):
-    ax5.plot(v_x_list_list[ii][500:2200], v_y_list_list[ii][500:2200])
-    ax5.plot(v_des_x_list_list[ii][500:2200], v_des_y_list_list[ii][500:2200])
+    ax5.plot(v_x_list_list[ii][450:2200], v_y_list_list[ii][450:2200])
+    ax5.plot(v_des_x_list_list[ii][450:2200], v_des_y_list_list[ii][450:2200])
 
     legend_vel_traj.append('drone_'+str(ii+1)+' actual velocity trajectory')
     legend_vel_traj.append('drone_'+str(ii+1)+' desired velocity trajectory')
