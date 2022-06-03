@@ -13,30 +13,30 @@ from crazy_common_py.common_functions import rad2deg
 N_cf = 1
 N_obs = 1
 N_mpc = 5
-mpc_traj_flag = True
+mpc_traj_flag = False
 
 rospack = rospkg.RosPack()
 
 
-bag_name = '1_drone_mpc_sim_test2.bag'
-bag_path = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name
-bag = rosbag.Bag(bag_path)
+bag_name_mpc = '1_drone_mpc_sim_test2.bag'
+bag_path_mpc = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name_mpc
+bag_mpc = rosbag.Bag(bag_path_mpc)
 
 
-x_list_list = []
-y_list_list = []
-v_x_list_list = []
-v_y_list_list = []
-time_sec_list_list = []
-time_nsec_list_list = []
+x_list_list_mpc = []
+y_list_list_mpc = []
+v_x_list_list_mpc = []
+v_y_list_list_mpc = []
+time_sec_list_list_mpc = []
+time_nsec_list_list_mpc = []
 
-v_des_x_list_list = []
-v_des_y_list_list = []
-des_time_sec_list_list = []
-des_time_nsec_list_list = []
+v_des_x_list_list_mpc = []
+v_des_y_list_list_mpc = []
+des_time_sec_list_list_mpc = []
+des_time_nsec_list_list_mpc = []
 
-abs_vel_list_list = []
-abs_vel_des_list_list = []
+abs_vel_list_list_mpc = []
+abs_vel_des_list_list_mpc = []
 
 time_mpc_sec_list_list = []
 time_mpc_nsec_list_list = []
@@ -47,29 +47,29 @@ mpc_y_list_list = []
 for ii in range(N_cf):
     # position trajectories
     x_list_i = []
-    x_list_list.append(x_list_i)
+    x_list_list_mpc.append(x_list_i)
     y_list_i = []
-    y_list_list.append(y_list_i)
+    y_list_list_mpc.append(y_list_i)
     # velocity trajectories
     v_x_list_i = []
-    v_x_list_list.append(v_x_list_i)
+    v_x_list_list_mpc.append(v_x_list_i)
     v_y_list_i = []
-    v_y_list_list.append(v_y_list_i)
+    v_y_list_list_mpc.append(v_y_list_i)
     # desired velocity trajectories
     v_des_x_list_i = []
-    v_des_x_list_list.append(v_des_x_list_i)
+    v_des_x_list_list_mpc.append(v_des_x_list_i)
     v_des_y_list_i = []
-    v_des_y_list_list.append(v_des_y_list_i)
+    v_des_y_list_list_mpc.append(v_des_y_list_i)
     # time
     time_sec_list_i = []
-    time_sec_list_list.append(time_sec_list_i)
+    time_sec_list_list_mpc.append(time_sec_list_i)
     time_nsec_list_i = []
-    time_nsec_list_list.append(time_nsec_list_i)
+    time_nsec_list_list_mpc.append(time_nsec_list_i)
     # time des vel
     des_time_sec_list_i = []
-    des_time_sec_list_list.append(des_time_sec_list_i)
+    des_time_sec_list_list_mpc.append(des_time_sec_list_i)
     des_time_nsec_list_i = []
-    des_time_nsec_list_list.append(des_time_nsec_list_i)
+    des_time_nsec_list_list_mpc.append(des_time_nsec_list_i)
     # time mpc
     time_mpc_sec_list_i = []
     time_mpc_sec_list_list.append(time_mpc_sec_list_i)
@@ -83,36 +83,42 @@ for ii in range(N_cf):
 
 
 for ii in range(N_cf):
-    for topic, msg, t in bag.read_messages(topics=['/cf'+ str(ii+1) +'/state']):
+    for topic, msg, t in bag_mpc.read_messages(topics=['/cf'+ str(ii+1) +'/state']):
         # position trajectories
-        x_list_list[ii].append(msg.position.x)
-        y_list_list[ii].append(msg.position.y)
+        x_list_list_mpc[ii].append(msg.position.x)
+        y_list_list_mpc[ii].append(msg.position.y)
         # velocity trajectories
-        v_x_list_list[ii].append(msg.velocity.x)
-        v_y_list_list[ii].append(msg.velocity.y)
+        v_x_list_list_mpc[ii].append(msg.velocity.x)
+        v_y_list_list_mpc[ii].append(msg.velocity.y)
         # time
-        time_sec_list_list[ii].append(t.secs)
-        time_nsec_list_list[ii].append(t.nsecs)
+        time_sec_list_list_mpc[ii].append(t.secs)
+        time_nsec_list_list_mpc[ii].append(t.nsecs)
+
+    # putting together seconds and nanoseconds
+    nsec_to_sec = [x * 10**(-9) for x in time_nsec_list_list_mpc[ii]]
+    time_sec_list_list_mpc[ii] = np.add(time_sec_list_list_mpc[ii], nsec_to_sec)
 
 for ii in range(N_cf):
-    for topic, msg, t in bag.read_messages(topics=['/cf'+ str(ii+1) +'/actual_state_target']):
+    for topic, msg, t in bag_mpc.read_messages(topics=['/cf'+ str(ii+1) +'/actual_state_target']):
         # desired velocity trajectories
-        v_des_x_list_list[ii].append(msg.desired_velocity.x)
-        v_des_y_list_list[ii].append(msg.desired_velocity.y)
+        v_des_x_list_list_mpc[ii].append(msg.desired_velocity.x)
+        v_des_y_list_list_mpc[ii].append(msg.desired_velocity.y)
         # time
-        des_time_sec_list_list[ii].append(t.secs)
-        des_time_nsec_list_list[ii].append(t.nsecs)
+        des_time_sec_list_list_mpc[ii].append(t.secs)
+        des_time_nsec_list_list_mpc[ii].append(t.nsecs)
+    
+    # putting together seconds and nanoseconds
+    nsec_to_sec = [x * 10**(-9) for x in des_time_nsec_list_list_mpc[ii]]
+    des_time_sec_list_list_mpc[ii] = np.add(des_time_sec_list_list_mpc[ii], nsec_to_sec)
 
 for ii in range(N_cf):
-    for topic, msg, t in bag.read_messages(topics=['/cf'+ str(ii+1) +'/mpc_traj']):
+    for topic, msg, t in bag_mpc.read_messages(topics=['/cf'+ str(ii+1) +'/mpc_traj']):
         # mpc optimal position trajectories
         mpc_x_list_j = []
         mpc_y_list_j = []
         for jj in range(N_mpc + 1):
             mpc_x_list_j.append(msg.x_vec[jj].desired_position.x)
             mpc_y_list_j.append(msg.x_vec[jj].desired_position.y)
-
-        # print('mpc_x_list_j is: ', mpc_x_list_j)
 
         mpc_x_list_list[ii].append(mpc_x_list_j)
         mpc_y_list_list[ii].append(mpc_y_list_j)
@@ -132,7 +138,7 @@ fig1,ax1 = plt.subplots()
 legend_traj = []
 
 for ii in range(N_cf):
-    ax1.plot(x_list_list[ii], y_list_list[ii])
+    ax1.plot(x_list_list_mpc[ii], y_list_list_mpc[ii])
     legend_traj.append('drone_'+str(ii+1)+' trajectory')
 
 
@@ -199,57 +205,29 @@ for ii in range(N_obs):
 # +++++++++++++++++++++ Plotting velocity vs. time +++++++++++++++++++++++++++
 
 
-N_time_steps_vel_list = []
-
-for ii in range(N_cf):
-    N_time_steps_vel_list.append(len(x_list_list[ii]))
-
-print('N_time_steps_vel_list is: ', N_time_steps_vel_list)
-
-time_smooth_vel = []
-
-for ii in range(N_cf):
-    time_smooth_vel.append(np.linspace(time_sec_list_list[ii][0], 
-                                       time_sec_list_list[ii][-1], N_time_steps_vel_list[ii]))
-
-
-N_des_time_steps_vel_list = []
-
-for ii in range(N_cf):
-    N_des_time_steps_vel_list.append(len(v_des_x_list_list[ii]))
-
-
-time_smooth_des_vel = []
-
-for ii in range(N_cf):
-    time_smooth_des_vel.append(np.linspace(des_time_sec_list_list[ii][0], 
-                                       des_time_sec_list_list[ii][-1], N_des_time_steps_vel_list[ii]))
 
 fig2,ax2 = plt.subplots()
 legend_vel = []
 
 for ii in range(N_cf):
-    vel_x_list_i = np.array(v_x_list_list[ii])
-    vel_y_list_i = np.array(v_y_list_list[ii])
-    vel_des_x_list_i = np.array(v_des_x_list_list[ii])
-    vel_des_y_list_i = np.array(v_des_y_list_list[ii])
-    print('length of vel_x_list_' + str(ii) + ' is: ' , len(vel_x_list_i))
-    print('length of vel_y_list_' + str(ii) + ' is: ', len(vel_y_list_i))
+    vel_x_list_i = np.array(v_x_list_list_mpc[ii])
+    vel_y_list_i = np.array(v_y_list_list_mpc[ii])
+    vel_des_x_list_i = np.array(v_des_x_list_list_mpc[ii])
+    vel_des_y_list_i = np.array(v_des_y_list_list_mpc[ii])
     
     abs_vel_list_i = np.sqrt(np.add(np.square(vel_x_list_i), np.square(vel_y_list_i)))
     abs_vel_des_list_i = np.sqrt(np.add(np.square(vel_des_x_list_i), np.square(vel_des_y_list_i)))
 
     print('length of abs_vel_list_i is: ', len(abs_vel_list_i))
 
-    abs_vel_list_list.append(abs_vel_list_i)
-
-    abs_vel_des_list_list.append(abs_vel_des_list_i)
+    abs_vel_list_list_mpc.append(abs_vel_list_i)
+    abs_vel_des_list_list_mpc.append(abs_vel_des_list_i)
 
 
 
 for ii in range(N_cf):
-    ax2.plot(time_smooth_vel[ii], abs_vel_list_list[ii])
-    ax2.plot(time_smooth_des_vel[ii], abs_vel_des_list_list[ii])
+    ax2.plot(time_sec_list_list_mpc[ii], abs_vel_list_list_mpc[ii])
+    ax2.plot(des_time_sec_list_list_mpc[ii], abs_vel_des_list_list_mpc[ii])
     legend_vel.append('v_'+str(ii+1))
     legend_vel.append('v_des_'+str(ii+1))
 
@@ -267,9 +245,9 @@ fig3,ax3 = plt.subplots()
 legend_vel = []
 
 for ii in range(N_cf):
-    ax3.plot(time_smooth_vel[ii], v_x_list_list[ii])
+    ax3.plot(time_sec_list_list_mpc[ii], v_x_list_list_mpc[ii])
     legend_vel.append('v_x_'+str(ii+1))
-    ax3.plot(time_smooth_vel[ii], v_y_list_list[ii])
+    ax3.plot(time_sec_list_list_mpc[ii], v_y_list_list_mpc[ii])
     legend_vel.append('v_y_'+str(ii+1))
 
 ax3.legend(legend_vel)
@@ -285,7 +263,7 @@ plt.grid("minor")
 N_time_steps_cm_list = []
 
 for ii in range(N_cf):
-    N_time_steps_cm_list.append(len(x_list_list[ii]))
+    N_time_steps_cm_list.append(len(x_list_list_mpc[ii]))
 
 N_time_steps_cm_list.sort()
 
@@ -301,8 +279,8 @@ for kk in range(N_time_steps_cm):
     x_cm_sum = 0
     y_cm_sum = 0
     for ii in range(N_cf):
-        x_cm_sum += x_list_list[ii][kk]
-        y_cm_sum += y_list_list[ii][kk]
+        x_cm_sum += x_list_list_mpc[ii][kk]
+        y_cm_sum += y_list_list_mpc[ii][kk]
     x_cm = x_cm_sum/N_cf
     y_cm = y_cm_sum/N_cf
     x_cm_list.append(x_cm)
@@ -314,7 +292,7 @@ for kk in range(N_time_steps_cm):
     dist = sqrt((x_cm_list[kk] - x_target)**2 + (y_cm_list[kk] - y_target)**2)
     distance_cm_list.append(dist)
 
-time_sec_list_cm = time_sec_list_list[0][0:N_time_steps_cm]
+time_sec_list_cm = time_sec_list_list_mpc[0][0:N_time_steps_cm]
 
 fig4,ax4 = plt.subplots()
 
@@ -338,8 +316,8 @@ fig5,ax5 = plt.subplots()
 legend_vel_traj = []
 
 for ii in range(N_cf):
-    ax5.plot(v_x_list_list[ii][500:1850], v_y_list_list[ii][500:1850])
-    ax5.plot(v_des_x_list_list[ii][500:1850], v_des_y_list_list[ii][500:1850])
+    ax5.plot(v_x_list_list_mpc[ii][500:1850], v_y_list_list_mpc[ii][500:1850])
+    ax5.plot(v_des_x_list_list_mpc[ii][500:1850], v_des_y_list_list_mpc[ii][500:1850])
 
     legend_vel_traj.append('drone_'+str(ii+1)+' actual velocity trajectory')
     legend_vel_traj.append('drone_'+str(ii+1)+' desired velocity trajectory')
@@ -358,59 +336,35 @@ plt.grid("minor")
 # +++++++++++++++++++++ Plotting Velocity Error +++++++++++++++++++++++++++++++
 
 
-
-n_vel = len(v_x_list_list[ii])
-n_vel_des = len(v_des_x_list_list[ii])
-
-print ('n_vel is: ', n_vel)
-print ('n_vel_des is: ', n_vel_des)
-
-
-N_des_time_steps_error_list = []
-
-for ii in range(N_cf):
-    N_des_time_steps_error_list.append(len(v_des_x_list_list[ii]))
-
-time_smooth_error = []
-
-for ii in range(N_cf):
-    time_smooth_error.append(np.linspace(des_time_sec_list_list[ii][0], 
-                                         des_time_sec_list_list[ii][-1], 
-                                         N_des_time_steps_vel_list[ii]))
-
-v_x_interp_list_list = []
-v_y_interp_list_list = []
-v_abs_interp_list_list = []
+v_x_interp_list_list_mpc = []
+v_y_interp_list_list_mpc = []
+v_abs_interp_list_list_mpc = []
 
 for ii in range(N_cf):
     # velocity interp trajectories
     v_x_interp_list_i = []
-    v_x_interp_list_list.append(v_x_interp_list_i)
+    v_x_interp_list_list_mpc.append(v_x_interp_list_i)
     v_y_interp_list_i = []
-    v_y_interp_list_list.append(v_y_interp_list_i)
+    v_y_interp_list_list_mpc.append(v_y_interp_list_i)
     v_abs_interp_list_i = []
-    v_abs_interp_list_list.append(v_abs_interp_list_i)
+    v_abs_interp_list_list_mpc.append(v_abs_interp_list_i)
 
 for ii in range(N_cf):
-    v_x_interp_list_list[ii] = (np.interp(time_smooth_error[ii],
-                                        time_smooth_vel[ii], v_x_list_list[ii]))
-    v_y_interp_list_list[ii] = (np.interp(time_smooth_error[ii],
-                                        time_smooth_vel[ii], v_y_list_list[ii]))
-    v_abs_interp_list_list[ii] = (np.interp(time_smooth_error[ii],
-                                        time_smooth_vel[ii], abs_vel_list_list[ii]))
+    v_x_interp_list_list_mpc[ii] = (np.interp(des_time_sec_list_list_mpc[ii],
+                                        time_sec_list_list_mpc[ii], v_x_list_list_mpc[ii]))
+    v_y_interp_list_list_mpc[ii] = (np.interp(des_time_sec_list_list_mpc[ii],
+                                        time_sec_list_list_mpc[ii], v_y_list_list_mpc[ii]))
+    v_abs_interp_list_list_mpc[ii] = (np.interp(des_time_sec_list_list_mpc[ii],
+                                        time_sec_list_list_mpc[ii], abs_vel_list_list_mpc[ii]))
 
-print('time_smooth_error[ii] is: ', time_smooth_error[0])
-print('len(time_smooth_error[ii]) is: ', len(time_smooth_error[0]))
-print('v_abs_interp_list_list[0] is: ', v_abs_interp_list_list[0])
-print('len(v_abs_interp_list_list[0]) is: ', len(v_abs_interp_list_list[0]))
 
 
 # Velocity error
-v_error_list_list = []
+v_error_list_list_mpc = []
 for ii in range(N_cf):
-    v_error_list_list.append(np.subtract(v_abs_interp_list_list[ii],
-                                         abs_vel_des_list_list[ii]))
-    pass
+    v_error_list_list_mpc.append(np.subtract(v_abs_interp_list_list_mpc[ii],
+                                             abs_vel_des_list_list_mpc[ii]))
+
 
 
 fig6,ax6 = plt.subplots()
@@ -420,7 +374,7 @@ legend_vel_err = []
 for ii in range(N_cf):
     # ax6.plot(v_x_interp_list_list[ii][500:2200], v_y_interp_list_list[ii][500:2200])
     # ax6.plot(v_des_x_list_list[ii][500:2200], v_des_y_list_list[ii][500:2200])
-    ax6.plot(time_smooth_error[ii], v_error_list_list[ii])
+    ax6.plot(des_time_sec_list_list_mpc[ii], v_error_list_list_mpc[ii])
 
     # legend_vel_traj.append('drone_'+str(ii+1)+' actual velocity trajectory')
     # legend_vel_traj.append('drone_'+str(ii+1)+' desired velocity trajectory')
@@ -440,4 +394,4 @@ for ii in range(N_cf):
 
 plt.show(block=True)
 
-bag.close()
+bag_mpc.close()

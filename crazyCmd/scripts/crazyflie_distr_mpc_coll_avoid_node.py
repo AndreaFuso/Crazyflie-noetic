@@ -160,7 +160,7 @@ def mpc2cbf_sub_callback(msg):
     # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
     mpc_velocity.desired_velocity.x = v[0]
     mpc_velocity.desired_velocity.y = v[1]
-
+    mpc_velocity.name = crazyflie_name
     mpc_velocity_pub.publish(mpc_velocity)
 
 #######################################################

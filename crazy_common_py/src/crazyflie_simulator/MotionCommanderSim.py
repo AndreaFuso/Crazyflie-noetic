@@ -314,11 +314,8 @@ class MotionCommanderSim:
     
     def __mpc_target_sub_callback(self,msg):
         
-        cf_name = 'cf1'
         print('A new MPC target has been accepted')
-        self.mpc_target_flag= True
-
-        pass
+        self.mpc_target_flag = True
 
 
     # ==================================================================================================================

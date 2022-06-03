@@ -683,7 +683,6 @@ def make_mpc_target_publishers():
                             '/mpc_target', Position, queue_size=1)
         mpc_target_publishers.append(mpc_target_pub)
 
-
 def swarm_mpc_velocity_pub(mpc_velocity):
     index = 0
     for index, mpc_velocity_pub in enumerate(mpc_velocity_publishers):
@@ -692,8 +691,8 @@ def swarm_mpc_velocity_pub(mpc_velocity):
 def swarm_mpc_target_pub(mpc_target):
     index = 0
     for index, mpc_target_pub in enumerate(mpc_target_publishers):
+        mpc_target.name = 'cf' + str(index+1)
         mpc_target_pub.publish(mpc_target)
-    pass
 
 ##################################################################
 
@@ -821,6 +820,8 @@ if __name__ == '__main__':
             x_opt_old = []
             for ii in range(2*N_cf):
                 x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
+            
+            swarm_mpc_target_pub(mpc_target)
 
             sub_mpc_flag.data = 2
 
@@ -859,7 +860,6 @@ if __name__ == '__main__':
                         # Initial position of the other crazyflies
                         x_crazy = np.array([P_0[2*jj], P_0[2*jj+1]])
                         x_obs.append(x_crazy)
-                        # print('x_obs is: ', x_obs)
                         r_obs.append(3*r_drone)
                 
                 # Extracting the mpc velocities from mpc_velocity list
@@ -883,6 +883,5 @@ if __name__ == '__main__':
                 mpc_velocity[ii].name = 'cf' + str(ii+1)
             
             swarm_mpc_velocity_pub(mpc_velocity)
-            swarm_mpc_target_pub(mpc_target)
 
         rate.sleep()

@@ -50,8 +50,6 @@ def nlp_solver_2d(N_cf, P_N, P_0, N, x_opt, v_opt,
     if T < 1.0:
         T = 1.0
 
-
-
     # Versor for the reference direction
     u_ref = u_ref/u_norm
 
@@ -611,10 +609,22 @@ def make_mpc_velocity_publishers():
                     '/mpc2cbf_velocity', Position, queue_size=1)
         mpc_velocity_publishers.append(mpc_velocity_pub)
 
+def make_mpc_target_publishers():
+    for cf_name in cf_names:
+        mpc_target_pub = rospy.Publisher('/' + cf_name + 
+                            '/mpc_target', Position, queue_size=1)
+        mpc_target_publishers.append(mpc_target_pub)
+
 def swarm_mpc_velocity_pub(mpc_velocity):
     index = 0
     for index, mpc_velocity_pub in enumerate(mpc_velocity_publishers):
         mpc_velocity_pub.publish(mpc_velocity[index])
+
+def swarm_mpc_target_pub(mpc_target):
+    index = 0
+    for index, mpc_target_pub in enumerate(mpc_target_publishers):
+        mpc_target.name = 'cf' + str(index+1)
+        mpc_target_pub.publish(mpc_target)
 
 ##################################################################
 
@@ -664,6 +674,10 @@ if __name__ == '__main__':
     mpc_velocity_publishers = []
     make_mpc_velocity_publishers()
 
+    # List of mpc_target Publishers
+    mpc_target_publishers = []
+    make_mpc_target_publishers()
+
     ##############################################################
 
     #               S U B S C R I B E R S   S E T U P
@@ -675,8 +689,6 @@ if __name__ == '__main__':
                                       mpc_target_sub_callback)
     mpc_target = Position()
 
-    ##############################################################
-    
     # Flag for the mpc target subscriber
     sub_mpc_flag = Int16()
     sub_mpc_flag.data = 0
@@ -719,6 +731,8 @@ if __name__ == '__main__':
             for ii in range(2*N_cf):
                 x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
 
+            swarm_mpc_target_pub(mpc_target)
+            
             sub_mpc_flag.data = 2
 
         else:

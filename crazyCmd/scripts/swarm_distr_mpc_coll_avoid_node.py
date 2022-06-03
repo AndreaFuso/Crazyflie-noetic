@@ -627,15 +627,26 @@ def mpc_target_sub_callback(msg):
 
 def make_mpc_velocity_publishers():
     for cf_name in cf_names:
-        mpc_velocity_pub = rospy.Publisher('/' + cf_name + '/mpc2cbf_velocity', 
-                                            Position, queue_size=1)
+        mpc_velocity_pub = rospy.Publisher('/' + cf_name + 
+                    '/mpc2cbf_velocity', Position, queue_size=1)
         mpc_velocity_publishers.append(mpc_velocity_pub)
 
+def make_mpc_target_publishers():
+    for cf_name in cf_names:
+        mpc_target_pub = rospy.Publisher('/' + cf_name + 
+                            '/mpc_target', Position, queue_size=1)
+        mpc_target_publishers.append(mpc_target_pub)
 
 def swarm_mpc_velocity_pub(mpc_velocity):
     index = 0
     for index, mpc_velocity_pub in enumerate(mpc_velocity_publishers):
         mpc_velocity_pub.publish(mpc_velocity[index])
+
+def swarm_mpc_target_pub(mpc_target):
+    index = 0
+    for index, mpc_target_pub in enumerate(mpc_target_publishers):
+        mpc_target.name = 'cf' + str(index+1)
+        mpc_target_pub.publish(mpc_target)
 
 ###########################################################################
 
@@ -692,6 +703,9 @@ if __name__ == '__main__':
     mpc_velocity_publishers = []
     make_mpc_velocity_publishers()
 
+    # List of mpc_target Publishers
+    mpc_target_publishers = []
+    make_mpc_target_publishers()
 
     ##############################################################
 
@@ -704,8 +718,6 @@ if __name__ == '__main__':
                                       mpc_target_sub_callback)
     mpc_target = Position()
 
-    ##############################################################
-    
     # Flag for the mpc target subscriber
     sub_mpc_flag = Int16()
     sub_mpc_flag.data = 0
@@ -714,9 +726,7 @@ if __name__ == '__main__':
     mpc_target.desired_position.x = 0
     mpc_target.desired_position.y = 0
 
-
     rate = rospy.Rate(5)
-
 
     while not rospy.is_shutdown():
 
@@ -725,8 +735,6 @@ if __name__ == '__main__':
         for ii in range(N_cf):
             P_0.append(swarm.states[ii].position.x)
             P_0.append(swarm.states[ii].position.y)
-
-        # print('P_0 is: ', P_0)
         
         if sub_mpc_flag.data == 0:
             # nothing is executed if no mpc target has been published
@@ -754,6 +762,8 @@ if __name__ == '__main__':
             for ii in range(2*N_cf):
                 x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
 
+            swarm_mpc_target_pub(mpc_target)
+
             sub_mpc_flag.data = 2
 
         else:
@@ -770,7 +780,6 @@ if __name__ == '__main__':
             
             x_opt_old, v_opt_old = x_opt, v_opt
             
-
             # We add the initial position of the drone inside the 
             # mpc_velocity message, in order to communicate all the info
             # needed by the CBF on a single topic

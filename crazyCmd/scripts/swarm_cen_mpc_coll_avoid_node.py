@@ -701,11 +701,21 @@ def make_mpc_velocity_publishers():
                                             Position, queue_size=1)
         mpc_velocity_publishers.append(mpc_velocity_pub)
 
+def make_mpc_target_publishers():
+    for cf_name in cf_names:
+        mpc_target_pub = rospy.Publisher('/' + cf_name + 
+                            '/mpc_target', Position, queue_size=1)
+        mpc_target_publishers.append(mpc_target_pub)
 
 def swarm_mpc_velocity_pub(mpc_velocity):
     index = 0
     for index, mpc_velocity_pub in enumerate(mpc_velocity_publishers):
         mpc_velocity_pub.publish(mpc_velocity[index])
+
+def swarm_mpc_target_pub(mpc_target):
+    index = 0
+    for index, mpc_target_pub in enumerate(mpc_target_publishers):
+        mpc_target_pub.publish(mpc_target)
 
 ###########################################################################
 
@@ -749,10 +759,7 @@ if __name__ == '__main__':
     alpha = 1.0
     
     # Defining obstacles geometry
-
-    N_obs = 3
-
-    # 3 is the number of real obstacles
+    N_obs = 3    # 3 is the number of real obstacles
 
     # Defining arbitrary obstacles' positions inside a list
     x_obs = []
@@ -795,6 +802,9 @@ if __name__ == '__main__':
     mpc_velocity_publishers = []
     make_mpc_velocity_publishers()
 
+    # List of mpc_target Publishers
+    mpc_target_publishers = []
+    make_mpc_target_publishers()
 
     ##############################################################
 
@@ -854,6 +864,9 @@ if __name__ == '__main__':
             for ii in range(2*N_cf):
                 x_opt_old.append(np.linspace(P_0[ii], P_N[ii], N_mpc+1))
 
+
+            swarm_mpc_target_pub(mpc_target)
+
             sub_mpc_flag.data = 2
 
         else:
@@ -890,10 +903,9 @@ if __name__ == '__main__':
                 # /cf1/mpc_velocity
                 mpc_velocity[ii].desired_velocity.x = cbf_velocity[0]
                 mpc_velocity[ii].desired_velocity.y = cbf_velocity[1]
-            
-                        
+                mpc_velocity[ii].name = 'cf' + str(ii+1)
+        
             swarm_mpc_velocity_pub(mpc_velocity)
-
 
         rate.sleep()
 

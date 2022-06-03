@@ -188,14 +188,12 @@ def mpc2cbf_sub_callback(msg):
     # Setting cbf_velocity msg to be published on /cf1/mpc_velocity
     mpc_velocity.desired_velocity.x = v[0]
     mpc_velocity.desired_velocity.y = v[1]
-
+    mpc_velocity.name = crazyflie_name
     mpc_velocity_pub.publish(mpc_velocity)
 
 
 
 def state_sub_callback(msg):
-
-    # print('the state callback has been called')
 
     # Getting id:
     crazy_name = msg.name
@@ -214,7 +212,6 @@ if __name__ == '__main__':
     # Extracting rosparam informations (to understand the name and spawn position):
     crazyflie_name = rospy.get_param('crazyflie_spawner_node/name')
     initial_pos = rospy.get_param('crazyflie_spawner_node/initial_position')
-    # N_cf = rospy.get_param('crazyflie_spawner_node/cfs_number')
 
     # Spawning the virtual Crazyflie:
     cf = CrazySim(crazyflie_name, Vector3(initial_pos[0], initial_pos[1], initial_pos[2]))

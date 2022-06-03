@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+from cmath import sqrt
 import rospy
 from casadi import *
 import numpy as np
@@ -42,7 +43,7 @@ class CBF_controller():
         # Defining the h function for the known obstacle
         self.h = lambda x1,x2 : ((x1-x_obs[0])**2 + (x2-x_obs[1])**2 
                                 - r_obs**2)*0.5
-        self.grad_h = lambda x1,x2 : np.array([x1-x_obs[0] , x2-x_obs[1]])
+        self.grad_h = lambda x1,x2 : np.array([x1-x_obs[0], x2-x_obs[1]])
 
     def get_v_des(self, x):
         # Given current state return proportional nominal controller
@@ -64,9 +65,11 @@ class CBF_controller():
         obj         = cp.Minimize((1/2)*cp.quad_form(v_opt-v_des,np.eye(2)))
         constraints = [grad_h_num.T @ v_opt >= -self.alpha*h_num ] 
         prob = cp.Problem(obj,constraints)
-        prob.solve()
+        prob.solve(verbose=True)
 
-        return v_opt.value
+        h_p = grad_h_num[0]*v_opt.value[0] + grad_h_num[1]*v_opt.value[1]
+        alpha_h = - self.alpha * h_num
+        return v_opt.value, alpha_h, h_p, h_num
 
 
 ###############################################################################
@@ -115,7 +118,7 @@ if __name__ == '__main__':
 
     # Setting the parameters for the cbf controller and the position goal
     v_lim = 0.75
-    alpha = 1
+    alpha = 1.5
     d_lim = 0.4
 
     # Defining obstacle geometry
@@ -138,6 +141,10 @@ if __name__ == '__main__':
                                         Position, queue_size=1)
 
 
+    # Publisher to publish the h function
+    h_function = Position()
+    h_function_pub = rospy.Publisher('/cf1/cbf_function', 
+                                        Position, queue_size=1)
     ###############################################################################
 
     #                     S U B S C R I B E R S   S E T U P
@@ -182,13 +189,20 @@ if __name__ == '__main__':
             # Setting obstacles
             cbf_controller.set_obstacle(x_obs, r_tot)
             # Getting cbf velocity
-            v = cbf_controller.get_cbf_v(x0)
+            v, alpha_h, h_p, h_num = cbf_controller.get_cbf_v(x0)
+            
             # Setting cbf_velocity msg to be published to
             # /cf1/mpc_velocity
             cbf_velocity.desired_velocity.x = v[0]
             cbf_velocity.desired_velocity.y = v[1]
             cbf_velocity.name = 'cf1'
+
+            h_function.desired_position.x = alpha_h
+            h_function.desired_position.y = h_p
+            h_function.desired_position.z = h_num
+
             cbf_velocity_pub.publish(cbf_velocity)
+            h_function_pub.publish(h_function)
 
         rate.sleep()
 
