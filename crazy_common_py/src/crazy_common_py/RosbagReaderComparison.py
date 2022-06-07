@@ -317,7 +317,7 @@ for ii in range(N_obs):
 # +++++++++++++++++++++ Plotting velocity vs. time +++++++++++++++++++++++++++
 
 
-fig2,ax2 = plt.subplots()
+fig2,(ax10, ax2) = plt.subplots(1,2, sharey='row')
 legend_vel = []
 
 for ii in range(N_cf):
@@ -360,9 +360,11 @@ ax2.legend(legend_vel)
 
 ax2.set_xlabel('t [s]')
 ax2.set_ylabel('v [m/s]')
+ax2.set_title('CBF')
 
+ax2.grid("minor")
 
-fig10,ax10 = plt.subplots()
+# fig10,ax10 = plt.subplots()
 legend_vel_mpc = []
 
 for ii in range(N_cf):
@@ -375,7 +377,9 @@ ax10.legend(legend_vel_mpc)
 
 ax10.set_xlabel('t [s]')
 ax10.set_ylabel('v [m/s]')
+ax10.set_title('MPC')
 
+ax10.grid("minor")
 
 
 fig11,ax11 = plt.subplots()
@@ -393,7 +397,7 @@ ax11.set_xlabel('t [s]')
 ax11.set_ylabel('v [m/s]')
 
 
-plt.grid("minor")
+ax11.grid("minor")
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -432,7 +436,7 @@ plt.grid("minor")
 
 # ++++++++++ Plotting Velocity Trajectories - Actual vs. Desired ++++++++++++++
 
-fig5,ax5 = plt.subplots()
+fig5,(ax14,ax5) = plt.subplots(1,2)
 legend_vel_traj = []
 
 for ii in range(N_cf):
@@ -450,7 +454,11 @@ ax5.set_ylabel('v_y [m]')
 
 ax5.set_aspect("equal")
 
-fig14,ax14 = plt.subplots()
+ax5.set_title("CBF")
+
+ax5.grid("minor")
+
+# fig14,ax14 = plt.subplots()
 legend_vel_traj = []
 
 for ii in range(N_cf):
@@ -467,12 +475,9 @@ ax14.set_ylabel('v_y [m]')
 
 ax14.set_aspect("equal")
 
+ax14.set_title("MPC")
 
-
-
-
-
-plt.grid("minor")
+ax14.grid("minor")
 
 
 
@@ -538,17 +543,17 @@ for ii in range(N_cf):
 # Velocity error
 v_error_list_list_mpc = []
 for ii in range(N_cf):
-    v_error_list_list_mpc.append(np.subtract(v_abs_interp_list_list_mpc[ii],
-                                             abs_vel_des_list_list_mpc[ii]))
-    pass
+    v_error = np.absolute(np.subtract(v_abs_interp_list_list_mpc[ii],
+              abs_vel_des_list_list_mpc[ii]))
+    v_error_list_list_mpc.append(v_error)
 
 
 # Velocity error
 v_error_list_list_cbf = []
 for ii in range(N_cf):
-    v_error_list_list_cbf.append(np.subtract(v_abs_interp_list_list_cbf[ii],
-                                             abs_vel_des_list_list_cbf[ii]))
-    pass
+    v_error = np.absolute(np.subtract(v_abs_interp_list_list_cbf[ii],
+              abs_vel_des_list_list_cbf[ii]))
+    v_error_list_list_cbf.append(v_error)
 
 
 fig6,ax6 = plt.subplots()
@@ -562,7 +567,12 @@ for ii in range(N_cf):
     legend_vel_err.append('drone_' + str(ii+1) + ' velocity error cbf')
 
 ax6.legend(legend_vel_err)
+ax6.set_xlabel('time [s]')
 
+ax6.set_ylabel('e [m/s]')
+
+
+ax6.grid("minor")
 # +++++++++++++ Interpolating v_des on time_sec_list_list ++++++++++++++
 
 
@@ -634,6 +644,95 @@ ax9.set_ylabel('h_p vs -alpha*h')
 ax9.legend(legend_h_p)
 
 plt.grid("minor")
+
+
+
+# +++++++++++++ Plotting distance of Center of Mass from Target ++++++++++++++
+
+
+
+distance_cm_list_mpc = []
+N_time_steps_cm_mpc = len(x_list_list_mpc[0])
+print('N_time_steps_cm_mpc is: ', N_time_steps_cm_mpc)
+legend_distance_cm = []
+x_cm_list_mpc = []
+y_cm_list_mpc = []
+
+for kk in range(N_time_steps_cm_mpc):
+    x_cm_sum = 0
+    y_cm_sum = 0
+    for ii in range(N_cf):
+        x_cm_sum += x_list_list_mpc[ii][kk]
+        y_cm_sum += y_list_list_mpc[ii][kk]
+    x_cm = x_cm_sum/N_cf
+    y_cm = y_cm_sum/N_cf
+    x_cm_list_mpc.append(x_cm)
+    y_cm_list_mpc.append(y_cm)
+
+
+
+for kk in range(N_time_steps_cm_mpc):
+    dist = sqrt((x_cm_list_mpc[kk] - x_target)**2 + (y_cm_list_mpc[kk] - y_target)**2)
+    distance_cm_list_mpc.append(dist)
+
+legend_distance_cm.append('absolute distance mpc')
+fig15,ax15 = plt.subplots()
+
+
+ax15.set_xlabel('t [s]')
+ax15.set_ylabel('d [m]')
+
+
+ax15.plot(time_sec_list_list_mpc[0], distance_cm_list_mpc)
+
+
+
+distance_cm_list_cbf = []
+N_time_steps_cm_cbf = len(x_list_list_cbf[0])
+print('N_time_steps_cm_mpc is: ', N_time_steps_cm_cbf)
+legend_distance_cbf = []
+x_cm_list_cbf = []
+y_cm_list_cbf = []
+
+for kk in range(N_time_steps_cm_cbf):
+    x_cm_sum = 0
+    y_cm_sum = 0
+    for ii in range(N_cf):
+        x_cm_sum += x_list_list_cbf[ii][kk]
+        y_cm_sum += y_list_list_cbf[ii][kk]
+    x_cm = x_cm_sum/N_cf
+    y_cm = y_cm_sum/N_cf
+    x_cm_list_cbf.append(x_cm)
+    y_cm_list_cbf.append(y_cm)
+
+
+
+for kk in range(N_time_steps_cm_cbf):
+    dist = sqrt((x_cm_list_cbf[kk] - x_target)**2 + (y_cm_list_cbf[kk] - y_target)**2)
+    distance_cm_list_cbf.append(dist)
+
+legend_distance_cm.append('absolute distance cbf')
+
+
+ax15.set_xlabel('t [s]')
+ax15.set_ylabel('d [m]')
+
+
+ax15.plot(time_sec_list_list_cbf[0], distance_cm_list_cbf)
+
+ax15.legend(legend_distance_cm)
+
+
+
+
+plt.grid("minor")
+
+
+
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 
 
 plt.show(block=True)
