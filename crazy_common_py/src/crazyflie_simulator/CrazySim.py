@@ -42,7 +42,7 @@ class CrazySim:
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Waiting for service used to spawn the urdf model of Crazyflie in Gazebo:
         rospy.wait_for_service("/gazebo/spawn_urdf_model")
-
+        #DD: rospy.wait_for_service to block until a service is available when we call a service
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -56,7 +56,7 @@ class CrazySim:
         self.IMU = GazeboIMU(IMU_GAUSSIAN_NOISE_DEFAULT, IMU_UPDATE_RATE_DEFAULT)
         self.state_estimator = FakeStateEstimator(name)
 
-        # Istance of motion commander:
+        # Instance of motion commander:
         self.motion_commander = MotionCommanderSim(name)
 
         # Test bench choice:
@@ -75,7 +75,7 @@ class CrazySim:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Service used to spawn the urdf model of the Crazyflie in the simulation:
         self.spawn_model_service = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
-        self.__spawn_model_request_srv = SpawnModelRequest()
+        self.__spawn_model_request_svr = SpawnModelRequest()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           A C T I O N S  S E T U P
@@ -205,8 +205,8 @@ class CrazySim:
         ccw_propeller_mesh_path = rospack.get_path('crazyflie_description') + '/meshes/propeller_ccw.dae'
 
         # Finding and modifying the path of the base link .dae and robotNamespace tag:
-        tag_bl = 'PATH_BASE'
-        tag_p1 = 'PATH_PROP_1'
+        tag_bl = 'PATH_BASE' #DD:base
+        tag_p1 = 'PATH_PROP_1'#DD:propeller
         tag_p2 = 'PATH_PROP_2'
         tag_p3 = 'PATH_PROP_3'
         tag_p4 = 'PATH_PROP_4'
@@ -238,8 +238,8 @@ class CrazySim:
         initial_pos_p4 = urdf_file.find(tag_p4)
         initial_pos_ns = urdf_file.find(tag_ns)
         initial_pos_odom = urdf_file.find(tag_odom)
-        initial_pos_imu_gn = urdf_file.find(tag_imu_gn)
-        initial_pos_imu_ur = urdf_file.find(tag_imu_ur)
+        initial_pos_imu_gn = urdf_file.find(tag_imu_gn) #gaussian noise
+        initial_pos_imu_ur = urdf_file.find(tag_imu_ur) #uodate rate
 
         initial_pos_freq_int_1 = urdf_file.find(tag_freq_int_1)
         initial_pos_freq_float_1 = urdf_file.find(tag_freq_float_1)
