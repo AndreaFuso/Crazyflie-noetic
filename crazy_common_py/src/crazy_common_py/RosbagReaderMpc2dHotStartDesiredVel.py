@@ -13,12 +13,12 @@ from crazy_common_py.common_functions import rad2deg
 N_cf = 1
 N_obs = 1
 N_mpc = 5
-mpc_traj_flag = False
+mpc_traj_flag = True
 
 rospack = rospkg.RosPack()
 
 
-bag_name_mpc = '1_drone_mpc_sim_test2.bag'
+bag_name_mpc = '1_drone_mpc_real_test6.bag'
 bag_path_mpc = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name_mpc
 bag_mpc = rosbag.Bag(bag_path_mpc)
 
@@ -161,7 +161,7 @@ if mpc_traj_flag:
 
     for ii in range(N_cf):
         N_max_time_i = len(time_mpc_sec_list_list[ii])
-        initial_time_steps_i = np.arange(0,N_max_time_i,35)
+        initial_time_steps_i = np.arange(0,N_max_time_i,60)
         for jj in range(3):
             initial_time_steps_i = np.delete(initial_time_steps_i,-1,0)
 

@@ -6,7 +6,9 @@ import rosbag
 import rospkg
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy as sp
 from scipy import integrate
+
 
 from crazy_common_py.common_functions import rad2deg
 
@@ -14,7 +16,7 @@ from crazy_common_py.common_functions import rad2deg
 N_cf = 1
 N_obs = 1
 N_mpc = 5
-mpc_traj_flag = False
+mpc_traj_flag = True
 
 rospack = rospkg.RosPack()
 
@@ -111,10 +113,12 @@ for ii in range(N_cf):
     # putting together seconds and nanoseconds
     nsec_to_sec = [x * 10**(-9) for x in time_nsec_list_list_cbf[ii]]
     time_sec_list_list_cbf[ii] = np.add(time_sec_list_list_cbf[ii], nsec_to_sec)
+    term_subtract = time_sec_list_list_cbf[ii][0]
+    time_sec_list_list_cbf[ii] = np.subtract(time_sec_list_list_cbf[ii], term_subtract)
 
 
-    print('time_sec_list_list[ii] is: ', time_sec_list_list_cbf[ii])
-    print('length time_sec_list_list[ii] is: ', len(time_sec_list_list_cbf[ii]))
+    # print('time_sec_list_list[ii] is: ', time_sec_list_list_cbf[ii])
+    # print('length time_sec_list_list[ii] is: ', len(time_sec_list_list_cbf[ii]))
 
 for ii in range(N_cf):
     for topic, msg, t in bag_cbf.read_messages(topics=['/cf'+ str(ii+1) +'/actual_state_target']):
@@ -129,6 +133,16 @@ for ii in range(N_cf):
     # putting together seconds and nanoseconds
     nsec_to_sec = [x * 10**(-9) for x in des_time_nsec_list_list_cbf[ii]]
     des_time_sec_list_list_cbf[ii] = np.add(des_time_sec_list_list_cbf[ii], nsec_to_sec)
+    des_time_sec_list_list_cbf[ii] = np.subtract(des_time_sec_list_list_cbf[ii], term_subtract)
+
+
+    x = np.array(v_des_x_list_list_cbf[ii])
+    indices_of_zeros_cbf = np.where(x == 0)[0]
+    print('indices of zeros cbf is: ', indices_of_zeros_cbf)
+    time_start_cbf = des_time_sec_list_list_cbf[ii][len(indices_of_zeros_cbf)]
+    print('time_start_cbf is: ', time_start_cbf)
+
+
 
 for ii in range(N_cf):
     for topic, msg, t in bag_cbf.read_messages(topics=['/cf'+ str(ii+1) +'/cbf_function']):
@@ -143,6 +157,7 @@ for ii in range(N_cf):
     # putting together seconds and nanoseconds
     nsec_to_sec = [x * 10**(-9) for x in time_h_nsec_list_list[ii]]
     time_h_sec_list_list[ii] = np.add(time_h_sec_list_list[ii], nsec_to_sec)
+    time_h_sec_list_list[ii] = np.subtract(time_h_sec_list_list[ii], term_subtract)
 
 
 # +++++++++++++++++++++ Extracting data about mpc +++++++++++++++++++++++++++++++++
@@ -230,6 +245,10 @@ for ii in range(N_cf):
     # putting together seconds and nanoseconds
     nsec_to_sec = [x * 10**(-9) for x in time_nsec_list_list_mpc[ii]]
     time_sec_list_list_mpc[ii] = np.add(time_sec_list_list_mpc[ii], nsec_to_sec)
+    term_subtract = time_sec_list_list_mpc[ii][0]
+    time_sec_list_list_mpc[ii] = np.subtract(time_sec_list_list_mpc[ii], term_subtract)
+
+    # print('time_sec_list_list[ii] is: ', time_sec_list_list_mpc[ii])
 
 for ii in range(N_cf):
     for topic, msg, t in bag_mpc.read_messages(topics=['/cf'+ str(ii+1) +'/actual_state_target']):
@@ -243,6 +262,14 @@ for ii in range(N_cf):
     # putting together seconds and nanoseconds
     nsec_to_sec = [x * 10**(-9) for x in des_time_nsec_list_list_mpc[ii]]
     des_time_sec_list_list_mpc[ii] = np.add(des_time_sec_list_list_mpc[ii], nsec_to_sec)
+    des_time_sec_list_list_mpc[ii] = np.subtract(des_time_sec_list_list_mpc[ii], term_subtract)
+
+    x = np.array(v_des_x_list_list_mpc[ii])
+    indices_of_zeros_mpc = np.where(x == 0)[0]
+    # print('indices of zeros mpc is: ', indices_of_zeros_mpc)
+    time_start_mpc = des_time_sec_list_list_mpc[ii][len(indices_of_zeros_mpc)]
+    print('time_start_mpc is: ', time_start_mpc)
+
 
 for ii in range(N_cf):
     for topic, msg, t in bag_mpc.read_messages(topics=['/cf'+ str(ii+1) +'/mpc_traj']):
@@ -260,6 +287,99 @@ for ii in range(N_cf):
         time_mpc_nsec_list_list[ii].append(t.nsecs)
 
 
+# ++++++++++++++++++++++ Shifting time vectors +++++++++++++++++++++++++++++++++
+
+number_of_zeros_cbf = len(indices_of_zeros_cbf)
+number_of_zeros_mpc = len(indices_of_zeros_mpc)
+
+# print('number_of_zeros_cbf is: ', number_of_zeros_cbf)
+# print('number_of_zeros_mpc is: ', number_of_zeros_mpc)
+
+
+if time_start_cbf > time_start_mpc:
+    diff = time_start_cbf - time_start_mpc
+    # print('diff 1')
+    # delete_indices = np.arange(0, diff)
+    for ii in range(N_cf):
+        time_subtract = diff
+        time_sec_list_list_cbf[ii] = np.subtract(time_sec_list_list_cbf[ii], 
+                                                 time_subtract)
+        x_= np.array(time_sec_list_list_cbf[ii])
+        indices_neg = np.where(x < 0)[0]
+        time_sec_list_list_cbf[ii] = np.delete(time_sec_list_list_cbf[ii], indices_neg)
+        x_list_list_cbf[ii] = np.delete(x_list_list_cbf[ii], indices_neg)
+        y_list_list_cbf[ii] = np.delete(y_list_list_cbf[ii], indices_neg)
+        v_x_list_list_cbf[ii] = np.delete(v_x_list_list_cbf[ii], indices_neg)
+        v_y_list_list_cbf[ii] = np.delete(v_y_list_list_cbf[ii], indices_neg)
+
+
+        des_time_sec_list_list_cbf[ii] = np.subtract(des_time_sec_list_list_cbf[ii], 
+                                                     time_subtract)
+        x_= np.array(des_time_sec_list_list_cbf[ii])
+        indices_neg = np.where(x < 0)[0]
+        des_time_sec_list_list_cbf[ii] = np.delete(des_time_sec_list_list_cbf[ii], indices_neg)
+        v_des_x_list_list_cbf[ii] = np.delete(v_des_x_list_list_cbf[ii], indices_neg)
+        v_des_x_list_list_cbf[ii] = np.delete(v_des_x_list_list_cbf[ii], indices_neg)
+
+
+        time_h_sec_list_list[ii] = np.subtract(time_h_sec_list_list[ii], 
+                                               time_subtract)
+        x_= np.array(time_h_sec_list_list[ii])
+        indices_neg = np.where(x < 0)[0]
+        time_h_sec_list_list[ii] = np.delete(time_h_sec_list_list[ii], indices_neg)
+
+        h_fun_list_list[ii] = np.delete(h_fun_list_list[ii], indices_neg)
+        h_p_list_list[ii] = np.delete(h_p_list_list[ii], indices_neg)
+        min_alpha_h_list_list[ii] = np.delete(min_alpha_h_list_list[ii], indices_neg)
+
+elif time_start_cbf < time_start_mpc:
+    diff = time_start_mpc - time_start_cbf
+    # print('diff 2')
+    # print('diff 2 is: ', diff)
+    # delete_indices = np.arange(0, diff)
+    for ii in range(N_cf):
+        time_subtract = diff
+        time_sec_list_list_mpc[ii] = np.subtract(time_sec_list_list_mpc[ii], 
+                                                 time_subtract)
+        print('time_sec_list_list_mpc is: ', time_sec_list_list_mpc[ii])
+        x = np.array(time_sec_list_list_mpc[ii])
+        print('x: ', x)
+        indices_neg = np.where(x < 0)[0]
+        print('indices_neg is: ', indices_neg)
+        time_sec_list_list_mpc[ii] = np.delete(time_sec_list_list_mpc[ii], indices_neg)
+        x_list_list_mpc[ii] = np.delete(x_list_list_mpc[ii], indices_neg)
+        y_list_list_mpc[ii] = np.delete(y_list_list_mpc[ii], indices_neg)
+        v_x_list_list_mpc[ii] = np.delete(v_x_list_list_mpc[ii], indices_neg)
+        v_y_list_list_mpc[ii] = np.delete(v_y_list_list_mpc[ii], indices_neg)
+
+
+
+        des_time_sec_list_list_mpc[ii] = np.subtract(des_time_sec_list_list_mpc[ii], 
+                                                     time_subtract)
+        x = np.array(des_time_sec_list_list_mpc[ii])
+        indices_neg = np.where(x < 0)[0]
+        des_time_sec_list_list_mpc[ii] = np.delete(des_time_sec_list_list_mpc[ii], indices_neg)
+        v_des_x_list_list_mpc[ii] = np.delete(v_des_x_list_list_mpc[ii], indices_neg)
+        v_des_y_list_list_mpc[ii] = np.delete(v_des_y_list_list_mpc[ii], indices_neg)
+else:
+    pass
+
+
+# print('des_time_sec_list_list_mpc is: ', des_time_sec_list_list_mpc[ii])
+# print('des_time_sec_list_list_cbf is: ', des_time_sec_list_list_cbf[ii])
+# print('time_sec_list_list_mpc is: ', time_sec_list_list_mpc[ii])
+# print('time_sec_list_list_cbf is: ', time_sec_list_list_cbf[ii])
+
+print('len of v_des_x_list_list_mpc is: ', len(v_des_x_list_list_mpc[ii]))
+print('len of v_des_x_list_list_mpc is: ', len(v_des_x_list_list_cbf[ii]))
+
+
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#                              P L O T T I N G
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # +++++++++++++++++++++++++ Target Coordinates +++++++++++++++++++++++++++++++++
 
@@ -346,7 +466,7 @@ for ii in range(N_cf):
     abs_vel_list_i = np.sqrt(np.add(np.square(vel_x_list_i), np.square(vel_y_list_i)))
     abs_vel_des_list_i = np.sqrt(np.add(np.square(vel_des_x_list_i), np.square(vel_des_y_list_i)))
 
-    print('length of abs_vel_list_i is: ', len(abs_vel_list_i))
+    # print('length of abs_vel_list_i is: ', len(abs_vel_list_i))
 
     abs_vel_list_list_mpc.append(abs_vel_list_i)
     abs_vel_des_list_list_mpc.append(abs_vel_des_list_i)
@@ -441,8 +561,8 @@ fig5,(ax14,ax5) = plt.subplots(1,2)
 legend_vel_traj = []
 
 for ii in range(N_cf):
-    ax5.plot(v_x_list_list_cbf[ii][200:2200], v_y_list_list_cbf[ii][200:2200])
-    ax5.plot(v_des_x_list_list_cbf[ii][200:2200], v_des_y_list_list_cbf[ii][200:2200])
+    ax5.plot(v_x_list_list_cbf[ii], v_y_list_list_cbf[ii])
+    ax5.plot(v_des_x_list_list_cbf[ii], v_des_y_list_list_cbf[ii])
 
     legend_vel_traj.append('drone_'+str(ii+1)+' actual velocity trajectory')
     legend_vel_traj.append('drone_'+str(ii+1)+' desired velocity trajectory')
@@ -463,8 +583,8 @@ ax5.grid("minor")
 legend_vel_traj = []
 
 for ii in range(N_cf):
-    ax14.plot(v_x_list_list_mpc[ii][500:1850], v_y_list_list_mpc[ii][500:1850])
-    ax14.plot(v_des_x_list_list_mpc[ii][500:1850], v_des_y_list_list_mpc[ii][500:1850])
+    ax14.plot(v_x_list_list_mpc[ii], v_y_list_list_mpc[ii])
+    ax14.plot(v_des_x_list_list_mpc[ii], v_des_y_list_list_mpc[ii])
 
     legend_vel_traj.append('drone_' + str(ii+1) + ' actual velocity trajectory')
     legend_vel_traj.append('drone_' + str(ii+1) + ' desired velocity trajectory')
@@ -574,6 +694,9 @@ ax6.set_ylabel('e [m/s]')
 
 
 ax6.grid("minor")
+
+
+
 # +++++++++++++ Interpolating v_des on time_sec_list_list ++++++++++++++
 
 
@@ -654,7 +777,7 @@ plt.grid("minor")
 
 distance_cm_list_mpc = []
 N_time_steps_cm_mpc = len(x_list_list_mpc[0])
-print('N_time_steps_cm_mpc is: ', N_time_steps_cm_mpc)
+# print('N_time_steps_cm_mpc is: ', N_time_steps_cm_mpc)
 legend_distance_cm = []
 x_cm_list_mpc = []
 y_cm_list_mpc = []
@@ -690,7 +813,7 @@ ax15.plot(time_sec_list_list_mpc[0], distance_cm_list_mpc)
 
 distance_cm_list_cbf = []
 N_time_steps_cm_cbf = len(x_list_list_cbf[0])
-print('N_time_steps_cm_mpc is: ', N_time_steps_cm_cbf)
+# print('N_time_steps_cm_mpc is: ', N_time_steps_cm_cbf)
 legend_distance_cbf = []
 x_cm_list_cbf = []
 y_cm_list_cbf = []
@@ -728,8 +851,6 @@ ax15.legend(legend_distance_cm)
 
 plt.grid("minor")
 
-
-
 # +++++++++++++++++++++++++ Integral of Error +++++++++++++++++++++++++++++++++++++
 integral_error_list_mpc = []
 integral_error_list_cbf = []
@@ -744,9 +865,6 @@ for ii in range(N_cf):
     integral_error_cbf = integrate.cumtrapz(v_error_list_list_cbf[ii], 
                                             des_time_sec_list_list_cbf[ii], 
                                             initial=0)
-    print('len integral_error_cbf: ', len(integral_error_cbf))
-
-    print('len des time: ', len(des_time_sec_list_list_mpc[ii]))
     integral_error_list_cbf.append(integral_error_cbf)
 
     # print( 'integral_error_list_mpc is: ', integral_error_list_mpc[ii])
@@ -776,11 +894,7 @@ plt.grid("minor")
 
 
 
-
-
-
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
