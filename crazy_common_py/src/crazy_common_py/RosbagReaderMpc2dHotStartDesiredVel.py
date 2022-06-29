@@ -18,7 +18,9 @@ mpc_traj_flag = True
 rospack = rospkg.RosPack()
 
 
-bag_name_mpc = '1_drone_mpc_real_test6.bag'
+# bag_name_mpc = '1_drone_mpc_sim_test.bag'
+bag_name_mpc = 'mpc_2d_hot_start.bag'
+
 bag_path_mpc = rospack.get_path('crazyCmd') + '/data/output/RosbagsPietro/' + bag_name_mpc
 bag_mpc = rosbag.Bag(bag_path_mpc)
 
@@ -130,7 +132,7 @@ for ii in range(N_cf):
 # +++++++++++++++++++++++++ Target Coordinates +++++++++++++++++++++++++++++++++
 
 x_target = 2.0
-y_target = 0.0
+y_target = 0.5
 
 # +++++++++++++++++++++++++ Plotting trajectories ++++++++++++++++++++++++++++++
 
@@ -138,7 +140,7 @@ fig1,ax1 = plt.subplots()
 legend_traj = []
 
 for ii in range(N_cf):
-    ax1.plot(x_list_list_mpc[ii], y_list_list_mpc[ii])
+    ax1.plot(x_list_list_mpc[ii], y_list_list_mpc[ii], linewidth=2)
     legend_traj.append('drone_'+str(ii+1)+' trajectory')
 
 
@@ -148,7 +150,6 @@ ax1.set_ylabel('y [m]')
 
 ax1.set_aspect("equal")
 plt.grid("minor")
-
 
 
 # ++++++++++++++++ Plotting MPC Open Loop Trajectories +++++++++++++++++++++++
@@ -161,7 +162,7 @@ if mpc_traj_flag:
 
     for ii in range(N_cf):
         N_max_time_i = len(time_mpc_sec_list_list[ii])
-        initial_time_steps_i = np.arange(0,N_max_time_i,60)
+        initial_time_steps_i = np.arange(0,N_max_time_i,35)
         for jj in range(3):
             initial_time_steps_i = np.delete(initial_time_steps_i,-1,0)
 
@@ -178,7 +179,34 @@ ax1.plot(x_target, y_target, 'ko')
 legend_traj.append('target')
 
 
+
+
+# +++++++++++++++++++++++++ Plotting trajectories ++++++++++++++++++++++++++++++
+
+l_terminal_set = 2 # edge terminal square
+
+x_square = [x_target + l_terminal_set/2, 
+            x_target + l_terminal_set/2,
+            x_target - l_terminal_set/2,
+            x_target - l_terminal_set/2,
+            x_target + l_terminal_set/2]
+y_square = [y_target + l_terminal_set/2,
+            y_target - l_terminal_set/2,
+            y_target - l_terminal_set/2,
+            y_target + l_terminal_set/2,
+            y_target + l_terminal_set/2]
+
+x_square.append
+
+
+
+for ii in range(N_cf):
+    ax1.plot(x_square, y_square, 'k', linewidth=2)
+    legend_traj.append('terminal constraint set')
+
+
 ax1.legend(legend_traj)
+
 
 # +++++++++++++++++++++++++ Plotting Obstacles +++++++++++++++++++++++++++++++
 

@@ -11,8 +11,8 @@ from crazyflie_messages.msg import Position, CrazyflieState, Attitude, MpcOpenLo
 
 
 def nlp_solver_2d(mpc_target, actual_state, x_obs, y_obs, r_obs, T_mpc, N_mpc, 
-                    r_drone, r_safety, x1_opt, x2_opt, w_vel, 
-                    a_pos, b_pos, d_lb, d_ub):
+                    r_drone, r_safety, x1_opt, x2_opt, w_des_vel, 
+                    w_vel, a_pos, b_pos, d_lb, d_ub):
 
     # Getting the actual position to set the initial condition
     x_pos = actual_state.position.x
@@ -257,11 +257,11 @@ if __name__ == '__main__':
     N_mpc = 5
 
     # Setting the obstacles' parameters
-    x_obs=[1]
-    y_obs=[0.1]
-    r_obs=[0.3]
+    x_obs=[1.2]
+    y_obs=[0.0]
+    r_obs=[0.125]
     r_drone = 0.05
-    r_safety = 0.05
+    r_safety = 0.15
 
     # Weights' parameters
     w_des_vel = 1.0

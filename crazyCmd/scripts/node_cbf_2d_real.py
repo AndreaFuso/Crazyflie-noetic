@@ -120,9 +120,9 @@ if __name__ == '__main__':
 
     # Defining obstacle geometry
     x_obs = np.array([1.0, 0.1])
-    r_obs = 0.30
+    r_obs = 0.125
     r_drone = 0.05
-    r_safety = 0.05
+    r_safety = 0.15
     r_tot = r_obs + r_drone + r_safety
 
 
