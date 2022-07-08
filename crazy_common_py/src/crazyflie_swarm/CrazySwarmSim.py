@@ -38,6 +38,10 @@ class CrazySwarmSim:
         self.takeoff_act_clients = []
         self.__make_takeoff_clients()
 
+        # List of clients for landing action per each drone:
+        self.landing_act_clients = []
+        self.__make_landing_clients()
+
         # List of clients for flocking action:
         self.flocking_act_clients = []
         self.__make_flocking_clients()
@@ -69,6 +73,12 @@ class CrazySwarmSim:
                                                                 self.__swarm_takeoff_act_callback, False)
         self.__swarm_takeoff_act.start()
 
+        # Action to land the entire swarm:
+        self.__swarm_landing_act = actionlib.SimpleActionServer('/swarm/land_actn', TakeoffAction,
+                                                                self.__swarm_landing_act_callback, False)
+        self.__swarm_landing_act.start()
+
+        # Action to make the entire swarm flock:
         self.__swarm_flocking_act = actionlib.SimpleActionServer('/swarm/flocking_actn', EmptyAction,
                                                                  self.__swarm_flocking_act_callback, False)
         self.__swarm_flocking_act.start()
@@ -89,6 +99,14 @@ class CrazySwarmSim:
             tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/takeoff_actn', TakeoffAction)
             self.takeoff_act_clients.append(tmp_action)
             self.takeoff_act_clients[-1].wait_for_server()
+            print('added 1 takeoff client')
+
+    def __make_landing_clients(self):
+        for cf_name in self.cf_names:
+            tmp_action = actionlib.SimpleActionClient('/' + cf_name + '/land_actn', TakeoffAction)
+            self.landing_act_clients.append(tmp_action)
+            self.landing_act_clients[-1].wait_for_server()
+            print('added 1 landing client')
 
     def __make_flocking_clients(self):
         for cf_name in self.cf_names:
@@ -160,6 +178,35 @@ class CrazySwarmSim:
 
         self.__swarm_takeoff_act.set_succeeded(result)
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                             __S W A R M _ L A N D I N G _ A C T _ C A L L B A C K
+    #
+    # This method is used as the swarm takeoff action.
+    # ------------------------------------------------------------------------------------------------------------------
+  
+    def __swarm_landing_act_callback(self,goal):
+        # Output:
+        feedback = TakeoffFeedback()
+        result = TakeoffResult()
+
+        # Setting up takeoff request:
+        _goal = TakeoffGoal()
+        _goal.takeoff_height = goal.takeoff_height
+
+        for land_actn in self.landing_act_clients:
+            land_actn.send_goal(_goal)
+            #print('\n\nTIPO:' + str(type(takeoff_actn)))
+
+        self.__swarm_takeoff_act.set_succeeded(result)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                             __S W A R M _ F L O C K I N G _ A C T _ C A L L B A C K
+    #
+    # This method is used as the swarm takeoff action.
+    # ------------------------------------------------------------------------------------------------------------------
+  
     def __swarm_flocking_act_callback(self, goal):
         # Defining the goal:
         flock_goal = EmptyGoal()
@@ -174,6 +221,7 @@ class CrazySwarmSim:
         result.executed = True
 
         self.__swarm_flocking_act.set_succeeded(result)
+
     # ==================================================================================================================
     #
     #                          F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)
@@ -181,3 +229,4 @@ class CrazySwarmSim:
     # ==================================================================================================================
     def __cf_takeoff_feedback_cb(self, feedback):
         pass
+

@@ -21,6 +21,7 @@ from crazy_common_py.dataTypes import SphericalSpotter, Role
 # OTHER MODULES
 import time
 import math
+import numpy as np
 
 # MESSAGES
 # Topic
@@ -92,6 +93,18 @@ class MotionCommanderSim:
                                                           Attitude, self.__desired_motor_command_callback)
         self.desired_motor_command = Attitude()
 
+
+        # Subscriber to read the desired velocity computed by the MPC controller
+        self.mpc_velocity_sub = rospy.Subscriber('/' + cfName + '/mpc_velocity',
+                                                          Position, self.__mpc_velocity_callback)
+        self.mpc_velocity = Position()
+
+
+        # Subscriber to read the mpc target and set the mpc target flag
+        self.mpc_velocity_sub = rospy.Subscriber('/' + cfName + '/mpc_target', 
+                                        Position, self.__mpc_target_sub_callback)
+        self.mpc_target_flag = False
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -99,6 +112,9 @@ class MotionCommanderSim:
         self.trajectory_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC,
                                               Position, queue_size=1)
         self.position_target = Position()
+
+
+
 
         #TODO: aggiungere subscriber per traiettoria pubblicata dall'esterno, un'azione blocca la pubblicazione di
         # position_target e la sostituisce con quella letta dallo subscriber: questo funzionamento rimane in piedi
@@ -134,8 +150,8 @@ class MotionCommanderSim:
         self.__takeoff_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_TAKEOFF_ACT_TOPIC,
                                                           TakeoffAction, self.__takeoff_act_callback, False)
         self.__takeoff_act.start()
-        self.__takeoff_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_TAKEOFF_ACT_TOPIC,
-                                                                 TakeoffAction)
+        # self.__takeoff_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_TAKEOFF_ACT_TOPIC,
+        #                                                          TakeoffAction)
 
         # Landing action (server + client):
         self.__land_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_LAND_ACT_TOPIC,
@@ -150,6 +166,7 @@ class MotionCommanderSim:
                                                                            self.__relative_3D_displacement_act_callback,
                                                                            False)
         self.__relative_3D_displacement_act.start()
+        self.__relative_3D_displacement_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_REL_POS_TOPIC, Destination3DAction)
 
         # Absolute 3D positioning movement:
         self.__absolute_position_3D_motion_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_ABS_POS_TOPIC,
@@ -164,6 +181,7 @@ class MotionCommanderSim:
                                                                               self.__relative_3D_velocity_motion_act_callback,
                                                                               False)
         self.__relative_3D_velocity_motion_act.start()
+        self.__relative_3D_velocity_motion_act_client = actionlib.SimpleActionClient('/' + cfName + '/' + DEFAULT_REL_VEL_TOPIC, Destination3DAction)
 
         # Absolute 3D velocity motion:
         self.__absolute_3D_velocity_motion_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_ABS_VEL_TOPIC,
@@ -182,6 +200,12 @@ class MotionCommanderSim:
         self.__flock_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_FLOCK_TOPIC, EmptyAction,
                                                         self.__flock_act_callback, False)
         self.__flock_act.start()
+
+
+
+
+
+
 
     # ==================================================================================================================
     #
@@ -254,6 +278,45 @@ class MotionCommanderSim:
         self.actual_state.rotating_speed.x = msg.rotating_speed.x
         self.actual_state.rotating_speed.y = msg.rotating_speed.y
         self.actual_state.rotating_speed.z = msg.rotating_speed.z
+
+
+
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __M P C _ V E L O C I T Y _ C A L L B A C K
+    #
+    # This callback gets the desired velocity computed by the mpc controller and sets the velocity target so that
+    # the velocity command is provided to the velocity controller
+    # ------------------------------------------------------------------------------------------------------------------
+    
+    def __mpc_velocity_callback(self, msg):
+        cf_name = msg.name
+        if self.mpc_target_flag:
+            # Setting velocity mode:
+            self.flight_controller.mode = MovementMode.VELOCITY
+        
+            self.position_target.desired_velocity.x = msg.desired_velocity.x
+            self.position_target.desired_velocity.y = msg.desired_velocity.y
+            self.position_target.desired_velocity.z = msg.desired_velocity.z
+
+        else:
+            pass
+
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __M P C _ T A R G E T _ S U B _ C A L L B A C K
+    #
+    # This callback gets the new MPC target and sets the mpc target flag to true 
+    # if it is safe to give velocity commands to the velocity controller
+    # ------------------------------------------------------------------------------------------------------------------
+    
+    def __mpc_target_sub_callback(self,msg):
+        
+        print('A new MPC target has been accepted')
+        self.mpc_target_flag = True
+
 
     # ==================================================================================================================
     #
@@ -371,6 +434,13 @@ class MotionCommanderSim:
     #   * takeoff_height -> target takeoff height [m] to be reached to switch crazyflie state from LAND to FLYING;
     # ------------------------------------------------------------------------------------------------------------------
     def __takeoff_act_callback(self, goal):
+
+        # Setting position mode:
+        self.flight_controller.mode = MovementMode.POSITION
+
+        # Setting mpc flag to false
+        self.mpc_target_flag = False
+
         # Setting up new status:
         self.status = CfStatus.TAKING_OFF
 
@@ -393,8 +463,7 @@ class MotionCommanderSim:
         while True:
             # Getting current state:
             actual_state = self.actual_state
-
-            # Aboslute distance:
+            
             absolute_distance = math.fabs(takeoff_height - actual_state.position.z)
 
             # Publishing absolute distance as feedback:
@@ -404,6 +473,7 @@ class MotionCommanderSim:
             # Verify if the Crazyflie has reached the takeoff height:
             if absolute_distance <= 0.005:
                 success = True
+                print('successful takeoff')
                 break
 
             # Check preemption:
@@ -439,6 +509,13 @@ class MotionCommanderSim:
     #   * takeoff_height -> height [m] at which the crazyflie has to move before turning off motors;
     # ------------------------------------------------------------------------------------------------------------------
     def __land_act_callback(self, goal):
+
+        # Setting position mode:
+        self.flight_controller.mode = MovementMode.POSITION
+
+        # Setting mpc flag to false
+        self.mpc_target_flag = False
+
         # Rate definition:
         rate = rospy.Rate(100.0)
         success = True
@@ -467,8 +544,9 @@ class MotionCommanderSim:
             self.__land_act.publish_feedback(feedback)
 
             # Verify if the Crazyflie has reached the takeoff height:
-            if absolute_distance <= 0.005:
+            if absolute_distance <= 0.05:
                 success = True
+                print('successfully landed')
                 break
 
             # Check preemption:
@@ -509,8 +587,8 @@ class MotionCommanderSim:
         self.flight_controller.mode = MovementMode.POSITION
 
         # Getting actual state:
-        actual_state = self.actual_state
-        actual_yaw = actual_state.orientation.yaw   # [rad]
+        initial_state = self.actual_state
+        initial_yaw = initial_state.orientation.yaw   # [rad]
 
         # Computing final destination:
         delta_x_rel = goal.destination_info.desired_position.x
@@ -518,9 +596,9 @@ class MotionCommanderSim:
         delta_z_rel = goal.destination_info.desired_position.z
         delta_yaw_rel = goal.destination_info.desired_yaw   # [deg]
 
-        destination_x = actual_state.position.x + delta_x_rel * math.cos(actual_yaw) - delta_y_rel * math.sin(actual_yaw)
-        destination_y = actual_state.position.y + delta_x_rel * math.sin(actual_yaw) + delta_y_rel * math.cos(actual_yaw)
-        destination_z = actual_state.position.z + delta_z_rel
+        destination_x = initial_state.position.x + delta_x_rel * math.cos(initial_yaw) - delta_y_rel * math.sin(initial_yaw)
+        destination_y = initial_state.position.y + delta_x_rel * math.sin(initial_yaw) + delta_y_rel * math.cos(initial_yaw)
+        destination_z = initial_state.position.z + delta_z_rel
 
         # Output:
         feedback = Destination3DFeedback()
@@ -540,12 +618,10 @@ class MotionCommanderSim:
         self.position_target.desired_position.y = destination_y
         self.position_target.desired_position.z = destination_z
 
-        self.position_target.desired_yaw = rad2deg(actual_yaw) + delta_yaw_rel
+        self.position_target.desired_yaw = rad2deg(initial_yaw) + delta_yaw_rel
 
-        self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
-        self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
-        self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
 
+            
         if success:
             result.result = True
             self.__relative_3D_displacement_act.set_succeeded(result)
@@ -899,6 +975,10 @@ class MotionCommanderSim:
         self.__flock_act.set_succeeded(result)
 
 
+
+
+
+
     # ==================================================================================================================
     #
     #                            F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)
@@ -910,10 +990,13 @@ class MotionCommanderSim:
     #
     # Callback function for the feedback of stop action client.
     # ------------------------------------------------------------------------------------------------------------------
+
     def __stop_act_client_feedback_cb(self, feedback):
         message = 'Actual delta velocity for crazyflie ' + self.name + ' = ' + str(
             feedback.feedback_value) + ' [m/s]'
         rospy.logdebug(message)
+
+
 
     # ------------------------------------------------------------------------------------------------------------------
     #

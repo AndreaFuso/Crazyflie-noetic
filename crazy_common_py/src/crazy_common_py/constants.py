@@ -124,7 +124,7 @@ DEFAULT_PID_OUTPUT_LIMIT = 0.0  #0.0 0.0
 # Forward velocity desired:
 PID_POSITION_X_KP = 2.0     #2.0 0.02
 PID_POSITION_X_KI = 0.0     #0.0 0.0
-PID_POSITION_X_KD = 0.0     #0.0 0.01
+PID_POSITION_X_KD = 0.0    #0.0 0.01
 
 # Lateral velocity desired:
 PID_POSITION_Y_KP = 2.0    #2.0 0.02

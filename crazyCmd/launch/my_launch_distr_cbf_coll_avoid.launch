@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+	<!-- Launching the Gazebo world scene -->
+	<include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<arg name="world_name" value="$(find crazyflie_gazebo)/worlds/crazyflie.world"/>
+		<!-- more default parameters can be changed here -->
+		<arg name="paused" value="true"/>
+	</include>
+
+	<!--  Starting up nodes that give the pace to the inner controllers -->
+	
+	<node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>
+	<node name="node_500Hz" pkg="crazyCmd" type="node_500Hz.py" output="screen"/>
+	<node name="node_1000Hz" pkg="crazyCmd" type="node_1000Hz.py" output="screen"/>
+
+	<group ns = "cf1">
+		<node pkg="crazyCmd" type="crazyflie_distr_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf1</rosparam>
+			<rosparam param="initial_position">[0.0, 0.0, 0.2]</rosparam>
+			<rosparam param="cfs_number">3</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf2">
+		<node pkg="crazyCmd" type="crazyflie_distr_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf2</rosparam>
+			<rosparam param="initial_position">[0.5, 0.0, 0.2]</rosparam>
+			<rosparam param="cfs_number">3</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf3">
+		<node pkg="crazyCmd" type="crazyflie_distr_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf3</rosparam>
+			<rosparam param="initial_position">[0.0, 0.5, 0.2]</rosparam>
+			<rosparam param="cfs_number">3</rosparam>
+		</node>
+	</group>
+<!--
+
+	<group ns = "cf4">
+		<node pkg="crazyCmd" type="crazyflie_distr_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf4</rosparam>
+			<rosparam param="initial_position">[0.5, 0.5, 0.2]</rosparam>
+			<rosparam param="cfs_number">3</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf5">
+		<node pkg="crazyCmd" type="crazyflie_distr_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf5</rosparam>
+			<rosparam param="initial_position">[1.0, 0.0, 0.2]</rosparam>
+			<rosparam param="cfs_number">3</rosparam>
+		</node>
+	</group>
+
+	<group ns = "cf6">
+		<node pkg="crazyCmd" type="crazyflie_distr_cbf_coll_avoid_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf6</rosparam>
+			<rosparam param="initial_position">[1.0, 0.5, 0.2]</rosparam>
+			<rosparam param="cfs_number">3</rosparam>
+		</node>
+	</group>     -->
+
+
+
+	<group ns = "swarm">
+		<rosparam param="cfs_number">3</rosparam>
+		<node pkg="crazyCmd" type="swarm_distr_cbf_coll_avoid_node.py" name="swarm_node" output="screen">
+			<rosparam param="cfs_number">3</rosparam>
+		</node>
+	</group> 
+
+    <group ns= "obstacle1">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description -model mrm -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
+    <group ns= "obstacle2">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description_2" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc_2.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn_2" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description_2 -model mrm2 -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
+
+    <group ns= "obstacle3">
+
+        <!-- Robot Model Description -->
+        <param name="robot_description_3" command="$(find xacro)/xacro '$(find crazyflie_description)/urdf/cylinder_obstacle_cbf_mpc_3.xacro'"/>
+
+        <arg name="x" default="0" />
+        <arg name="y" default="0" />
+        <arg name="z" default="0" />
+
+        <!-- Spawn the robot model -->
+        <node name="mybot_spawn_3" pkg="gazebo_ros" type="spawn_model" output="screen"
+            args="-urdf -param robot_description_3 -model mrm3 -x $(arg x) -y $(arg y) -z $(arg z)" />
+
+    </group>
+
+
+</launch>

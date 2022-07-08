@@ -91,6 +91,7 @@ class CrazyDrone:
 
         # State:
         self.__state = CrazyflieState()
+        self.__state.name = self.cfName
 
         # Controller output:
         self.__controller_output = Attitude()
@@ -102,6 +103,12 @@ class CrazyDrone:
         #                                       S U B S C R I B E R S  S E T U P
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         self.__pace_100Hz_sub = rospy.Subscriber('/' + DEFAULT_100Hz_PACE_TOPIC, Empty, self.__pace_100Hz_cb)
+
+
+        # Subscriber to read the desired velocity computed by the MPC controller
+        self.mpc_velocity_sub = rospy.Subscriber('/' + self.cfName + '/mpc_velocity',
+                                                          Position, self.__mpc_velocity_callback)
+        self.mpc_velocity = Position()
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -140,6 +147,26 @@ class CrazyDrone:
                                                                self.__rel_vel_move_act_callback, False)
         self.__rel_vel_move_act.start()
 
+        self.__rel_vel_move_client = actionlib.SimpleActionClient('/' + name + '/' + DEFAULT_REL_VEL_TOPIC,
+                                                                  Destination3DAction)
+
+        # Waits until the action server has started up and started listening for goals.
+        self.__rel_vel_move_client.wait_for_server()
+
+        # Creates a goal to send to the action server.
+        self.goal = Destination3DAction()
+
+
+        # Relative displacement motion;
+        self.__rel_displ_move_act = actionlib.SimpleActionServer('/' + name + '/' + DEFAULT_REL_POS_TOPIC,
+                                                                 Destination3DAction,
+                                                                 self.__rel_displ_move_act_callback, False)
+        self.__rel_displ_move_act.start()
+
+
+
+
+
         # Relative displacement motion;
         self.__rel_displ_move_act = actionlib.SimpleActionServer('/' + name + '/' + DEFAULT_REL_POS_TOPIC,
                                                                  Destination3DAction,
@@ -150,9 +177,13 @@ class CrazyDrone:
         #                                        I N I T I A L  O P E R A T I O N S
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
        
-        if self.cfName == 'cf1':
-            # Drivers initialization:
-            cflib.crtp.init_drivers()
+        # if self.cfName == 'cf1':
+        #     # Drivers initialization:
+        #     cflib.crtp.init_drivers()
+
+    
+        # Drivers initialization:
+        cflib.crtp.init_drivers()
 
         # Instantiation of SyncCrazyflie and opening communication:
         self.__scf = SyncCrazyflie(URI)
@@ -160,6 +191,7 @@ class CrazyDrone:
 
         # Instantiation of MotionCommander:
         self.__mc = MotionCommander(self.__scf)
+
 
         # Attitude logger:
         self.__attitude_logger = SyncLogger(self.__scf, self.__attitude_logger_config)
@@ -178,8 +210,9 @@ class CrazyDrone:
         self.__desired_state_logger.connect()
 
         self.__initialOperationsEnded = True
-        #self.__mc.take_off()
-        #self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
+
+        # self.__mc.take_off()
+        # self.__scf.cf.commander.send_setpoint(0.0, 0.0, 0.0, 20000)
 
     # ==================================================================================================================
     #
@@ -235,6 +268,35 @@ class CrazyDrone:
             #print(data)
             #print('ROLL: ', data[1]['stabilizer.roll'], '; PITCH: ', data[1]['stabilizer.pitch'], '; YAW: ', data[1]['stabilizer.yaw'])
 
+
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                               __M P C _ V E L O C I T Y _ C A L L B A C K
+    #
+    # This callback gets the desired velocity computed by the mpc controller and sets the velocity target so that
+    # the velocity command is provided to the velocity controller
+    # ------------------------------------------------------------------------------------------------------------------
+    def __mpc_velocity_callback(self, msg):
+        
+        # self.position_target.desired_velocity.x = msg.desired_velocity.x
+        # self.position_target.desired_velocity.y = msg.desired_velocity.y
+        # self.position_target.desired_velocity.z = msg.desired_velocity.z
+
+        self.goal.destination_info.desired_velocity.x = msg.desired_velocity.x
+        self.goal.destination_info.desired_velocity.y = msg.desired_velocity.y
+        self.goal.destination_info.desired_velocity.z = msg.desired_velocity.z
+
+
+        # Sends the goal to the action server.
+        self.__rel_vel_move_client.send_goal(self.goal)
+
+        # Waits for the server to finish performing the action.
+        self.__rel_vel_move_client.wait_for_result()
+
+
+
+
     # ==================================================================================================================
     #
     #                                 C A L L B A C K  M E T H O D S  (S E R V I C E S)
@@ -256,7 +318,7 @@ class CrazyDrone:
         if goal.takeoff_height <= 0:
             desired_takeoff_height = DEFAULT_TAKEOFF_HEIGHT
         else:
-            desired_takeoff_height = goal.takeoff_height + self.__state.position.z
+            desired_takeoff_height = goal.takeoff_height
         self.__mc.take_off(height=desired_takeoff_height)
 
     # ------------------------------------------------------------------------------------------------------------------

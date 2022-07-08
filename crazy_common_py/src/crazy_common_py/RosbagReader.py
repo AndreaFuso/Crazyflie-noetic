@@ -5,7 +5,7 @@ from crazy_common_py.common_functions import rad2deg
 
 rospack = rospkg.RosPack()
 
-bag_name = 'real_state.bag'
+bag_name = 'cf_states_6_drones.bag'
 bag_path = rospack.get_path('crazyCmd') + '/data/output/Rosbags/' + bag_name
 bag = rosbag.Bag(bag_path)
 

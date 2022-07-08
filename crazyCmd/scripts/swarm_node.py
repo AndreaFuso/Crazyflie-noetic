@@ -14,7 +14,8 @@ if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('swarm_node', log_level=rospy.DEBUG)
 
-    # Extracting rosparam informations (to understand the number of crazyflies):
+    # Extracting rosparam informations (to understand the number of 
+    # crazyflies):
     number_of_cfs = rospy.get_param('swarm_node/cfs_number')
 
     # Generate a standard list of names:
@@ -24,11 +25,5 @@ if __name__ == '__main__':
     swarm = CrazySwarmSim(cf_names)
 
     time.sleep(10)
-
-    print(cf_names)
-    print(swarm.cf_names)
-    print(type(swarm.takeoff_act_clients[0]))
-
-
 
     rospy.spin()

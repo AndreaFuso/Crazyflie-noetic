@@ -1,3 +1,5 @@
+from casadi import *
+import numpy as np
 import math
 from enum import Enum
 from crazy_common_py.common_functions import constrain, sameSign
@@ -93,3 +95,21 @@ class PidController:
 
         self.error = 0
         self.prevError = 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

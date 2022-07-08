@@ -1,0 +1,697 @@
+# ROS MODULES
+from time import sleep
+import rospy
+import actionlib
+
+# Action
+from crazyflie_messages.msg import TakeoffAction, TakeoffGoal, TakeoffResult, TakeoffFeedback
+from crazyflie_messages.msg import EmptyAction, EmptyGoal, EmptyResult, EmptyFeedback
+from crazy_common_py.default_topics import DEFAULT_FLOCK_TOPIC, DEFAULT_CF_STATE_TOPIC, \
+     DEFAULT_100Hz_PACE_TOPIC, DEFAULT_MOTOR_CMD_TOPIC, DEFAULT_ACTUAL_DESTINATION_TOPIC
+from crazy_common_py.constants import DEFAULT_LEADER
+from std_msgs.msg import Empty
+from crazyflie_messages.msg import Position, CrazyflieState, SwarmStates, Attitude, \
+                                   SwarmControllerOutputs, SwarmDesiredStates
+
+# Custom modules
+from crazy_common_py.common_functions import deg2rad, extractCfNumber
+from crazy_common_py.constants import *
+
+# Crazyflie API
+import cflib.crtp
+from cflib.crazyflie.syncLogger import SyncLogger
+from cflib.crazyflie import Crazyflie
+from cflib.crazyflie.commander import Commander
+from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
+from cflib.positioning.motion_commander import MotionCommander
+from cflib.crazyflie.log import LogConfig
+from cflib.crazyflie.swarm import Swarm, CachedCfFactory, _Factory
+
+# Other imports
+from collections import namedtuple
+
+
+StateEstimateLog = namedtuple('StateEstimateLog', 'x y z vx vy vz')
+AttitudeLog = namedtuple('AttitudeLog', 'roll pitch yaw gyro_x gyro_y gyro_z')
+RefVelocityLog = namedtuple('RefVelocityLog', 'target_vx target_vy target_vz yawrate')
+ControllerOutputLog= namedtuple('ControllerOutputLog', 'cmd_thrust cmd_roll cmd_pitch cmd_yaw')
+
+class CrazySwarmReal:
+    # ==================================================================================================================
+    #
+    #              C O N S T R U C T O R
+    #
+    # This class completely handle one real swarm of crazyflies.
+    # INPUTS:
+    #   1) cf_names -> list of names of each Crazyflie within the real swarm;
+    #
+    # ==================================================================================================================
+    def __init__(self, cf_names):
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #              P R O P E R T I E S  I N I T I A L I Z A T I O N
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        # Logger period
+        logger_period = 200 # ms
+
+        # Flag to understand when initial operations are ended 
+        # (otherwise problem with 100Hz subscriber):
+        self.__initialOperationsEnded = False
+
+        # List of crazyflies names:
+        self.cf_names = cf_names
+
+        # List of URIs
+        self.uris = self.create_uris_list(cf_names)
+
+        print(self.uris)
+
+        # Number of crazyflies:
+        self.number_of_cfs = len(self.cf_names)
+
+        # Dictionaries for commanders initialization
+        self.mc_dict = dict()
+        self.c_dict = dict()
+
+        # State logger configuration (6 floats => 24/26 bytes):
+        self.__state_logger_config = LogConfig(name='state_conf', 
+                                        period_in_ms=logger_period)
+        self.__state_logger_config.add_variable('stateEstimate.x', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.y', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.z', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.vx', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.vy', 
+                                                'float')
+        self.__state_logger_config.add_variable('stateEstimate.vz', 
+                                                'float')
+
+        # Attitude logger configuration (6 floats => 24/26 bytes):
+        self.__attitude_logger_config = LogConfig(name='attitude_conf', 
+                                                    period_in_ms=logger_period)
+        self.__attitude_logger_config.add_variable('stabilizer.roll', 'float')
+        self.__attitude_logger_config.add_variable('stabilizer.pitch', 'float')
+        self.__attitude_logger_config.add_variable('stabilizer.yaw', 'float')
+        self.__attitude_logger_config.add_variable('gyro.x', 'float')
+        self.__attitude_logger_config.add_variable('gyro.y', 'float')
+        self.__attitude_logger_config.add_variable('gyro.z', 'float')
+
+         # Controller output logger configuration (4 floats => 16/26 bytes):
+        self.__controller_output_config = LogConfig(name='controller_output_conf', 
+                                                    period_in_ms=logger_period)
+        self.__controller_output_config.add_variable('controller.cmd_thrust', 'float')
+        self.__controller_output_config.add_variable('controller.cmd_roll', 'float')
+        self.__controller_output_config.add_variable('controller.cmd_pitch', 'float')
+        self.__controller_output_config.add_variable('controller.cmd_yaw', 'float')
+
+        # Reference velocity state logger configuration (4 floats => 16/26 bytes):
+        self.__desired_state_logger_config = LogConfig(name='desired_state_config', 
+                                                    period_in_ms=logger_period)
+        self.__desired_state_logger_config.add_variable('posCtl.targetVX', 'float')
+        self.__desired_state_logger_config.add_variable('posCtl.targetVY', 'float')
+        self.__desired_state_logger_config.add_variable('posCtl.targetVZ', 'float')
+        self.__desired_state_logger_config.add_variable('controller.yawRate', 'float')
+
+        # Dictionaries for logger data
+        self.attitude_data_dict = dict()
+        self.state_data_dict = dict()
+        self.controller_output_data_dict = dict()
+        self.desired_state_data_dict = dict()
+
+
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                 S U B S C R I B E R S  S E T U P
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Subscriber to pace 100Hz:
+        self.pace_100Hz_sub = rospy.Subscriber(
+                        '/' + DEFAULT_100Hz_PACE_TOPIC, 
+                        Empty, self.__pace_100Hz_sub_callback)
+   
+        # List of mpc velocity subscribers:
+        self.mpc_velocity_subs = []
+        self.desired_vx = dict()
+        self.desired_vy = dict()
+        self.desired_vz = dict()
+        self.desired_yaw_rate = dict()
+        self.__make_mpc_velocity_subs()
+
+        # List of mpc target subscribers:
+        self.mpc_target_subs = []
+        # Flag to understand if the mpc target has been set
+        self.mpc_target_flag = dict()
+        self.__make_mpc_target_subs()
+
+        
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                 P U B L I S H E R S  S E T U P
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # States publisher:
+        self.states_pub = rospy.Publisher('/swarm/states', 
+                                          SwarmStates, queue_size=1)
+
+        # List of states
+        self.__make_states_publishers()
+
+        # List of controller outputs
+        self.controller_outputs = []
+        self.__make_controller_outputs_publishers()
+
+        # List of desired states
+        self.desired_states = []
+        self.__make_desired_states_publishers()
+
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                   S E R V I C E S  S E T U P
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #                    A C T I O N S  S E T U P
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Action to make the entire swarm take off :
+        self.__swarm_takeoff_act = actionlib.SimpleActionServer(
+                                    '/swarm/takeoff_actn', TakeoffAction, 
+                                    self.__swarm_takeoff_act_callback, False)
+        self.__swarm_takeoff_act.start()
+
+
+        # Action to make the entire swarm land:
+        self.__swarm_land_act = actionlib.SimpleActionServer(
+                                    '/swarm/land_actn', TakeoffAction, 
+                                    self.__swarm_land_act_callback, False)
+        self.__swarm_land_act.start()
+
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #             I N I T I A L  O P E R A T I O N S
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        
+        print('Loggers ok')
+
+        # Drivers initialization:
+        cflib.crtp.init_drivers()
+
+        # Instantiation of Swarm:
+        self.__swarm = Swarm(self.uris, factory = _Factory())
+
+        #  Opening communication
+        self.__swarm.open_links()
+
+        # Resetting estimators
+        self.__swarm.reset_estimators()
+
+        # Loggers configuration for all the agents
+        self.__attitude_loggers = dict()
+        self.__state_loggers = dict()
+        self.__controller_output_loggers = dict()
+        self.__desired_state_loggers = dict()
+
+        # Configuring the loggers
+        self.state_loggers_swarm()
+        self.attitude_loggers_swarm()
+        self.controller_output_loggers_swarm()
+        self.desired_state_loggers_swarm()
+
+        # List of states as CrazyflieState messages:
+        self.states = []
+        self.__make_states_list()
+
+        # Create commanders for the swarm
+        self.create_commanders_dict_swarm()
+
+        # Ending initial operations
+        self.__initialOperationsEnded = True
+
+
+
+
+
+    # ==================================================================================================================
+    #
+    #         I N I T I A L  O P E R A T I O N S  M E T H O D S
+    #
+    # ==================================================================================================================
+
+
+    #++++++++ MOTION COMMANDER AND COMMANDER INSTANTIATION METHOD +++++++++++++++++
+
+    # Creating a list of motion commanders to be used for the single 
+    # drones and for the swarm
+
+    def create_commanders_dict_drone(self, scf):
+
+        # Motion commander instance
+        motion_commander = MotionCommander(scf)        
+        self.mc_dict[scf._link_uri] = motion_commander
+
+        # Commander instance to send control setpoints
+        commander = Commander(scf.cf)
+        commander.set_client_xmode(enabled=True)
+
+        self.c_dict[scf._link_uri] = commander
+
+    def create_commanders_dict_swarm(self):
+        self.__swarm.parallel_safe(self.create_commanders_dict_drone)
+
+    #++++++++ STATE SUBSCRIBER LIST METHOD +++++++++++++++++++
+
+    def __make_states_list(self):
+        for cf_name in self.cf_names:
+            self.states.append(CrazyflieState())
+
+    #++++++++ MPC VELOCITY SUBSCRIBER LIST METHOD ++++++++++++
+
+    def __make_mpc_velocity_subs(self):
+        for cf_name in self.cf_names:
+            # Subscribers to read the desired velocity 
+            # computed by the MPC controller
+            tmp_sub = rospy.Subscriber('/' + cf_name + 
+                                       '/mpc_velocity', Position, 
+                                       self.__mpc_velocity_sub_callback)
+            self.mpc_velocity_subs.append(tmp_sub)
+
+    #++++++++ MPC TARGET SUBSCRIBER LIST METHOD ++++++++++++++
+
+    def __make_mpc_target_subs(self):
+        for cf_name in self.cf_names:
+            # Subscribers to read the MPC target for single drones
+            tmp_sub = rospy.Subscriber('/' + cf_name + 
+                                       '/mpc_target', Position, 
+                                       self.__mpc_target_sub_callback)
+            self.mpc_target_subs.append(tmp_sub)
+
+        for uri in self.uris:
+            self.mpc_target_flag[uri] = False
+
+    #+++++++++ STATE PUBLISHERS LIST METHOD ++++++++++++
+
+    def __make_states_publishers(self):
+        self.states_pubs = []
+        for cf_name in self.cf_names:
+            tmp_pub = rospy.Publisher('/' + cf_name + '/state', 
+                                      CrazyflieState, queue_size=1)
+            self.states_pubs.append(tmp_pub)
+
+    #+++++++++ C.O. PUBLISHERS LIST METHOD +++++++++++++
+
+    def __make_controller_outputs_publishers(self):
+        self.controller_outputs_pubs = []
+        for cf_name in self.cf_names:
+            tmp_pub = rospy.Publisher('/' + cf_name + '/' + 
+                                      DEFAULT_MOTOR_CMD_TOPIC, 
+                                      Attitude, queue_size=1)
+            self.controller_outputs_pubs.append(tmp_pub)
+            self.controller_outputs.append(Attitude())
+
+    #+++++++++ D.S. PUBLISHERS LIST METHOD +++++++++++++
+
+    def __make_desired_states_publishers(self):
+        self.desired_states_pubs = []
+        for cf_name in self.cf_names:
+            tmp_pub = rospy.Publisher('/' + cf_name + '/' + 
+                                      DEFAULT_ACTUAL_DESTINATION_TOPIC, 
+                                      Position, queue_size=1)
+            self.desired_states_pubs.append(tmp_pub)
+            self.desired_states.append(Position())
+
+    #++++++++++ STATE PUBLISHERS PUBLISH METHOD +++++++++
+
+    def __states_pub(self, states):
+        index = 0
+        for index, state_pub in enumerate(self.states_pubs):
+            state_pub.publish(states.states[index])
+
+    #+++++++++++ C.O. PUBLISHERS PUBLISH METHOD +++++++++
+
+    def __controller_outputs_pub(self, controller_outputs):
+        index = 0
+        for index, controller_output_pub in enumerate(
+                                    self.controller_outputs_pubs):
+            controller_output_pub.publish(
+                    controller_outputs.controller_outputs[index])
+
+    #+++++++++++ D.S. PUBLISHERS PUBLISH METHOD +++++++++
+
+    def __desired_states_pub(self, desired_states):
+        index = 0
+        for index, desired_state_pub in enumerate(
+                                self.desired_states_pubs):
+            desired_state_pub.publish(
+                     desired_states.desired_states[index])
+
+    #++++++++++++++++++++++++ CREATE LIST OF URIS +++++++++++++++++++++++++++++++++
+
+    def create_uris_list(self, cf_names):
+        uris = []
+        for name in cf_names:
+            num_ID = int(name[2:]) - 1
+            uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
+            uris.append(uri)
+        
+        return uris
+
+    # ==================================================================================================================
+    #
+    #                                     C A L L B A C K  M E T H O D S  (T O P I C S)
+    #
+    # ==================================================================================================================
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                                  __P A C E _ 1 0 0 H Z _ S U B _ C A L L B A C K
+    #
+    # This callback is called whenever an Empty message is published by pace_100Hz_node; it is used to develop the main
+    # routine.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __pace_100Hz_sub_callback(self, msg):
+
+        if self.__initialOperationsEnded:
+
+            # Initializing states message:
+            states = SwarmStates()
+            controller_outputs = SwarmControllerOutputs()
+            desired_states = SwarmDesiredStates()
+
+            cf_index = 0
+
+            for uri in self.uris:
+
+                # Extracting information from the loggers
+                self.state_data_dict[uri] = \
+                            self.__state_loggers[uri].next()
+                self.attitude_data_dict[uri] = \
+                            self.__attitude_loggers[uri].next()
+                self.controller_output_data_dict[uri] = \
+                            self.__controller_output_loggers[uri].next()
+                self.desired_state_data_dict[uri] = \
+                            self.__desired_state_loggers[uri].next()
+
+                # States
+                self.states[cf_index].name = 'cf' + str(cf_index + 1)
+                self.states[cf_index].position.x = \
+                    self.state_data_dict[uri][1]['stateEstimate.x']
+                self.states[cf_index].position.y = \
+                    self.state_data_dict[uri][1]['stateEstimate.y']
+                self.states[cf_index].position.z = \
+                    self.state_data_dict[uri][1]['stateEstimate.z']
+                self.states[cf_index].velocity.x = \
+                    self.state_data_dict[uri][1]['stateEstimate.vx']
+                self.states[cf_index].velocity.y = \
+                    self.state_data_dict[uri][1]['stateEstimate.vy']
+                self.states[cf_index].velocity.z = \
+                    self.state_data_dict[uri][1]['stateEstimate.vz']
+
+                # Attitudes
+                self.states[cf_index].orientation.roll = \
+                    deg2rad(self.attitude_data_dict[uri][1]['stabilizer.roll'])
+                self.states[cf_index].orientation.pitch = \
+                    deg2rad(-self.attitude_data_dict[uri][1]['stabilizer.pitch'])
+                self.states[cf_index].orientation.yaw = \
+                    deg2rad(self.attitude_data_dict[uri][1]['stabilizer.yaw'])
+                self.states[cf_index].rotating_speed.x = \
+                    deg2rad(self.attitude_data_dict[uri][1]['gyro.x'])
+                self.states[cf_index].rotating_speed.y = \
+                    deg2rad(self.attitude_data_dict[uri][1]['gyro.y'])
+                self.states[cf_index].rotating_speed.z = \
+                    deg2rad(self.attitude_data_dict[uri][1]['gyro.z'])
+                
+                # Controller outputs
+                self.controller_outputs[cf_index].desired_thrust = \
+                    self.controller_output_data_dict[uri][1]['controller.cmd_thrust']
+                self.controller_outputs[cf_index].desired_attitude.roll = \
+                    self.controller_output_data_dict[uri][1]['controller.cmd_roll']
+                self.controller_outputs[cf_index].desired_attitude.pitch = \
+                    self.controller_output_data_dict[uri][1]['controller.cmd_pitch']
+                self.controller_outputs[cf_index].desired_attitude.yaw = \
+                    self.controller_output_data_dict[uri][1]['controller.cmd_yaw']
+
+                # Desired states
+                self.desired_states[cf_index].desired_velocity.x = \
+                    self.desired_state_data_dict[uri][1]['posCtl.targetVX']
+                self.desired_states[cf_index].desired_velocity.y = \
+                    self.desired_state_data_dict[uri][1]['posCtl.targetVY']
+                self.desired_states[cf_index].desired_velocity.z = \
+                    self.desired_state_data_dict[uri][1]['posCtl.targetVZ']
+                self.desired_states[cf_index].desired_yaw_rate = \
+                    self.desired_state_data_dict[uri][1]['controller.yawRate']
+                
+                cf_index += 1
+
+            states.states = self.states
+            controller_outputs.controller_outputs = self.controller_outputs
+            desired_states.desired_states = self.desired_states
+
+            self.states_pub.publish(states)
+            self.__states_pub(states)
+            self.__controller_outputs_pub(controller_outputs)
+            self.__desired_states_pub(desired_states)
+            
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #         __M P C _ V E L O C I T Y  _ S U B _ C A L L B A C K
+    #
+    # This callback gets the desired velocity computed by the mpc controller 
+    # and sets the velocity target so that the velocity commands are given as 
+    # velocity setpoints to the drones composing the swarm
+    # ------------------------------------------------------------------------------------------------------------------
+    def __mpc_velocity_sub_callback(self, msg):
+        
+        cf_name = msg.name
+        num_ID = int(cf_name[2:]) - 1
+        uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
+
+        if self.mpc_target_flag[uri]:
+            self.desired_vx[uri] = msg.desired_velocity.x
+            self.desired_vy[uri] = msg.desired_velocity.y
+            self.desired_vz[uri] = msg.desired_velocity.z
+            self.desired_yaw_rate[uri] = msg.desired_yaw_rate
+
+            self.velocity_setpoint_swarm()
+
+        else:
+            pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #         __M P C _ T A R G E T _ S U B _ C A L L B A C K
+    #
+    # This callback gets the desired velocity computed by the mpc controller 
+    # and sets the velocity target so that the velocity commands are given as 
+    # velocity setpoints to the drones composing the swarm
+    # ------------------------------------------------------------------------------------------------------------------
+    def __mpc_target_sub_callback(self, msg):
+        
+        cf_name = 'cf1'
+        num_ID = int(cf_name[2:]) - 1
+        uri = 'radio://0/80/2M/E7E7E7E7E' + hex(num_ID)[-1]
+        print('A new MPC target has been accepted')
+        self.mpc_target_flag[uri] = True
+
+    # ==================================================================================================================
+    #
+    #            C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #         __S W A R M _ T A K E O F F _ A C T _ C A L L B A C K
+    #
+    # This method is used as the swarm takeoff action.
+    # ------------------------------------------------------------------------------------------------------------------
+    
+    def __swarm_takeoff_act_callback(self, goal):
+        # Output:
+        result = TakeoffResult()
+
+        print('about to take off')
+        
+        for uri in self.uris:
+            self.mpc_target_flag[uri] = False
+
+        self.takeoff_swarm()
+
+        rospy.sleep(2)
+
+        self.__swarm_takeoff_act.set_succeeded(result)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #         __S W A R M _ L A N D _ A C T _ C A L L B A C K
+    #
+    # This method is used as the swarm land action.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __swarm_land_act_callback(self, goal):
+        # Output:
+        result = TakeoffResult()
+
+        for uri in self.uris:
+            self.mpc_target_flag[uri] = False
+
+        self.land_swarm()
+
+        rospy.sleep(2)
+        
+        self.__swarm_land_act.set_succeeded(result)
+    
+    # ==================================================================================================================
+    #
+    #         F E E D B A C K  C A L L B A C K  M E T H O D S  (A C T I O N S)
+    #
+    # ==================================================================================================================
+    def __cf_takeoff_feedback_cb(self, feedback):
+        pass
+
+    # ==================================================================================================================
+    #
+    #        L O G G E R S     C O N F I G U R A T I O N    M E T H O D S
+    #
+    # ==================================================================================================================
+
+    # Dictionaries are used to store the SyncLogger instances and extract data 
+    # within the 100 Hz callback
+    # The key used to identify the drones is the URI string
+
+    #++++++++++++++++++++++++ CREATE STATE LOGGERS +++++++++++++++++++++++++++++++++
+
+    def state_logger_drone(self, scf):
+
+        # SyncLogger instantiation
+        self.__state_logger = SyncLogger(scf, self.__state_logger_config)
+        self.__state_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__state_loggers[scf._link_uri] = self.__state_logger
+
+    def state_loggers_swarm(self):
+        """
+        Configuring the loggers to be used 
+        """
+        self.__swarm.parallel_safe(self.state_logger_drone)
+
+
+    #++++++++++++++++++++++++ CREATE ATTITUDE LOGGERS ++++++++++++++++++++++++++++++
+
+    def attitude_logger_drone(self, scf):
+
+        # SyncLogger instantiation
+        self.__attitude_logger = SyncLogger(scf, self.__attitude_logger_config)
+        self.__attitude_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__attitude_loggers[scf._link_uri] = self.__attitude_logger
+
+    def attitude_loggers_swarm(self):
+        """
+        Configuring the loggers to be used 
+        """
+        self.__swarm.parallel_safe(self.attitude_logger_drone)
+
+    #++++++++++++++++++++ CREATE CONTROLLER OUTPUT LOGGERS +++++++++++++++++++++++++
+
+    def controller_output_logger_drone(self, scf):
+
+        # SyncLogger instantiation
+        self.__controller_output_logger = SyncLogger(scf, 
+                                    self.__controller_output_config)
+        self.__controller_output_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__controller_output_loggers[scf._link_uri] = \
+                                    self.__controller_output_logger
+
+    def controller_output_loggers_swarm(self):
+        """
+        Configuring the loggers to be used 
+        """
+        self.__swarm.parallel_safe(self.controller_output_logger_drone)
+
+    #+++++++++++++++++++++ CREATE DESIRED STATE LOGGERS ++++++++++++++++++++++++++++
+
+    def desired_state_logger_drone(self, scf):
+
+        # SyncLogger instantiation
+        self.__desired_state_logger = SyncLogger(scf, 
+                                    self.__desired_state_logger_config)
+        self.__desired_state_logger.connect()
+        # Storing SyncLogger instance inside the dictionary
+        self.__desired_state_loggers[scf._link_uri] = self.__desired_state_logger
+
+    def desired_state_loggers_swarm(self):
+        """
+        Configuring the loggers to be used 
+        """
+        self.__swarm.parallel_safe(self.desired_state_logger_drone)
+
+    # ==================================================================================================================
+    #
+    #         M E T H O D S    F O R    A C T I O N S    
+    #
+    # ==================================================================================================================
+
+    #+++++++++++++++++++++++ TAKEOFF METHOD ++++++++++++++++++++++++++++++++++++++
+
+    def takeoff_drone4swarm(self, scf):
+        self.mc_dict[scf._link_uri].take_off(height=0.3)
+
+    def takeoff_swarm(self):
+        print('takeoff action')
+        self.__swarm.parallel_safe(self.takeoff_drone4swarm)
+
+    #+++++++++++++++++++++++++ LAND METHOD +++++++++++++++++++++++++++++++++++++++
+
+    def land_drone4swarm(self, scf):
+        self.mc_dict[scf._link_uri].land()
+
+    def land_swarm(self):
+        print('land action')
+        self.__swarm.parallel_safe(self.land_drone4swarm)
+
+    #+++++++++++++++++++++ VELOCITY SETPOINT METHOD ++++++++++++++++++++++++++++++
+
+    def velocity_setpoint_drone4swarm(self, scf):
+        self.c_dict[scf._link_uri].send_velocity_world_setpoint(
+                                        self.desired_vx[scf._link_uri], 
+                                        self.desired_vy[scf._link_uri],
+                                        self.desired_vz[scf._link_uri],
+                                        self.desired_yaw_rate[scf._link_uri])
+
+    def velocity_setpoint_swarm(self):
+        # print('... sending velocity setpoints')
+        self.__swarm.parallel_safe(self.velocity_setpoint_drone4swarm)
+
+    # ==================================================================================================================
+    #
+    #                   E X I T    M E T H O D S
+    #
+    # All operations to perform if an error occurs (like KeyboardInterrupt to stop 
+    # the execution).
+    # ==================================================================================================================
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                   E X I T _ O P E R A T I O N S
+    #
+    # This method performs all the required exiting operations.
+    # ------------------------------------------------------------------------------------------------------------------
+    def exit_operations(self):
+
+        print('...about to land the swarm')
+        # Land the swarm
+        self.land_swarm()
+
+        print('swarm landed')
+
+        rospy.sleep(2)
+
+        print('...about to close links')
+        # Closing communication with the crazyflie:
+        self.__swarm.close_links()
+
+        print('links have been closed')
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #
+    #                   __ E X I T __
+    #
+    # This method is called when an error occurs, performing some operations before 
+    # destroying class instance.
+    # ------------------------------------------------------------------------------------------------------------------
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.exit_operations()

@@ -94,6 +94,7 @@ def standardNameList(number_of_cfs):
     return cf_names
 
 def extractCfNumber(name):
+    # print('name is: ', name)
     digit_pos = [name.find('1'), name.find('2'), name.find('3'), name.find('4'), name.find('5'), name.find('6'),
                  name.find('7'), name.find('8'), name.find('9')]
     for ii in range(0, len(digit_pos)):
@@ -101,4 +102,5 @@ def extractCfNumber(name):
             digit_pos[ii] = 100
 
     first_digit_pos = min(digit_pos)
+    # print('name[first_digit_pos:] is: ', name[first_digit_pos:])
     return int(name[first_digit_pos:])

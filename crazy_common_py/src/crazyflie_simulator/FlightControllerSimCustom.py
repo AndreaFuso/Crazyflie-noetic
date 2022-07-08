@@ -50,6 +50,9 @@ class FlightControllerCustom:
         self.desired_position_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, Position,
                                                      self.__desired_position_sub_callback)
 
+
+
+
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                      P U B L I S H E R S  S E T U P
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -59,8 +62,18 @@ class FlightControllerCustom:
                                                  Attitude, queue_size=1)
         self.desired_motor_command = Attitude()
 
+
+        # This publisher has to be deleted (only 1 publisher per topic)
+        # Publisher to publish the desired destination (used by desired position subscriber):
+        self.trajectory_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC,
+                                              Position, queue_size=1)
+        self.position_target = Position()
+
+
+
         self.previous_desired_position = Vector3(0.0001, 0.0001, 0.0001)
         self.previous_desired_yaw = 1000.0
+
 
         self.__init_position_controller()
         self.__init_velocity_controller()
@@ -235,7 +248,6 @@ class FlightControllerCustom:
             self.OK500 = True
         #print('DESIRED ATTITUDE: ', self.desired_attitude.x, '; ', self.desired_attitude.y, '; ', self.desired_attitude.z)
         #print('DESIRED THRUST: ', self.desired_thrust, '/', MAX_THRUST)
-
 
 
     # ==================================================================================================================
@@ -436,3 +448,5 @@ class FlightControllerCustom:
         rpy_motor_command.z = constrain(rpy_motor_command.z, -MAX_YAW_OUTPUT, MAX_YAW_OUTPUT)
 
         return rpy_motor_command
+
+

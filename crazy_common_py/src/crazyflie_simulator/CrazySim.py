@@ -5,6 +5,7 @@ import rospkg
 
 # GAZEBO MODULES
 from gazebo_msgs.srv import SpawnModel, SpawnModelRequest
+## DD: import services classes used for creating rospy.ServiceProxy instance
 
 import sys
 import xacro
@@ -37,12 +38,14 @@ class CrazySim:
     #   2) initialPosition -> Vector3 object with the inital position coordinates;
     # ==================================================================================================================
     def __init__(self, name, initialPosition, testBench=False):
+        ## DD??: the meaning of testBench
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                               W A I T I N G  F O R  S E R V I C E S
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Waiting for service used to spawn the urdf model of Crazyflie in Gazebo:
         rospy.wait_for_service("/gazebo/spawn_urdf_model")
-        #DD: rospy.wait_for_service to block until a service is available when we call a service
+        ## DD: wait until a service becomes available
+
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                           P R O P E R T I E S  I N I T I A L I Z A T I O N
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -54,13 +57,19 @@ class CrazySim:
 
         # Simulated IMU parameters:
         self.IMU = GazeboIMU(IMU_GAUSSIAN_NOISE_DEFAULT, IMU_UPDATE_RATE_DEFAULT)
+        ## DD?: 2 types of GazeboImu, one is GazeboRosImu computed by ROS plugin, not Gazebo; 
+        ## DD?: another is GazeboRosImuSensor, measurements are given by gazebo ImuSensor instead of computed by ROS plugin
+        
         self.state_estimator = FakeStateEstimator(name)
+        ## DD?: see it later
 
         # Instance of motion commander:
         self.motion_commander = MotionCommanderSim(name)
+        ## DD?: see it later
 
         # Test bench choice:
         self.testBench = testBench
+        ## DD?: don't know
 
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -75,7 +84,9 @@ class CrazySim:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # Service used to spawn the urdf model of the Crazyflie in the simulation:
         self.spawn_model_service = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
-        self.__spawn_model_request_svr = SpawnModelRequest()
+        ## DD: create a rospy.ServiceProxy instance spawn_model_service
+        ## DD: create a callable proxy to a service, rospy.ServiceProxy(service_name, service_definition_class.srv)
+        self.__spawn_model_request_srv = SpawnModelRequest()
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           A C T I O N S  S E T U P
@@ -104,12 +115,13 @@ class CrazySim:
     def __spawn_cf(self):
         # Getting the urdf path:
         rospack = rospkg.RosPack()
+        ## DD: create an instance from class rospkg.RosPack()to query info. about ROS packages 
         if not self.testBench:
             urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_reference.urdf'
         else:
             urdf_path = rospack.get_path('crazyflie_description') + '/urdf/crazyflie_test_bench.urdf'
 
-        # Setting up the request message to spawn the crazyflie in the simulation:
+        # Setting up the arguments of request message to spawn the crazyflie in the simulation:
         self.__spawn_model_request_srv.model_name = self.name
         self.__spawn_model_request_srv.model_xml = self.__setup_custom_urdf(urdf_path)
         self.__spawn_model_request_srv.robot_namespace = self.name
@@ -205,8 +217,9 @@ class CrazySim:
         ccw_propeller_mesh_path = rospack.get_path('crazyflie_description') + '/meshes/propeller_ccw.dae'
 
         # Finding and modifying the path of the base link .dae and robotNamespace tag:
-        tag_bl = 'PATH_BASE' #DD:base
-        tag_p1 = 'PATH_PROP_1'#DD:propeller
+        ## DD: extract these tags' valuename from reference urdf
+        tag_bl = 'PATH_BASE'
+        tag_p1 = 'PATH_PROP_1'
         tag_p2 = 'PATH_PROP_2'
         tag_p3 = 'PATH_PROP_3'
         tag_p4 = 'PATH_PROP_4'
@@ -231,6 +244,7 @@ class CrazySim:
         tag_freq_float_4 = 'FORCE_STATE_FREQ_FLOAT_4'
         tag_fs_m4 = 'FORCE_STATE_TOPIC_M4'
 
+        ## DD: extract the place/positioon in urdf file
         initial_pos_bl = urdf_file.find(tag_bl)
         initial_pos_p1 = urdf_file.find(tag_p1)
         initial_pos_p2 = urdf_file.find(tag_p2)
@@ -238,8 +252,8 @@ class CrazySim:
         initial_pos_p4 = urdf_file.find(tag_p4)
         initial_pos_ns = urdf_file.find(tag_ns)
         initial_pos_odom = urdf_file.find(tag_odom)
-        initial_pos_imu_gn = urdf_file.find(tag_imu_gn) #gaussian noise
-        initial_pos_imu_ur = urdf_file.find(tag_imu_ur) #uodate rate
+        initial_pos_imu_gn = urdf_file.find(tag_imu_gn)
+        initial_pos_imu_ur = urdf_file.find(tag_imu_ur)
 
         initial_pos_freq_int_1 = urdf_file.find(tag_freq_int_1)
         initial_pos_freq_float_1 = urdf_file.find(tag_freq_float_1)
@@ -257,6 +271,7 @@ class CrazySim:
         initial_pos_freq_float_4 = urdf_file.find(tag_freq_float_4)
         initial_pos_fs_m4 = urdf_file.find(tag_fs_m4)
 
+        ## DD: concatenate urdf contents with new meshes path, new topics, new arguments step by step to get a custom urdf
         custom_urdf_file = urdf_file[:initial_pos_bl]
         custom_urdf_file = custom_urdf_file + basic_link_mesh_path + urdf_file[initial_pos_bl + len(tag_bl):initial_pos_p1]
         custom_urdf_file = custom_urdf_file + ccw_propeller_mesh_path + urdf_file[initial_pos_p1 + len(tag_p1):initial_pos_p2]

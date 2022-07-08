@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<robot name="mrm2" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- BGN - Include -->
+    <xacro:include filename="$(find crazyflie_description)/urdf/links_joints.xacro" />
+    <!-- END - Include -->
+
+    <!-- BGN - Obstacles Description  -->
+
+    <xacro:m_link_cylinder name="link_02"
+                           origin_rpy="0 0 0" origin_xyz="1 2.5 0.5"
+                           mass="157.633"
+                           ixx="13.235" ixy="0" ixz="0"
+                           iyy="13.235" iyz="0"
+                           izz="9.655"
+                           length="1" radius="0.2" />
+
+    <!-- END - Obstacles Description  -->
+
+</robot>
