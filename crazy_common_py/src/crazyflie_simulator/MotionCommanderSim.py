@@ -1,6 +1,7 @@
 # ROS MODULES
 import rospy
 import actionlib
+
 # CUSTOM MODULES
 
 from crazy_common_py.dataTypes import Vector3, CfStatus, MovementMode

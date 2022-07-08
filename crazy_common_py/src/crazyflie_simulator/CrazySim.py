@@ -193,6 +193,7 @@ class CrazySim:
                                    namespace='/'+self.name,
                                    args='crazyflie_M1_joint_velocity_controller crazyflie_M2_joint_velocity_controller crazyflie_M3_joint_velocity_controller crazyflie_M4_joint_velocity_controller joint_state_controller')
         launch = roslaunch.scriptapi.ROSLaunch()
+        ## DD: launch instance
         launch.start()
 
         process = launch.launch(node)

@@ -43,6 +43,7 @@ class FakeStateEstimator:
 
         # Check variable to understand if the values have been correctly initialized:
         self.prev_values_init = False
+        ## DD?
 
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       S U B S C R I B E R S  S E T U P
@@ -58,6 +59,7 @@ class FakeStateEstimator:
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         self.state_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState, queue_size=1)
         self.__actual_state = CrazyflieState()
+        ## DD: put content of CrazyflieState message to actual state, including name, position, orientation, velocity, rotating speed
         self.__tmp_rotating_speed = Vector3()
 
 
@@ -138,7 +140,9 @@ class FakeStateEstimator:
         self.__actual_state.orientation.pitch = pitch
         self.__actual_state.orientation.yaw = yaw
 
+
         # Setting the linear velocity:
+        ## DD: here the twist means velocity
         self.__actual_state.velocity.x = msg.twist.twist.linear.x
         self.__actual_state.velocity.y = msg.twist.twist.linear.y
         self.__actual_state.velocity.z = msg.twist.twist.linear.z
