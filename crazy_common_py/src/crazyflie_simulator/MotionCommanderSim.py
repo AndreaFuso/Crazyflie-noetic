@@ -6,7 +6,9 @@ import actionlib
 
 from crazy_common_py.dataTypes import Vector3, CfStatus, MovementMode
 from crazyflie_simulator.MotorControllerSim import MotorControllerSim
+# DD?: next layer to study--->MotorControllerSim
 from crazyflie_simulator.FlightControllerSimCustom import FlightControllerCustom
+# DD?: next layer to study--->FlightControllerCustom
 from crazy_common_py.common_functions import rad2deg, deg2rad
 from crazy_common_py.constants import *
 from crazy_common_py.default_topics import DEFAULT_CF_STATE_TOPIC, DEFAULT_100Hz_PACE_TOPIC, DEFAULT_500Hz_PACE_TOPIC, \
@@ -17,7 +19,9 @@ from crazy_common_py.default_topics import DEFAULT_TAKEOFF_ACT_TOPIC, DEFAULT_LA
 from crazy_common_py.default_topics import DEFAULT_TAKEOFF_SRV_TOPIC, DEFAULT_LAND_SRV_TOPIC
 
 from crazyflie_manager.NeighborSpotter import NeighborSpotter
+## DD?: next layer to study--->NeighborSpotter
 from crazy_common_py.dataTypes import SphericalSpotter, Role
+## DD?: define the leader and follower
 
 # OTHER MODULES
 import time
@@ -61,9 +65,11 @@ class MotionCommanderSim:
 
         # Instance of motor controller:
         self.motors_controller = MotorControllerSim(cfName)
+        ## DD?: next layer to study--->MotorControllerSim
 
         # Instance of flight controller:
         self.flight_controller = FlightControllerCustom(cfName)
+        ## DD?: next layer to study--->FlightControllerCustom
 
         # Property to understand if movement actions have to be interrupted:
         self.stopActions = False
@@ -99,12 +105,16 @@ class MotionCommanderSim:
         self.mpc_velocity_sub = rospy.Subscriber('/' + cfName + '/mpc_velocity',
                                                           Position, self.__mpc_velocity_callback)
         self.mpc_velocity = Position()
+        ## DD?: here why we have the second line, is to output these values?, what's the difference between following one
 
 
         # Subscriber to read the mpc target and set the mpc target flag
         self.mpc_velocity_sub = rospy.Subscriber('/' + cfName + '/mpc_target', 
                                         Position, self.__mpc_target_sub_callback)
         self.mpc_target_flag = False
+
+
+
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                       P U B L I S H E R S  S E T U P
@@ -128,8 +138,14 @@ class MotionCommanderSim:
         # calculating the motor commands publishing them on "/set_desired_motion_command"; anyway it's the
         # MotionCommander that decides when to actually send commands to the motors.
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        ## DD?: also above don't understand
+
         self.motor_command_pub = rospy.Publisher('/' + cfName + '/' + DEFAULT_MOTOR_CMD_TOPIC, Attitude, queue_size=1)
         self.motor_command = Attitude()
+
+
+
 
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #                                           S E R V I C E S  S E T U P
