@@ -878,8 +878,8 @@ legend_err_cum = []
 for ii in range(N_cf):
     ax16.plot(des_time_sec_list_list_mpc[ii], integral_error_list_mpc[ii])
     ax16.plot(des_time_sec_list_list_cbf[ii], integral_error_list_cbf[ii])
-    legend_err_cum.append('cumulated error mpc')
-    legend_err_cum.append('cumulated error cbf')
+    legend_err_cum.append('integral of error mpc')
+    legend_err_cum.append('integral of error cbf')
 
 
 

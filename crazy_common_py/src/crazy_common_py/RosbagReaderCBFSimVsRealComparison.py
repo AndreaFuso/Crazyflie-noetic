@@ -589,6 +589,23 @@ ax7.set_ylabel('h')
 ax7.grid("minor")
 # ax7.set_title('h function')
 
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+fig77,ax77 = plt.subplots()
+
+legend_h = []
+
+for ii in range(N_cf):
+    ax77.plot(time_h_sec_list_list_sim[ii], h_fun_list_list_sim[ii])
+    legend_h.append('h sim')
+
+# ax77.legend(legend_h)
+ax77.set_xlabel('time [s]')
+
+ax77.set_ylabel('h')
+
+ax77.grid("minor")
+# ax7.set_title('h function')
 
 
 
