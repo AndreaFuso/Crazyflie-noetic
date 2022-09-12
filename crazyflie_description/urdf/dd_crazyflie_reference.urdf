@@ -1,0 +1,1167 @@
+<?xml version="1.0"?>
+<robot name="crazyflie" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Material color used in Rviz -->
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.203125 0.23828125 0.28515625 1.0"/>
+  </material>
+  <material name="green">
+    <color rgba="0.0 0.8 0.0 1.0"/>
+  </material>
+  <material name="grey">
+    <color rgba="0.2 0.2 0.2 1.0"/>
+  </material>
+  <material name="orange">
+    <color rgba="1.0 0.423529411765 0.0392156862745 1.0"/>
+  </material>
+  <material name="brown">
+    <color rgba="0.870588235294 0.811764705882 0.764705882353 1.0"/>
+  </material>
+  <material name="red">
+    <color rgba="0.80078125 0.12890625 0.1328125 1.0"/>
+  </material>
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+  <!-- Material used by Gazebo -->
+  <gazebo reference="imu_link">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <gazebo reference="fldk_base_link">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <gazebo reference="fldk_sensor_laser">
+    <material>Gazebo/Red</material>
+  </gazebo>
+
+  <gazebo reference="fldk_sensor_camera">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+
+  <gazebo reference="mrdk_base_link">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <gazebo reference="top_sensor">
+   <material>Gazebo/Red</material>
+  </gazebo> 
+
+  <gazebo reference="front_sensor">
+   <material>Gazebo/Red</material>
+  </gazebo>
+
+  <gazebo reference="back_sensor">
+   <material>Gazebo/Red</material>
+  </gazebo> 
+
+  <gazebo reference="left_sensor">
+   <material>Gazebo/Red</material>
+  </gazebo> 
+
+  <gazebo reference="right_sensor">
+   <material>Gazebo/Red</material>
+  </gazebo> 
+
+    <!--
+    =========================================================================
+                                  L I N K S
+    =========================================================================
+    -->
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        C R A Z Y F L I E  B O D Y
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="crazyflie_main_body">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.027"/>
+        <origin xyz="0 0 0.01745" rpy="0 0 0"/>
+        <!--<inertia ixx="1.65717e-05" ixy="0" ixz="0" iyy="1.65717e-05" iyz="0" izz="2.92617e-05"/>-->
+        <inertia ixx="16.823890e-06" ixy="0" ixz="0" iyy="16.655602e-06" iyz="0" izz="29.261652e-06"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://PATH_BASE"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.045 0.045 0.03"/>  <!-- "0.045 0.045 0.03" -->
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        I M U  S E N S O R  L I N K
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="imu_link">
+        <origin xyz="0 0 0"/>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='8.252083333333335e-12' ixy='0' ixz='0' 
+                     iyy='1.7627083333333335e-11' iyz='0' izz='8.252083333333335e-12'/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0045 0.003 0.00095"/>
+            </geometry>
+            <material name="white"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0045 0.003 0.00095"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M1">
+      <origin xyz="0 0 0"/> <!-- 0.032527 -0.032527 0.024 -->
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="file://PATH_PROP_1"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M2">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="file://PATH_PROP_2"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M3">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="file://PATH_PROP_3"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        P R O P E L L E R  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <link name="crazyflie_prop_M4">
+      <origin xyz="0 0 0"/>
+      <inertial>
+        <mass value="0.0005"/>
+        <inertia ixx="1.20833e-07" ixy="0" ixz="0" iyy="1.07344e-06" iyz="0" izz="1.15677e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh scale="0.0225 0.0225 0.0225" filename="file://PATH_PROP_4"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.0225" length="0.005"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--
+    =========================================================================
+                                  J O I N T S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                I M U  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="imu_sensor_joint" type="fixed">
+        <parent link="crazyflie_main_body" />
+        <child link="imu_link" />
+        <origin xyz="0 0 0.01745" rpy="0 0 0" />
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M1_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M1"/>
+      <origin xyz="0.0326695 -0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M2_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M2"/>
+      <origin xyz="-0.0326695 -0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M3_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M3"/>
+      <origin xyz="-0.0326695 0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    R E V O L U T E  J O I N T  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="crazyflie_M4_joint" type="revolute">
+      <parent link="crazyflie_main_body"/>
+      <child link="crazyflie_prop_M4"/>
+      <origin xyz="0.0326695 0.0326695 0.024" rpy="0 0 0" />
+      <axis xyz="0 0 1"/>
+      <limit lower="-1e+16" upper="1e+16" effort="1000" velocity="100"/>
+    </joint>
+
+    <!--
+    =========================================================================
+                              P L U G I N S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        G A Z E B O  R O S  C O N T R O L
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+          <robotNamespace>ROBOT_NAMESPACE</robotNamespace>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                O D O M E T R Y
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo>
+        <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>500.0</updateRate>
+            <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
+            <topicName>ODOMETRY_TOPIC</topicName>
+            <gaussianNoise>0.0</gaussianNoise>
+            <frameName>world</frameName> <!-- world -->
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>500.0</updateRate>
+            <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
+            <topicName>odom_relative</topicName>
+            <gaussianNoise>0.0</gaussianNoise>
+            <frameName>crazyflie_main_body</frameName> <!-- world -->
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                I M U  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo>
+        <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
+        <alwaysOn>true</alwaysOn>
+        <bodyName>imu_link</bodyName> <!-- crazyflie_main_body -->
+        <topicName>/cf1/imu</topicName>
+        <serviceName>imu_service</serviceName>
+        <gaussianNoise>IMU_GAUSSIAN_NOISE_VALUE</gaussianNoise>
+        <updateRate>IMU_UPDATE_RATE</updateRate>
+        <frameName>imu_link</frameName>
+    </plugin>
+    </gazebo>    
+
+    <!--
+    =========================================================================
+                              A C T U A T O R S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        A C T U A T O R  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M1_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M1">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        A C T U A T O R  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M2_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M2">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M3">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M3_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M3">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    A C T U A T O R  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <transmission name="transmission_M4">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="crazyflie_M4_joint">
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="M4">
+          <mechanicalReduction>1</mechanicalReduction>
+          <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </actuator>
+
+    </transmission>
+
+    <!--
+    =========================================================================
+                    F O R C E S & T O R Q U E S  P L U G I N S
+    =========================================================================
+    -->
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  1
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>FORCE_STATE_FREQ_INT_1</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_1</updateRate>
+              <bodyName>crazyflie_prop_M1</bodyName>
+              <topicName>FORCE_STATE_TOPIC_M1</topicName>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  2
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+               <update>FORCE_STATE_FREQ_INT_2</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_2</updateRate>
+              <bodyName>crazyflie_prop_M2</bodyName>
+              <topicName>FORCE_STATE_TOPIC_M2</topicName>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  3
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>FORCE_STATE_FREQ_INT_3</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_3</updateRate>
+              <bodyName>crazyflie_prop_M3</bodyName>
+              <topicName>FORCE_STATE_TOPIC_M3</topicName>
+        </plugin>
+    </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    F O R C E / T O R Q U E  M O T O R  4
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <gazebo>
+        <plugin name="gazebo_ros_force" filename="libgazebo_ros_force.so">
+              <alwaysOn>true</alwaysOn>
+              <update>FORCE_STATE_FREQ_INT_4</update>
+              <updateRate>FORCE_STATE_FREQ_FLOAT_4</updateRate>
+              <bodyName>crazyflie_prop_M4</bodyName>
+              <topicName>FORCE_STATE_TOPIC_M4</topicName>
+        </plugin>
+    </gazebo>
+
+
+    <!--
+    =========================================================================
+                               F L O W D E C K
+    =========================================================================
+    -->
+
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                 F L O W D E C K  B A S E  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+ 
+    <link name="fldk_base_link">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.0016"/>
+            <inertia ixx="1.0666666666666667e-07" ixy="0" ixz="0" 
+            iyy="6.093333333333334e-08" iyz="0" izz="6.093333333333334e-08"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.021 0.028 0.004"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.021 0.028 0.004"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            F L O W D E C K  B A S E L I N K  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <joint name="joint_fldk_base_link" type="fixed">
+        <origin xyz="0 0 0.013" rpy="0 0 0" />
+        <parent link="crazyflie_main_body"/>
+        <child link="fldk_base_link"/>
+    </joint>
+
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                 F L O W D E C K  L A S E R  S E N S O R  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="fldk_sensor_laser">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='2.2036333333333332e-11' ixy='0' ixz='0' 
+            iyy='7.236333333333333e-12' iyz='0' izz='2.2036333333333332e-11' />
+            <!-- xacro:cylinder_inertia mass="0.00001" r="0.005" l="0.005"/ -->
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0025 0.0049 0.00156"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0025 0.0049 0.00156"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            F L O W D E C K  L A S E R  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="joint_fldk_sensor_laser" type="fixed">
+        <origin xyz="0.007 0 -0.002" rpy="0 0 0" />
+        <parent link="fldk_base_link"/>
+        <child link="fldk_sensor_laser"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                 F L O W D E C K  L A S E R  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo reference="fldk_sensor_laser">
+    <sensor type="ray" name="fldk_VL53L1x_ToF">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <vertical>
+            <samples>32</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.3345</min_angle> <!-- 27 degree -->
+            <max_angle>-1.8055</max_angle>
+          </vertical>
+          <!-- horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.570796</min_angle>
+            <max_angle>1.570796</max_angle>
+          </horizontal -->
+        </scan>
+        <range>
+          <min>0.04</min>
+          <max>4.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
+        <topicName>/cf1/laser/scan</topicName>
+        <frameName>fldk_sensor_laser</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+          F L O W D E C K  O P T I C A L  F L O W  S E N S O R  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="fldk_sensor_camera">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='3.333354166666667e-05' ixy='0' ixz='0' 
+            iyy='3.333354166666667e-05' iyz='0' izz='3.333354166666667e-05' />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.005 0.005 0.002"/>
+            </geometry>
+            <material name="orange"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.005 0.005 0.002"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      F L O W D E C K  O P T I C A L  F L O W  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="joint_fldk_sensor_camera" type="fixed">
+        <origin xyz="0 0 -0.0025" rpy="0 1.5707963 0" />
+        <parent link="fldk_base_link"/>
+        <child link="fldk_sensor_camera"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        F L O W D E C K  O P T I C A L  F L O W  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+  <gazebo reference="fldk_sensor_camera">
+    <sensor type="camera" name="camera">
+      <update_rate>120.0</update_rate>
+      <visualize>true</visualize>
+      <camera name="head">
+        <horizontal_fov>0.73266667</horizontal_fov>
+        <image>
+          <width>800</width>
+          <height>800</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.08</near>
+          <far>300</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <!-- Noise is sampled independently per pixel on each frame.
+               That pixel's noise value is added to each of its color
+               channels, which at that point lie in the range [0,1]. -->
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>camera1</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>fldk_sensor_camera</frameName>
+        <hackBaseline>0.07</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+
+    <!--
+    =========================================================================
+                    M U L T I - R A N G E R   D E C K
+    =========================================================================
+    -->
+
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+              M U L T I - R A N G E R   D E C K   B A S E  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+ 
+    <link name="mrdk_base_link">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.0023"/>
+            <inertia ixx='2.3958333333333335e-07' ixy='0' ixz='0' 
+            iyy='2.3958333333333335e-07' iyz='0' izz='2.3958333333333335e-07'/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.035 0.035 0.005"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.035 0.035 0.005"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      M U L T I - R A N G E R   D E C K  B A S E L I N K  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <joint name="joint_mrdk_base_link" type="fixed">
+        <origin xyz="0 0 0.027" rpy="0 0 0" />
+        <parent link="crazyflie_main_body"/>
+        <child link="mrdk_base_link"/>
+    </joint>
+
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                       T O P  S E N S O R  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="top_sensor">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='7.236333333333333e-12' ixy='0' ixz='0' 
+            iyy='2.2036333333333332e-11' iyz='0' izz='7.236333333333333e-12' />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0049 0.0025 0.00156"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0049 0.0025 0.00156"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                  T O P  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="joint_top_sensor" type="fixed">
+        <origin xyz="0 0 0.002" rpy="0 0 0" />
+        <parent link="mrdk_base_link"/>
+        <child link="top_sensor"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                     T O P  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo reference="top_sensor">
+    <sensor type="ray" name="top_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <vertical>
+            <samples>32</samples>
+            <resolution>1</resolution>
+            <min_angle>1.3345</min_angle> <!-- 27 degree -->
+            <max_angle>1.8055</max_angle>
+          </vertical>
+          <!-- horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.570796</min_angle>
+            <max_angle>1.570796</max_angle>
+          </horizontal -->
+        </scan>
+        <range>
+          <min>0.04</min>
+          <max>4.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
+        <topicName>/cf1/top_sensor/scan</topicName>
+        <frameName>top_sensor</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                       F R O N T  S E N S O R  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="front_sensor">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='2.2036333333333332e-11' ixy='0' ixz='0' 
+            iyy='7.236333333333333e-12' iyz='0' izz='2.2036333333333332e-11' />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0025 0.0049 0.00156"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0025 0.0049 0.00156"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                  F R O N T  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="joint_front_sensor" type="fixed">
+        <origin xyz="0.01875 0 0" rpy="0 0 0" />
+        <parent link="mrdk_base_link"/>
+        <child link="front_sensor"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                     F R O N T  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo reference="front_sensor">
+    <sensor type="ray" name="front_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>32</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.2355</min_angle>
+            <max_angle>0.2355</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.04</min>
+          <max>4.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
+        <topicName>/cf1/front_sensor/scan</topicName>
+        <frameName>front_sensor</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                       B A C K  S E N S O R  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="back_sensor">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='2.2036333333333332e-11' ixy='0' ixz='0' 
+            iyy='7.236333333333333e-12' iyz='0' izz='2.2036333333333332e-11' />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0025 0.0049 0.00156"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0025 0.0049 0.00156"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                  B A C K  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="joint_back_sensor" type="fixed">
+        <origin xyz="-0.01875 0 0" rpy="0 0 0" />
+        <parent link="mrdk_base_link"/>
+        <child link="back_sensor"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                     B A C K  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo reference="back_sensor">
+    <sensor type="ray" name="back_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>32</samples>
+            <resolution>1</resolution>
+            <min_angle>-2.9045</min_angle>
+            <max_angle>-3.3755</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.04</min>
+          <max>4.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
+        <topicName>/cf1/back_sensor/scan</topicName>
+        <frameName>back_sensor</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                       L E F T  S E N S O R  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="left_sensor">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='7.236333333333333e-12' ixy='0' ixz='0' 
+            iyy='2.2036333333333332e-11' iyz='0' izz='7.236333333333333e-12' />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0049 0.0025 0.00156"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0049 0.0025 0.00156"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                  L E F T  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="joint_left_sensor" type="fixed">
+        <origin xyz="0 0.01875 0" rpy="0 0 0" />
+        <parent link="mrdk_base_link"/>
+        <child link="left_sensor"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                     L E F T  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo reference="left_sensor">
+    <sensor type="ray" name="left_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>32</samples>
+            <resolution>1</resolution>
+            <min_angle>1.3345</min_angle>
+            <max_angle>1.8055</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.04</min>
+          <max>4.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
+        <topicName>/cf1/left_sensor/scan</topicName>
+        <frameName>left_sensor</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                       R I G H T  S E N S O R  L I N K 
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <link name="right_sensor">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.00001"/>
+            <inertia ixx='7.236333333333333e-12' ixy='0' ixz='0' 
+            iyy='2.2036333333333332e-11' iyz='0' izz='7.236333333333333e-12' />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0049 0.0025 0.00156"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.0049 0.0025 0.00156"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                  R I G H T  S E N S O R  F I X E D  J O I N T
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+
+    <joint name="joint_right_sensor" type="fixed">
+        <origin xyz="0 -0.01875 0" rpy="0 0 0" />
+        <parent link="mrdk_base_link"/>
+        <child link="right_sensor"/>
+    </joint>
+
+    <!--
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                     R I G H T  S E N S O R  P L U G I N
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    -->
+    <gazebo reference="right_sensor">
+    <sensor type="ray" name="right_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>32</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.3345</min_angle>
+            <max_angle>-1.8055</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.04</min>
+          <max>4.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
+        <topicName>/cf1/right_sensor/scan</topicName>
+        <frameName>right_sensor</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+</robot>

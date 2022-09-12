@@ -80,6 +80,7 @@ class PidController:
             afterClamping = constrain(beforeClamping, self.windup_info.lowerValueSat, self.windup_info.upperValueSat)
 
             # Checking sign of the error and sign of the PID output:
+            ## DD: consider integral part equals to zero when saturation happens
             if beforeClamping != afterClamping and sameSign(beforeClamping, self.error):
                 self.integral = 0
 

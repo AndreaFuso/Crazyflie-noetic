@@ -69,6 +69,7 @@ def RotateVector(vector=Vector3(), rotation=Vector3()):
     cosY = math.cos(rotation.z)
     sinY = math.sin(rotation.z)
 
+    # rotation matrix
     R11 = cosY * cosP
     R12 = cosY * sinP * sinR - sinY * cosR
     R13 = cosY * sinP * cosR + sinY * sinR

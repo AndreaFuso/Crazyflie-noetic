@@ -45,11 +45,12 @@ class FlightControllerCustom:
         state_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_CF_STATE_TOPIC, CrazyflieState,
                                      self.__state_sub_callback)
         self.actual_state = CrazyflieState()
+        ## DD: to read the actual state
 
         # Subscriber looking for a point to go:
         self.desired_position_sub = rospy.Subscriber('/' + cfName + '/' + DEFAULT_ACTUAL_DESTINATION_TOPIC, Position,
                                                      self.__desired_position_sub_callback)
-
+        ## DD: read desired position and combine the actual state results to get desired velocity and yaw rate
 
 
 
@@ -261,6 +262,7 @@ class FlightControllerCustom:
     #
     # ------------------------------------------------------------------------------------------------------------------
     def __init_position_controller(self):
+        ## DD: controllers initialization
         windup_type = DEFAULT_WINDUP_TYPE
         windup_info = WindupInfo()
         dt = 1 / 100

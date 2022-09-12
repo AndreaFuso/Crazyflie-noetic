@@ -469,7 +469,7 @@ class MotionCommanderSim:
         feedback = TakeoffFeedback()
         result = TakeoffResult()
 
-        # Getting initial position:
+        # Getting initial position(using current actual positions):
         initial_position = Vector3(self.actual_state.position.x, self.actual_state.position.y,
                                    self.actual_state.position.z)
         initial_attitude = rad2deg(self.actual_state.orientation.yaw)
@@ -505,7 +505,7 @@ class MotionCommanderSim:
             # Sending commands to reach the takeoff height:
             self.position_target.desired_position.x = initial_position.x
             self.position_target.desired_position.y = initial_position.y
-            self.position_target.desired_position.z = takeoff_height
+            self.position_target.desired_position.z = takeoff_height #for take off, we can just update the z position
             self.position_target.desired_yaw = initial_attitude
 
             # Telling MotorControllerSim that can send motor commands:

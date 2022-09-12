@@ -4,7 +4,7 @@ import time
 # MESSAGE
 from std_msgs.msg import Float64, Empty
 from crazyflie_messages.msg import Position, Attitude, CrazyflieState
-from geometry_msgs.msg import Wrench
+from geometry_msgs.msg import Wrench ## DD: force, torque
 
 # CUSTOM MODULES
 from crazyflie_simulator.FlightControllerSimFirmwr import MAX_THRUST, INT16_MAX
@@ -175,6 +175,7 @@ class MotorSim:
                                 Vector3(actual_state.orientation.roll,
                                         actual_state.orientation.pitch,
                                         actual_state.orientation.yaw))
+        ## DD:? calculation
 
         # Setting the new force:
         self.lift_drag_pub_msg.force.x = resLiftForce.x
@@ -207,6 +208,7 @@ class MotorSim:
         #                             F O R C E  S T A T E  A P P L I C A T I O N
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         dur = rospy.Duration.from_sec(1 / 1000)
+        ## DD: duration
         if self.apply_delay:
             half_quantites = Wrench()
             perc = 1.0
@@ -332,6 +334,7 @@ class MotorControllerSim:
         self.cfName = cfName
 
         # Variable to decide wether to send or not commands to the motors:
+        ## DD: here canSend default value is False, and we cna change in the MotionCommanderSim, there is an object motors_controller, then do motors_controller.canSend = True or False
         self.canSend = False
 
         # Motors instantiation:
