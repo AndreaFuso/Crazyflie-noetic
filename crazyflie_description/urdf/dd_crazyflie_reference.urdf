@@ -355,18 +355,26 @@
                                 I M U  S E N S O R  P L U G I N
     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     -->
-    <gazebo>
-        <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
-        <alwaysOn>true</alwaysOn>
-        <bodyName>imu_link</bodyName> <!-- crazyflie_main_body -->
-        <topicName>/cf1/imu</topicName>
-        <serviceName>imu_service</serviceName>
-        <gaussianNoise>IMU_GAUSSIAN_NOISE_VALUE</gaussianNoise>
-        <updateRate>IMU_UPDATE_RATE</updateRate>
-        <frameName>imu_link</frameName>
-    </plugin>
-    </gazebo>    
-
+    <gazebo reference="imu_link">
+      <gravity>true</gravity>
+      <sensor name="imu_sensor" type="imu">
+        <always_on>true</always_on>
+        <update_rate>100</update_rate>
+        <visualize>true</visualize>
+        <topic>__default_topic__</topic>
+        <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+          <topicName>imu</topicName>
+          <bodyName>/cf1/imu</bodyName>
+          <gaussianNoise>IMU_GAUSSIAN_NOISE_VALUE</gaussianNoise>
+          <updateRateHZ>IMU_UPDATE_RATE</updateRateHZ>
+          <xyzOffset>0 0 0</xyzOffset>
+          <rpyOffset>0 0 0</rpyOffset>
+          <frameName>imu_link</frameName>
+          <initialOrientationAsReference>false</initialOrientationAsReference>
+        </plugin>
+        <pose>0 0 0 0 0 0</pose>
+      </sensor>
+    </gazebo>
     <!--
     =========================================================================
                               A C T U A T O R S

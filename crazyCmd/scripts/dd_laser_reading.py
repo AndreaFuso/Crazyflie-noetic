@@ -3,26 +3,23 @@
 import rospy
 
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Float64
 
 def clbk_laser(msg):
-    regions = min(msg.ranges[:])
-    # regions = []
-    # for i in range(0,50,10):
-    #     value = min(min(msg.ranges[i:i+9]),10)
-    #     regions.append(value)
-    # regions = [
-    #     min(min(msg.ranges[0:143]),10),
-    #     min(min(msg.ranges[144:287]),10),
-    #     min(min(msg.ranges[288:431]),10),
-    #     min(min(msg.ranges[432:575]),10),
-    #     min(min(msg.ranges[576:713]),10),
-    # ]
-    rospy.loginfo(regions)
+    value = min(min(msg.ranges[:]),4)
+    laser_scan_msg = Float64()
+    laser_scan_msg.data = value
+    laser_scan_pub.publish(laser_scan_msg)
 
 def main():
+    global laser_scan_pub
     rospy.init_node("laser_reading")
-    sub = rospy.Subscriber("/cf1/laser/scan",LaserScan,clbk_laser)
-    rospy.spin()
+    laser_scan_sub = rospy.Subscriber("/cf1/laser/scan",LaserScan,clbk_laser)
+    laser_scan_pub = rospy.Publisher("/cf1/laser_scan_z", Float64, queue_size=1)
+    
+    rate = rospy.Rate(20)
+    while not rospy.is_shutdown():
+        rate.sleep()
 
 if __name__ == '__main__':
     main()

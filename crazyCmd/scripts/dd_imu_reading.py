@@ -17,8 +17,6 @@ def clbk_imu(msg):
     rpy_msg.yaw = yaw
     rpy_pub.publish(rpy_msg)
 
-    # rospy.loginfo([roll,pitch,yaw])
-
 def main():
     global rpy_pub
     rospy.init_node("imu_reading")
@@ -29,8 +27,6 @@ def main():
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
         rate.sleep()
-
-    # rospy.spin()
 
 if __name__ == '__main__':
     main()
