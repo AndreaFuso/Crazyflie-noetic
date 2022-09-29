@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node name="laser_reading" pkg="crazyCmd" type="dd_laser_reading.py" output="screen"/>
+    <node name="multiranger_reading" pkg="crazyCmd" type="dd_multiranger_reading.py" output="screen"/>
+    <node name="imu_reading" pkg="crazyCmd" type="dd_imu_reading.py" output="screen"/>
+    <node name="odometry_rpy_reading" pkg="crazyCmd" type="dd_odometry_rpy_reading.py" output="screen"/>
+</launch>

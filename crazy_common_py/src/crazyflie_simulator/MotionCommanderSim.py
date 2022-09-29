@@ -113,6 +113,8 @@ class MotionCommanderSim:
                                         Position, self.__mpc_target_sub_callback)
         self.mpc_target_flag = False
 
+        # Subscriber to read the deisred velocity from the keyboard teleop
+        self.cmd_vel_sub = rospy.Subscriber('/' + cfName + '/cmd_vel', Position, self.__cmd_vel_callback)
 
 
 
@@ -217,12 +219,6 @@ class MotionCommanderSim:
         self.__flock_act = actionlib.SimpleActionServer('/' + cfName + '/' + DEFAULT_FLOCK_TOPIC, EmptyAction,
                                                         self.__flock_act_callback, False)
         self.__flock_act.start()
-
-
-
-
-
-
 
     # ==================================================================================================================
     #
@@ -334,6 +330,31 @@ class MotionCommanderSim:
         print('A new MPC target has been accepted')
         self.mpc_target_flag = True
 
+    # teleop call back
+    def __cmd_vel_callback(self,msg):
+        
+        # Setting velocity mode:
+        self.flight_controller.mode = MovementMode.VELOCITY
+        
+        # Getting actual state:
+        actual_state = self.actual_state
+
+        # Getting defined velocity components:
+        fixed_vel_x = msg.desired_velocity.x
+        fixed_vel_y = msg.desired_velocity.y
+        fixed_vel_z = msg.desired_velocity.z
+        actual_yaw = actual_state.orientation.yaw
+
+        # Compute real absolute velocity components:
+        vx_real = fixed_vel_x * math.cos(actual_yaw)
+        vy_real = fixed_vel_x * math.sin(actual_yaw)
+        vz_real = fixed_vel_z
+
+        # Sending commands to follow the desired velocity and yaw attitude rate:
+        self.position_target.desired_velocity.x = vx_real
+        self.position_target.desired_velocity.y = vy_real
+        self.position_target.desired_velocity.z = vz_real
+        self.position_target.desired_yaw_rate = msg.desired_yaw_rate
 
     # ==================================================================================================================
     #
@@ -743,7 +764,7 @@ class MotionCommanderSim:
             self.position_target.desired_velocity.x = goal.destination_info.desired_velocity.x
             self.position_target.desired_velocity.y = goal.destination_info.desired_velocity.y
             self.position_target.desired_velocity.z = goal.destination_info.desired_velocity.z
-            self.position_target.desired_yaw = goal.destination_info.desired_yaw
+            self.position_target.desired_yaw_rate = goal.destination_info.desired_yaw_rate
 
             # Check for preemption:
             if self.__absolute_3D_velocity_motion_act.is_preempt_requested() or self.stopActions:

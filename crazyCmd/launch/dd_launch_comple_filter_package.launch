@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- this is the launch file to use 'imu_complementary_filer' -->
+<!-- let's do same operation to see the variation of rpy, move from (0,0,0.5) yaw:0  to (2,3,1) yaw:90 -->
+
+<launch>
+    <!-- this the node for changeing imu topic to match that package -->
+    <node name="imu_topic_change" pkg="crazyCmd" type="dd_imu_topic_change.py" output="screen"/>
+
+    <!-- this is the node to launch the 'complementary_filter_node' -->
+    <node pkg="imu_complementary_filter" type="complementary_filter_node"
+      name="complementary_filter_gain_node" output="screen">
+        <param name="do_bias_estimation" value="false"/>
+        <param name="do_adaptive_gain" value="false"/> 
+        <!-- the adaptive_gain will cause big error wrt odometry data  -->
+        <param name="use_mag" value="false"/>
+        <param name="gain_acc" value="0.01"/>
+        <param name="gain_mag" value="0.0"/>
+    </node>
+
+</launch>

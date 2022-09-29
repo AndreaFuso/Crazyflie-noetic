@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+	<!-- Launching the Gazebo world scene -->
+	<include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/world03.world"/> -->
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/world02.world"/> -->
+		<arg name="world_name" value="$(find crazyflie_gazebo)/worlds/crazyflie.world"/>
+		<!-- more default parameters can be changed here -->
+		<arg name="paused" value="False"/>
+	</include>
+
+	<!-- Starting up nodes that give the pace to the inner controllers -->
+	<node name="node_100Hz" pkg="crazyCmd" type="node_100Hz.py" output="screen"/>
+	<node name="node_500Hz" pkg="crazyCmd" type="node_500Hz.py" output="screen"/>
+	<node name="node_1000Hz" pkg="crazyCmd" type="node_1000Hz.py" output="screen"/>
+
+    <!-- Starting up node that spawn the crazyflie -->
+	<group ns = "cf1">
+		<node pkg="crazyCmd" type="dd_crazyflie_spawner_node.py" name="crazyflie_spawner_node" output="screen">
+			<rosparam param="name">cf1</rosparam>
+			<rosparam param="initial_position">[0.0, 0.0, 0.2]</rosparam>
+		</node>
+	</group>
+
+	<param name="robot_description" command="xacro '$(find crazyflie_description)/urdf/dd_crazyflie_reference.urdf'"/> 
+    
+    <!-- Combine joint values -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+    <!-- Show in Rviz   -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" /> -->
+    <!-- args="-d $(find crazyCmd)/launch/config.rviz" -->
+
+	 <!-- send joint values -->
+  	<!-- <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"/> -->
+
+</launch>
