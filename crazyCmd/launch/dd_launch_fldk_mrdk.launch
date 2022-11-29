@@ -4,9 +4,15 @@
 	<include file="$(find gazebo_ros)/launch/empty_world.launch">
 		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/world03.world"/> -->
 		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/world02.world"/> -->
-		<arg name="world_name" value="$(find crazyflie_gazebo)/worlds/crazyflie.world"/>
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/world02_estimation.world"/> -->
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/crazyflie.world"/> -->
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/labroom01.world"/> -->
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/labroom02.world"/> -->
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/line3.world"/> -->
+		<arg name="world_name" value="$(find crazyflie_gazebo)/worlds/asphalt_plane.world"/>
+		<!-- <arg name="world_name" value="$(find crazyflie_gazebo)/worlds/line3_1.world"/> -->
 		<!-- more default parameters can be changed here -->
-		<arg name="paused" value="False"/>
+		<arg name="paused" value="True"/>
 	</include>
 
 	<!-- Starting up nodes that give the pace to the inner controllers -->
@@ -23,7 +29,7 @@
 	</group>
 
 	<param name="robot_description" command="xacro '$(find crazyflie_description)/urdf/dd_crazyflie_reference.urdf'"/> 
-    
+
     <!-- Combine joint values -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 

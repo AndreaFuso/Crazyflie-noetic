@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <node pkg="crazyCmd" type="dd_optic_flow_calculator.py" name="optic_flow_calculator" />
+  <node pkg="crazyCmd" type="dd_laser_reading_collection.py" name="collect_laser_reading" />
+  <include file="$(find crazyCmd)/launch/dd_launch_robot_localization_package.launch"/>   
+</launch>

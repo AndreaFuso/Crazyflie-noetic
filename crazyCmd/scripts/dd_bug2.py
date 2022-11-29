@@ -137,7 +137,7 @@ class Bug2():
         self.up_eq = math.fabs((self.p2.y - self.p1.y) * p0.x - (self.p2.x - self.p1.x) * p0.y + (self.p2.x * self.p1.y) - (self.p2.y * self.p1.x))
         self.lo_eq = math.sqrt(pow(self.p2.y - self.p1.y, 2) + pow(self.p2.x - self.p1.x, 2))
         self.distance = self.up_eq / self.lo_eq
-        return self.distance
+        return self.distance    
 
     # def normalize_angle(self, angle):
     #     if(math.fabs(angle) > math.pi):

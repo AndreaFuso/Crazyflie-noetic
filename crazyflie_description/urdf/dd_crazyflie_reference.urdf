@@ -316,6 +316,12 @@
     <gazebo>
         <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
           <robotNamespace>ROBOT_NAMESPACE</robotNamespace>
+          <!-- Topic to publish nav_msgs/Odometry messages, defaults to `odom` -->
+          <!-- <odometryTopic>odom</odometryTopic> -->
+          <!-- Odometry frame, defaults to `odom` -->
+          <!-- <odometryFrame>odom</odometryFrame> -->
+          <!-- Odometry source, 0 for ENCODER, 1 for WORLD, defaults to WORLD -->
+          <!-- <odometrySource>1</odometrySource> -->
         </plugin>
     </gazebo>
 
@@ -331,7 +337,10 @@
             <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
             <topicName>ODOMETRY_TOPIC</topicName>
             <gaussianNoise>0.0</gaussianNoise>
-            <frameName>world</frameName> <!-- world -->
+            <!-- new stuff -->
+            <!-- <odometryTopic>odom</odometryTopic> -->
+            <!-- <odometryFrame>odom</odometryFrame> -->
+            <frameName>world</frameName> 
             <xyzOffsets>0 0 0</xyzOffsets>
             <rpyOffsets>0 0 0</rpyOffsets>
         </plugin>
@@ -344,7 +353,15 @@
             <bodyName>crazyflie_main_body</bodyName> <!--crazyflie_main_body-->
             <topicName>odom_relative</topicName>
             <gaussianNoise>0.0</gaussianNoise>
-            <frameName>crazyflie_main_body</frameName> <!-- world -->
+
+            <!-- new stuff -->
+            <!-- <odometryTopic>odom</odometryTopic> -->
+            <!-- <odometryFrame>odom</odometryFrame> -->
+
+            <!-- change the framName to world -->
+            <!-- <frameName>world</frameName>  -->
+            <frameName>crazyflie_main_body</frameName>
+
             <xyzOffsets>0 0 0</xyzOffsets>
             <rpyOffsets>0 0 0</rpyOffsets>
         </plugin>
@@ -701,13 +718,15 @@
     -->
   <gazebo reference="fldk_sensor_camera">
     <sensor type="camera" name="camera">
-      <update_rate>120.0</update_rate>
+      <update_rate>120</update_rate>
+      <!-- it's the maximum frame per second the camera can achieve, could be lower than that in simulation -->
       <visualize>true</visualize>
-      <camera name="head">
+      <camera name="PMW3901">
         <horizontal_fov>0.73266667</horizontal_fov>
+        <!-- field of view is 42 degrees -->
         <image>
-          <width>800</width>
-          <height>800</height>
+          <width>350</width>
+          <height>350</height>
           <format>R8G8B8</format>
         </image>
         <clip>
@@ -917,7 +936,7 @@
     <gazebo reference="front_sensor">
     <sensor type="ray" name="front_sensor">
       <pose>0 0 0 0 0 0</pose>
-      <visualize>true</visualize>
+      <visualize>false</visualize>
       <update_rate>10</update_rate>
       <ray>
         <scan>

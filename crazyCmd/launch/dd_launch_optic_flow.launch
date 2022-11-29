@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- this is the launch file to implement optical flow, and extract xy position from IMU accelerometer data  -->
+
+<launch>
+    <!-- this the node for changeing imu topic to match that package -->
+    <node name="optic_flow_calculator" pkg="crazyCmd" type="dd_optic_flow_lk_final.py" output="screen"/>
+    <!-- <node name="collect_laser_reading" pkg="crazyCmd" type="dd_laser_reading_collection.py" output="screen"/> -->
+    <node name="pos_from_imu" pkg="crazyCmd" type="dd_imu_xy_extraction.py" output="screen"/>
+    <node name="optic_flow_data_manage" pkg="crazyCmd" type="dd_optic_flow_data_manage.py" output="screen"/>
+</launch>

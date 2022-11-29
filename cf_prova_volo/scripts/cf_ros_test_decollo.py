@@ -12,7 +12,7 @@ from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.positioning.motion_commander import MotionCommander
 
 # Crazyflie address:
-URI = 'radio://0/80/2M'
+URI = 'radio://0/80/2M/E7E7E7E7E2'
 
 logging.basicConfig(level=logging.ERROR)
 

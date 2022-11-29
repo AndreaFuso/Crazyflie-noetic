@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <arg name="des_x" default="0" />
+    <arg name="des_y" default="0" />
+    <param name="des_pos_x" value="$(arg des_x)" />
+    <param name="des_pos_y" value="$(arg des_y)" />
+
+    <node name="go_straight_server" pkg="crazyCmd" type="dd_go_straight_server.py" output="screen"/>
+    <node name="follow_wall_server" pkg="crazyCmd" type="dd_follow_wall_server.py" output="screen"/>
+    <node name="follow_wall_server_turn_right" pkg="crazyCmd" type="dd_follow_wall_server_turn_right.py" output="screen"/>
+    <node name="go_to_point_server" pkg="crazyCmd" type="dd_go_to_point_server_real.py" output="screen"/>
+    <node name="room_mapping_bug1" pkg="crazyCmd" type="dd_room_mapping_bug1_real.py" output="screen"/>
+
+</launch>

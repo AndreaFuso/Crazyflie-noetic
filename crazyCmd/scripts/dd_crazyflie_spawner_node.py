@@ -7,11 +7,14 @@ from crazy_common_py.dataTypes import Vector3
 ## DD: from dataTypes module inside crazy_commom_py package, import Vector3 class
 from crazyflie_simulator.DdCrazySim import CrazySim
 ## DD: from <module> CrazySim inside <crazyflie_simulator> package, import CrazySim class
+from sensor_msgs.msg import LaserScan
 
 if __name__ == '__main__':
     # Node initialization:
     rospy.init_node('crazyflie_spawner_node', log_level=rospy.ERROR)
 
+    laser_pub = rospy.Publisher("/laser_scan_real",LaserScan, queue_size=1)
+    
     # Extracting rosparam informations (to understand the name and spawn position):
     crazyflie_name = rospy.get_param('crazyflie_spawner_node/name')
     initial_pos = rospy.get_param('crazyflie_spawner_node/initial_position')

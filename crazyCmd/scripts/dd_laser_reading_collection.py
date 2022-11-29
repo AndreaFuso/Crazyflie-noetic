@@ -52,7 +52,7 @@ class CollectLaserReading():
     # To publish the message
     def publish_action(self):
         while not rospy.is_shutdown():
-            rospy.loginfo("front:{}, back:{}, left:{}, right:{}, top:{}, bottom:{}".format(self.front, self.back, self.left, self.right, self.top, self.bottom))
+            # rospy.loginfo("front:{}, back:{}, left:{}, right:{}, top:{}, bottom:{}".format(self.front, self.back, self.left, self.right, self.top, self.bottom))
             self.tot_msg.data = [self.front, self.back, self.left, self.right, self.top, self.bottom]
             self.lase_reading_tot_pub.publish(self.tot_msg)
             self.rate.sleep()

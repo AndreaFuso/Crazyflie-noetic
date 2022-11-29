@@ -5,7 +5,7 @@
 # Once the robot reaches the initial point (where the robot first met the obstacle) it then goes to the point stored in memory and then moves towards the goal from there.
 
 # We will have three main states:1) Go to point  2) Circumnavigate the obstacle  3) Go to closest point
-# Use world03
+# Use world03, and run laser_reading_collection before running bug1.launch
 
 import rospy
 

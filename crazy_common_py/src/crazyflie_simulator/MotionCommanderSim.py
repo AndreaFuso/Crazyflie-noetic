@@ -113,7 +113,7 @@ class MotionCommanderSim:
                                         Position, self.__mpc_target_sub_callback)
         self.mpc_target_flag = False
 
-        # Subscriber to read the deisred velocity from the keyboard teleop
+        # Subscriber to read the deisred velocity from what we want
         self.cmd_vel_sub = rospy.Subscriber('/' + cfName + '/cmd_vel', Position, self.__cmd_vel_callback)
 
 
@@ -129,7 +129,7 @@ class MotionCommanderSim:
 
 
 
-        #TODO: aggiungere subscriber per traiettoria pubblicata dall'esterno, un'azione blocca la pubblicazione di
+        # TODO: aggiungere subscriber per traiettoria pubblicata dall'esterno, un'azione blocca la pubblicazione di
         # position_target e la sostituisce con quella letta dallo subscriber: questo funzionamento rimane in piedi
         # finche' l'azione di traiettoria non termina per tempo o per stop action; a quel punto si ritorna a
         # pubblicare position_target

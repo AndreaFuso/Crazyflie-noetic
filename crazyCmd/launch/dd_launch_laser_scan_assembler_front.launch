@@ -1,0 +1,9 @@
+<launch>
+  <node type="laser_scan_assembler" pkg="laser_assembler" name="my_assembler">
+    <remap from="scan" to="/cf1/front_sensor/scan"/>
+    <param name="max_scans" type="int" value="2147483647" />
+    <param name="fixed_frame" type="string" value="world" />
+  </node>
+
+  <node type="dd_laser_assembler_2pc_front.py" pkg="crazyCmd" name="laser_assembler_2pc_front" />
+</launch>

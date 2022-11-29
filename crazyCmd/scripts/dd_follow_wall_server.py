@@ -69,64 +69,62 @@ class FollowWall():
         if state is not self.state_:
             rospy.loginfo('Wall follower - [%s] - %s' % (state, self.state_dict_[state]))
             self.state_ = state
-    
+            
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  ###
+
     def decide_state(self):
-        if self.right < 0.5:
-            self.state_description = "case1: too close to right"
-            self.change_state(2)
+        if self.front > self.limit and self.left > self.limit and self.right > self.limit and self.back > self.limit:
+            self.state_description = "case1: nothing"
+            self.change_state(0)
+        elif self.front < self.limit and self.left > self.limit and self.right > self.limit and self.back > self.limit:
+            self.state_description = "case2: obstacle in the front"
+            self.change_state(1)
+        elif self.front > self.limit and self.left < self.limit and self.right > self.limit and self.back > self.limit:
+            self.state_description = "case3: obstacle in the left"
+            self.change_state(0)  
+        elif self.front > self.limit and self.left > self.limit and self.right < self.limit and self.back > self.limit:
+            self.state_description = "case4: obstacle in the right"
+            self.change_state(3)
+        elif self.front > self.limit and self.left > self.limit and self.right > self.limit and self.back < self.limit:
+            self.state_description = "case5: obstacle in the back"
+            self.change_state(0)
+        elif self.front < self.limit and self.left < self.limit and self.right > self.limit and self.back > self.limit:
+            self.state_description = "case6: obstacle in the front and left"
+            self.change_state(1)
+        elif self.front < self.limit and self.left > self.limit and self.right < self.limit and self.back > self.limit:
+            self.state_description = "case7: obstacle in the front and right"
+            self.change_state(1)
+        elif self.front < self.limit and self.left > self.limit and self.right > self.limit and self.back < self.limit:
+            self.state_description = "case8: obstacle in the front and back "
+            self.change_state(1)
+        elif self.front > self.limit and self.left < self.limit and self.right < self.limit and self.back > self.limit:
+            self.state_description = "case9: obstacle in the left and right "
+            self.change_state(0)
+        elif self.front > self.limit and self.left < self.limit and self.right > self.limit and self.back < self.limit:
+            self.state_description = "case10: obstacle in the left and back "
+            self.change_state(0)
+        elif self.front > self.limit and self.left > self.limit and self.right < self.limit and self.back < self.limit:
+            self.state_description = "case11: obstacle in the right and back "
+            self.change_state(3)
+        elif self.front < self.limit and self.left < self.limit and self.right < self.limit and self.back > self.limit:
+            self.state_description = "case12: obstacle in the front, left and right "
+            self.change_state(1)
+        elif self.front < self.limit and self.left < self.limit and self.right > self.limit and self.back < self.limit:
+            self.state_description = "case13: obstacle in the front, left and back "
+            self.change_state(1)
+        elif self.front < self.limit and self.left > self.limit and self.right < self.limit and self.back < self.limit:
+            self.state_description = "case14: obstacle in the front, right and back "
+            self.change_state(1)
+        elif self.front > self.limit and self.left < self.limit and self.right < self.limit and self.back < self.limit:
+            self.state_description = "case15: obstacle in the left, right and back"
+            self.change_state(0)
         else:
-            if self.front > self.limit and self.left > self.limit and self.right > self.limit and self.back > self.limit:
-                self.state_description = "case1: nothing"
-                self.change_state(0)
-            elif self.front < self.limit and self.left > self.limit and self.right > self.limit and self.back > self.limit:
-                self.state_description = "case2: obstacle in the front"
-                self.change_state(1)
-            elif self.front > self.limit and self.left < self.limit and self.right > self.limit and self.back > self.limit:
-                self.state_description = "case3: obstacle in the left"
-                self.change_state(0)  
-            elif self.front > self.limit and self.left > self.limit and self.right < self.limit and self.back > self.limit:
-                self.state_description = "case4: obstacle in the right"
-                self.change_state(3)
-            elif self.front > self.limit and self.left > self.limit and self.right > self.limit and self.back < self.limit:
-                self.state_description = "case5: obstacle in the back"
-                self.change_state(0)
-            elif self.front < self.limit and self.left < self.limit and self.right > self.limit and self.back > self.limit:
-                self.state_description = "case6: obstacle in the front and left"
-                self.change_state(1)
-            elif self.front < self.limit and self.left > self.limit and self.right < self.limit and self.back > self.limit:
-                self.state_description = "case7: obstacle in the front and right"
-                self.change_state(1)
-            elif self.front < self.limit and self.left > self.limit and self.right > self.limit and self.back < self.limit:
-                self.state_description = "case8: obstacle in the front and back "
-                self.change_state(1)
-            elif self.front > self.limit and self.left < self.limit and self.right < self.limit and self.back > self.limit:
-                self.state_description = "case9: obstacle in the left and right "
-                self.change_state(0)
-            elif self.front > self.limit and self.left < self.limit and self.right > self.limit and self.back < self.limit:
-                self.state_description = "case10: obstacle in the left and back "
-                self.change_state(0)
-            elif self.front > self.limit and self.left > self.limit and self.right < self.limit and self.back < self.limit:
-                self.state_description = "case11: obstacle in the right and back "
-                self.change_state(3)
-            elif self.front < self.limit and self.left < self.limit and self.right < self.limit and self.back > self.limit:
-                self.state_description = "case12: obstacle in the front, left and right "
-                self.change_state(1)
-            elif self.front < self.limit and self.left < self.limit and self.right > self.limit and self.back < self.limit:
-                self.state_description = "case13: obstacle in the front, left and back "
-                self.change_state(1)
-            elif self.front < self.limit and self.left > self.limit and self.right < self.limit and self.back < self.limit:
-                self.state_description = "case14: obstacle in the front, right and back "
-                self.change_state(1)
-            elif self.front > self.limit and self.left < self.limit and self.right < self.limit and self.back < self.limit:
-                self.state_description = "case15: obstacle in the left, right and back"
-                self.change_state(0)
-            else:
-                self.state_description = "unknown case"
-                rospy.loginfo("front:{}, back:{}, left:{}, right:{}, top:{}, bottom:{}".format(self.front, self.back, self.left, self.right, self.top, self.bottom))
+            self.state_description = "unknown case"
+            rospy.loginfo("front:{}, back:{}, left:{}, right:{}, top:{}, bottom:{}".format(self.front, self.back, self.left, self.right, self.top, self.bottom))
 
     def find_wall(self):
         self.cmd_msg.desired_velocity.x = 0.2
-        self.cmd_msg.desired_yaw_rate = -15
+        self.cmd_msg.desired_yaw_rate = -5
         return self.cmd_msg
     
     def turn_left(self):
@@ -134,15 +132,97 @@ class FollowWall():
         self.cmd_msg.desired_yaw_rate = 15
         return self.cmd_msg
 
-    def turn_left_with_velocity(self):
-        self.cmd_msg.desired_velocity.x = 0.2
-        self.cmd_msg.desired_yaw_rate = 4
-        return self.cmd_msg
+    # def turn_right(self):
+    #     self.cmd_msg.desired_velocity.x = 0
+    #     self.cmd_msg.desired_yaw_rate = -10
+    #     return self.cmd_msg
 
     def follow_the_wall(self):
-        self.cmd_msg.desired_velocity.x = 0.2
+        self.cmd_msg.desired_velocity.x = 0.1
         self.cmd_msg.desired_yaw_rate = 0
         return self.cmd_msg
+
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  ###
+
+
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  ###
+
+    # def decide_state(self):
+    #     if self.right < 0.5:
+    #         self.state_description = "case1: too close to right"
+    #         self.change_state(2)
+    #     else:
+    #         if self.front > self.limit and self.left > self.limit and self.right > self.limit and self.back > self.limit:
+    #             self.state_description = "case1: nothing"
+    #             self.change_state(0)
+    #         elif self.front < self.limit and self.left > self.limit and self.right > self.limit and self.back > self.limit:
+    #             self.state_description = "case2: obstacle in the front"
+    #             self.change_state(1)
+    #         elif self.front > self.limit and self.left < self.limit and self.right > self.limit and self.back > self.limit:
+    #             self.state_description = "case3: obstacle in the left"
+    #             self.change_state(0)  
+    #         elif self.front > self.limit and self.left > self.limit and self.right < self.limit and self.back > self.limit:
+    #             self.state_description = "case4: obstacle in the right"
+    #             self.change_state(3)
+    #         elif self.front > self.limit and self.left > self.limit and self.right > self.limit and self.back < self.limit:
+    #             self.state_description = "case5: obstacle in the back"
+    #             self.change_state(0)
+    #         elif self.front < self.limit and self.left < self.limit and self.right > self.limit and self.back > self.limit:
+    #             self.state_description = "case6: obstacle in the front and left"
+    #             self.change_state(1)
+    #         elif self.front < self.limit and self.left > self.limit and self.right < self.limit and self.back > self.limit:
+    #             self.state_description = "case7: obstacle in the front and right"
+    #             self.change_state(1)
+    #         elif self.front < self.limit and self.left > self.limit and self.right > self.limit and self.back < self.limit:
+    #             self.state_description = "case8: obstacle in the front and back "
+    #             self.change_state(1)
+    #         elif self.front > self.limit and self.left < self.limit and self.right < self.limit and self.back > self.limit:
+    #             self.state_description = "case9: obstacle in the left and right "
+    #             self.change_state(0)
+    #         elif self.front > self.limit and self.left < self.limit and self.right > self.limit and self.back < self.limit:
+    #             self.state_description = "case10: obstacle in the left and back "
+    #             self.change_state(0)
+    #         elif self.front > self.limit and self.left > self.limit and self.right < self.limit and self.back < self.limit:
+    #             self.state_description = "case11: obstacle in the right and back "
+    #             self.change_state(3)
+    #         elif self.front < self.limit and self.left < self.limit and self.right < self.limit and self.back > self.limit:
+    #             self.state_description = "case12: obstacle in the front, left and right "
+    #             self.change_state(1)
+    #         elif self.front < self.limit and self.left < self.limit and self.right > self.limit and self.back < self.limit:
+    #             self.state_description = "case13: obstacle in the front, left and back "
+    #             self.change_state(1)
+    #         elif self.front < self.limit and self.left > self.limit and self.right < self.limit and self.back < self.limit:
+    #             self.state_description = "case14: obstacle in the front, right and back "
+    #             self.change_state(1)
+    #         elif self.front > self.limit and self.left < self.limit and self.right < self.limit and self.back < self.limit:
+    #             self.state_description = "case15: obstacle in the left, right and back"
+    #             self.change_state(0)
+    #         else:
+    #             self.state_description = "unknown case"
+    #             rospy.loginfo("front:{}, back:{}, left:{}, right:{}, top:{}, bottom:{}".format(self.front, self.back, self.left, self.right, self.top, self.bottom))
+
+    # def find_wall(self):
+    #     self.cmd_msg.desired_velocity.x = 0.2
+    #     self.cmd_msg.desired_yaw_rate = -15
+    #     return self.cmd_msg
+    
+    # def turn_left(self):
+    #     self.cmd_msg.desired_velocity.x = 0
+    #     self.cmd_msg.desired_yaw_rate = 15
+    #     return self.cmd_msg
+
+    # def turn_left_with_velocity(self):
+    #     self.cmd_msg.desired_velocity.x = 0.2
+    #     self.cmd_msg.desired_yaw_rate = 4
+    #     return self.cmd_msg
+
+    # def follow_the_wall(self):
+    #     self.cmd_msg.desired_velocity.x = 0.2
+    #     self.cmd_msg.desired_yaw_rate = 0
+    #     return self.cmd_msg
+
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  ###
+
 
     # Decide different state and corresponding action
     def take_action_follow_wall(self):

@@ -62,6 +62,7 @@ add_message_files(
     MpcOpenLoopTraj.msg
     SwarmControllerOutputs.msg
     SwarmDesiredStates.msg
+    OpticalFlow.msg
 )
 
 ## Generate services in the 'srv' folder
